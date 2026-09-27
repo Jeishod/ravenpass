@@ -271,7 +271,8 @@ jobs:
           fi
           brew bump-cask-pr --write-only --no-audit --no-style \
             --version="$version" --sha256="$checksum" dortanes/ravenpass/ravenpass
-          brew style dortanes/ravenpass
+          # The tap is this repository: styling the whole tap would also lint its workflows against Homebrew's actionlint config.
+          brew style --cask dortanes/ravenpass/ravenpass
           brew audit --cask --online dortanes/ravenpass/ravenpass
           cp "$(brew --repository dortanes/ravenpass)/Casks/ravenpass.rb" Casks/ravenpass.rb
           git diff --check
