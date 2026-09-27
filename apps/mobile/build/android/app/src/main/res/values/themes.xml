@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Ravenpass" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
+
+    <!-- The autofill screens: the page draws its sheet and the scrim over the app being filled. -->
+    <style name="Theme.Ravenpass.Autofill" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+    </style>
+
+    <!-- The fill screen shows nothing: it releases the chosen credential and ends. -->
+    <style name="Theme.Ravenpass.Autofill.Invisible">
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+</resources>

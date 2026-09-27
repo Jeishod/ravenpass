@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+
+# Build output
+/apps/desktop/bin/
+/apps/desktop/frontend/
+/apps/desktop/internal/secureenclave/*.syso
+/apps/extension/dist/
+/apps/extension/.extension-js/
+/apps/extension/extension-env.d.ts
+/apps/mobile/frontend/
+/apps/mobile/build/android/.gradle/
+/apps/mobile/build/android/.kotlin/
+/apps/mobile/build/android/build/
+/apps/mobile/build/android/app/build/
+/apps/mobile/build/android/app/release/
+/apps/mobile/build/android/app/src/main/jniLibs/
+/apps/mobile/build/android/app/src/main/assets/autofill/
+/apps/mobile/build/android/app/src/main/assets/THIRD_PARTY_NOTICES.txt
+/apps/mobile/build/android/local.properties
+coverage/
+*.test
+*.out
+*.log
+*.apk
+*.aab
+*.dmg
+
+# Signing material
+*.p12
+*.p8
+*.cer
+*.jks
+*.keystore
+*.mobileprovision
+*.provisionprofile
+*.pem
+*.key
+.env
+.env.*
+
+# Editors and platforms
+.idea/
+.vscode/
+*.iml
+.DS_Store

@@ -1,0 +1,206 @@
+{
+  "fields": [
+    {
+      "name": "six tel boxes, focused in the middle",
+      "inputs": [
+        { "type": "tel", "maxLength": 1 },
+        { "type": "tel", "maxLength": 1 },
+        { "type": "tel", "maxLength": 1 },
+        { "type": "tel", "maxLength": 1 },
+        { "type": "tel", "maxLength": 1 },
+        { "type": "tel", "maxLength": 1 }
+      ],
+      "focus": 3,
+      "code": [0, 1, 2, 3, 4, 5]
+    },
+    {
+      "name": "four text boxes",
+      "inputs": [
+        { "maxLength": 1 },
+        { "maxLength": 1 },
+        { "maxLength": 1 },
+        { "maxLength": 1 }
+      ],
+      "focus": 0,
+      "code": [0, 1, 2, 3]
+    },
+    {
+      "name": "number boxes, focused on the last",
+      "inputs": [
+        { "type": "number", "maxLength": 1 },
+        { "type": "number", "maxLength": 1 },
+        { "type": "number", "maxLength": 1 },
+        { "type": "number", "maxLength": 1 },
+        { "type": "number", "maxLength": 1 },
+        { "type": "number", "maxLength": 1 }
+      ],
+      "focus": 5,
+      "code": [0, 1, 2, 3, 4, 5]
+    },
+    {
+      "name": "three boxes are no code field",
+      "inputs": [{ "maxLength": 1 }, { "maxLength": 1 }, { "maxLength": 1 }],
+      "focus": 1,
+      "code": null
+    },
+    {
+      "name": "boxes after an unrelated input",
+      "inputs": [
+        { "name": "first_name" },
+        { "type": "tel", "maxLength": 1 },
+        { "type": "tel", "maxLength": 1 },
+        { "type": "tel", "maxLength": 1 },
+        { "type": "tel", "maxLength": 1 }
+      ],
+      "focus": 1,
+      "code": [1, 2, 3, 4]
+    },
+    {
+      "name": "an unrelated input beside boxes is no code field",
+      "inputs": [
+        { "name": "first_name" },
+        { "type": "tel", "maxLength": 1 },
+        { "type": "tel", "maxLength": 1 },
+        { "type": "tel", "maxLength": 1 },
+        { "type": "tel", "maxLength": 1 }
+      ],
+      "focus": 0,
+      "code": null
+    },
+    {
+      "name": "a wider input breaks the run",
+      "inputs": [
+        { "maxLength": 1 },
+        { "maxLength": 1 },
+        { "maxLength": 1 },
+        { "maxLength": 2 },
+        { "maxLength": 1 },
+        { "maxLength": 1 },
+        { "maxLength": 1 }
+      ],
+      "focus": 1,
+      "code": null
+    },
+    {
+      "name": "a hidden box breaks the run",
+      "inputs": [
+        { "maxLength": 1 },
+        { "maxLength": 1 },
+        { "maxLength": 1, "visible": false },
+        { "maxLength": 1 },
+        { "maxLength": 1 },
+        { "maxLength": 1 },
+        { "maxLength": 1 }
+      ],
+      "focus": 4,
+      "code": [3, 4, 5, 6]
+    },
+    {
+      "name": "an email box is no box",
+      "inputs": [
+        { "maxLength": 1 },
+        { "maxLength": 1 },
+        { "maxLength": 1 },
+        { "type": "email", "maxLength": 1 }
+      ],
+      "focus": 0,
+      "code": null
+    },
+    {
+      "name": "password boxes are no code field",
+      "inputs": [
+        { "type": "password", "maxLength": 1 },
+        { "type": "password", "maxLength": 1 },
+        { "type": "password", "maxLength": 1 },
+        { "type": "password", "maxLength": 1 }
+      ],
+      "focus": 0,
+      "code": null
+    },
+    {
+      "name": "a code field of three characters is too short",
+      "inputs": [{ "name": "code", "maxLength": 3 }],
+      "focus": 0,
+      "code": null
+    },
+    {
+      "name": "a code field of four characters",
+      "inputs": [{ "name": "code", "maxLength": 4 }],
+      "focus": 0,
+      "code": [0]
+    },
+    {
+      "name": "a code field of ten characters",
+      "inputs": [{ "name": "code", "maxLength": 10 }],
+      "focus": 0,
+      "code": [0]
+    },
+    {
+      "name": "a code field of eleven characters is too long",
+      "inputs": [{ "name": "code", "maxLength": 11 }],
+      "focus": 0,
+      "code": null
+    },
+    {
+      "name": "a code field without a length",
+      "inputs": [{ "name": "code" }],
+      "focus": 0,
+      "code": null
+    },
+    {
+      "name": "a code field whose label names the email the code went to",
+      "inputs": [
+        { "maxLength": 6, "label": "Enter the code we sent to your email" }
+      ],
+      "focus": 0,
+      "code": [0]
+    },
+    {
+      "name": "a code field before a new password",
+      "inputs": [
+        { "name": "verification_code", "maxLength": 6 },
+        { "type": "password", "name": "new_password" }
+      ],
+      "focus": 0,
+      "code": [0]
+    },
+    {
+      "name": "a field named for a one-time code without digits or a length",
+      "inputs": [{ "name": "otp" }],
+      "focus": 0,
+      "code": [0]
+    },
+    {
+      "name": "an email input named for a one-time code is no code field",
+      "inputs": [{ "type": "email", "name": "otp" }],
+      "focus": 0,
+      "code": null
+    },
+    {
+      "name": "a tel input named for a code asks for digits",
+      "inputs": [{ "type": "tel", "name": "verificationCode" }],
+      "focus": 0,
+      "code": [0]
+    },
+    {
+      "name": "a number input named for a code asks for digits",
+      "inputs": [{ "type": "number", "name": "code" }],
+      "focus": 0,
+      "code": [0]
+    },
+    {
+      "name": "a numeric input mode asks for digits",
+      "inputs": [{ "name": "code", "inputMode": "numeric" }],
+      "focus": 0,
+      "code": [0]
+    }
+  ],
+  "entries": [
+    { "code": "123456", "boxes": 6, "entries": ["1", "2", "3", "4", "5", "6"] },
+    { "code": "1234", "boxes": 4, "entries": ["1", "2", "3", "4"] },
+    { "code": "123456", "boxes": 1, "entries": ["123456"] },
+    { "code": "12345678", "boxes": 6, "entries": ["12345678"] },
+    { "code": "1234", "boxes": 6, "entries": ["1234"] },
+    { "code": "123456", "boxes": 0, "entries": ["123456"] }
+  ]
+}

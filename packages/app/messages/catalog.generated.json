@@ -1,0 +1,358 @@
+{
+  "system.dialog.choose-vault-location": {
+    "en": "Choose where to keep your vault",
+    "ru": "Выберите место для хранилища"
+  },
+  "system.dialog.select-vault-file": {
+    "en": "Select a vault file",
+    "ru": "Выберите файл хранилища"
+  },
+  "system.dialog.save-export": {
+    "en": "Save an encrypted copy of your vault",
+    "ru": "Сохраните зашифрованную копию хранилища"
+  },
+  "system.dialog.save-recovery-key": {
+    "en": "Save your recovery key",
+    "ru": "Сохраните ключ восстановления"
+  },
+  "system.dialog.choose-photo": {
+    "en": "Choose a photo",
+    "ru": "Выберите фотографию"
+  },
+  "system.dialog.choose-scan": {
+    "en": "Choose a scan of the document",
+    "ru": "Выберите скан документа"
+  },
+  "system.dialog.save-scan": {
+    "en": "Save an unencrypted copy of the scan",
+    "ru": "Сохраните незашифрованную копию скана"
+  },
+  "system.dialog.select-import": {
+    "en": "Select the exported file",
+    "ru": "Выберите файл экспорта"
+  },
+  "system.dialog.choose-backup-folder": {
+    "en": "Choose a folder for automatic backups",
+    "ru": "Выберите папку для автоматических копий"
+  },
+  "system.filter.vault": {
+    "en": "Ravenpass vault",
+    "ru": "Хранилище Ravenpass"
+  },
+  "system.filter.text": {
+    "en": "Text file",
+    "ru": "Текстовый файл"
+  },
+  "system.filter.photo": {
+    "en": "Image",
+    "ru": "Изображение"
+  },
+  "system.filter.scan": {
+    "en": "Image or PDF",
+    "ru": "Изображение или PDF"
+  },
+  "system.filter.import": {
+    "en": "Exported vault",
+    "ru": "Экспорт хранилища"
+  },
+  "system.file.vault": {
+    "en": "vault.rpv",
+    "ru": "vault.rpv"
+  },
+  "system.file.export": {
+    "en": "Ravenpass export.rpv",
+    "ru": "Экспорт Ravenpass.rpv"
+  },
+  "system.file.recovery-key": {
+    "en": "Ravenpass recovery key.txt",
+    "ru": "Ключ восстановления Ravenpass.txt"
+  },
+  "system.reason.share-file": {
+    "en": "share “{file}” from {identity} with {site}",
+    "ru": "передать сайту {site} файл «{file}» из профиля «{identity}»"
+  },
+  "system.reason.save-passkey": {
+    "en": "save a passkey for {site}",
+    "ru": "сохранить ключ доступа для сайта {site}"
+  },
+  "system.reason.sign-in-passkey": {
+    "en": "sign in to {site} as {account} with a passkey",
+    "ru": "войти на сайт {site} как «{account}» с ключом доступа"
+  },
+  "system.reason.fill-sign-in": {
+    "en": "fill the sign-in for {account} on {site}",
+    "ru": "вставить данные входа «{account}» на сайте {site}"
+  },
+  "system.reason.change-unlock": {
+    "en": "change how your vault unlocks",
+    "ru": "изменить способ разблокировки хранилища"
+  },
+  "system.reason.create-vault": {
+    "en": "create a new vault",
+    "ru": "создать новое хранилище"
+  },
+  "system.reason.open-vault": {
+    "en": "open another vault file",
+    "ru": "открыть другой файл хранилища"
+  },
+  "system.reason.delete-vault": {
+    "en": "delete the vault “{vault}”",
+    "ru": "удалить хранилище «{vault}»"
+  },
+  "system.reason.unlock-vault": {
+    "en": "unlock your vault",
+    "ru": "разблокировать хранилище"
+  },
+  "system.prompt.share-file.title": {
+    "en": "Share a file",
+    "ru": "Передача файла"
+  },
+  "system.prompt.share-file": {
+    "en": "Confirm it’s you to share “{file}” from {identity} with {site}.",
+    "ru": "Подтвердите, что это вы, чтобы передать сайту {site} файл «{file}» из профиля «{identity}»."
+  },
+  "system.prompt.save-passkey.title": {
+    "en": "Save a passkey",
+    "ru": "Сохранение ключа доступа"
+  },
+  "system.prompt.save-passkey": {
+    "en": "Confirm it’s you to save a passkey for {site}.",
+    "ru": "Подтвердите, что это вы, чтобы сохранить ключ доступа для сайта {site}."
+  },
+  "system.prompt.sign-in-passkey.title": {
+    "en": "Sign in with a passkey",
+    "ru": "Вход с ключом доступа"
+  },
+  "system.prompt.sign-in-passkey": {
+    "en": "Confirm it’s you to sign in to {site} as {account}.",
+    "ru": "Подтвердите, что это вы, чтобы войти на сайт {site} как «{account}»."
+  },
+  "system.prompt.fill-sign-in.title": {
+    "en": "Fill a sign-in",
+    "ru": "Вставка данных входа"
+  },
+  "system.prompt.fill-sign-in": {
+    "en": "Confirm it’s you to fill the sign-in for {account} on {site}.",
+    "ru": "Подтвердите, что это вы, чтобы вставить данные входа «{account}» на сайте {site}."
+  },
+  "system.prompt.change-unlock.title": {
+    "en": "Change unlock settings",
+    "ru": "Изменение разблокировки"
+  },
+  "system.prompt.change-unlock": {
+    "en": "Confirm it’s you to change how your vault unlocks.",
+    "ru": "Подтвердите, что это вы, чтобы изменить способ разблокировки хранилища."
+  },
+  "system.prompt.create-vault.title": {
+    "en": "Create a vault",
+    "ru": "Создание хранилища"
+  },
+  "system.prompt.create-vault": {
+    "en": "Confirm it’s you to create a new vault.",
+    "ru": "Подтвердите, что это вы, чтобы создать новое хранилище."
+  },
+  "system.prompt.open-vault.title": {
+    "en": "Open a vault file",
+    "ru": "Открытие файла хранилища"
+  },
+  "system.prompt.open-vault": {
+    "en": "Confirm it’s you to open another vault file.",
+    "ru": "Подтвердите, что это вы, чтобы открыть другой файл хранилища."
+  },
+  "system.prompt.delete-vault.title": {
+    "en": "Delete a vault",
+    "ru": "Удаление хранилища"
+  },
+  "system.prompt.delete-vault": {
+    "en": "Confirm it’s you to delete the vault “{vault}”.",
+    "ru": "Подтвердите, что это вы, чтобы удалить хранилище «{vault}»."
+  },
+  "system.prompt.unlock-vault.title": {
+    "en": "Unlock Ravenpass",
+    "ru": "Разблокировка Ravenpass"
+  },
+  "system.prompt.unlock-vault": {
+    "en": "Confirm it’s you to unlock your vault.",
+    "ru": "Подтвердите, что это вы, чтобы разблокировать хранилище."
+  },
+  "system.place.on-this-device": {
+    "en": "On this device",
+    "ru": "На этом устройстве"
+  },
+  "system.recovery-file.title": {
+    "en": "Ravenpass recovery key",
+    "ru": "Ключ восстановления Ravenpass"
+  },
+  "system.recovery-file.notice": {
+    "en": "This key unlocks an existing encrypted Ravenpass vault or export. It does not contain your passwords or a copy of the vault. This file is not encrypted. Keep it private.",
+    "ru": "Этот ключ открывает существующее зашифрованное хранилище Ravenpass или его копию. Он не содержит ваши пароли и не является копией хранилища. Этот файл не зашифрован. Храните его в тайне."
+  },
+  "system.recovery-sheet.printed": {
+    "en": "Printed on {date}",
+    "ru": "Напечатано {date}"
+  },
+  "system.recovery-sheet.keep": {
+    "en": "Keep this sheet somewhere safe and private.",
+    "ru": "Храните этот лист в надёжном месте, недоступном для других."
+  },
+  "system.recovery-sheet.warning": {
+    "en": "Anyone with these words can open your vault.",
+    "ru": "Любой, у кого есть эти слова, сможет открыть ваше хранилище."
+  },
+  "system.menu.open": {
+    "en": "Open Ravenpass",
+    "ru": "Открыть Ravenpass"
+  },
+  "system.menu.lock": {
+    "en": "Lock vault",
+    "ru": "Заблокировать хранилище"
+  },
+  "system.menu.quit": {
+    "en": "Quit Ravenpass",
+    "ru": "Выйти из Ravenpass"
+  },
+  "settings.import.note.website": {
+    "en": "Website",
+    "ru": "Сайт"
+  },
+  "settings.import.note.one-time-code": {
+    "en": "One-time code setup",
+    "ru": "Настройка одноразового кода"
+  },
+  "settings.import.note.title": {
+    "en": "Title",
+    "ru": "Обращение"
+  },
+  "settings.import.note.company": {
+    "en": "Company",
+    "ru": "Компания"
+  },
+  "settings.import.note.username": {
+    "en": "Username",
+    "ru": "Имя пользователя"
+  },
+  "settings.import.note.expiry": {
+    "en": "Expiration date",
+    "ru": "Срок действия"
+  },
+  "settings.import.note.security-code": {
+    "en": "Security code",
+    "ru": "Код безопасности"
+  },
+  "settings.import.note.card-number": {
+    "en": "Card number",
+    "ru": "Номер карты"
+  },
+  "settings.import.note.cardholder": {
+    "en": "Cardholder",
+    "ru": "Держатель карты"
+  },
+  "settings.import.note.brand": {
+    "en": "Brand",
+    "ru": "Платёжная система"
+  },
+  "settings.import.note.private-key": {
+    "en": "Private key",
+    "ru": "Закрытый ключ"
+  },
+  "settings.import.note.public-key": {
+    "en": "Public key",
+    "ru": "Открытый ключ"
+  },
+  "settings.import.note.fingerprint": {
+    "en": "Fingerprint",
+    "ru": "Отпечаток"
+  },
+  "settings.import.note.bank": {
+    "en": "Bank",
+    "ru": "Банк"
+  },
+  "settings.import.note.account-holder": {
+    "en": "Account holder",
+    "ru": "Владелец счёта"
+  },
+  "settings.import.note.account-type": {
+    "en": "Account type",
+    "ru": "Тип счёта"
+  },
+  "settings.import.note.account-number": {
+    "en": "Account number",
+    "ru": "Номер счёта"
+  },
+  "settings.import.note.routing-number": {
+    "en": "Routing number",
+    "ru": "Маршрутный номер"
+  },
+  "settings.import.note.branch-number": {
+    "en": "Branch number",
+    "ru": "Номер отделения"
+  },
+  "settings.import.note.pin": {
+    "en": "PIN",
+    "ru": "Пин-код"
+  },
+  "settings.import.note.swift": {
+    "en": "SWIFT",
+    "ru": "SWIFT"
+  },
+  "settings.import.note.iban": {
+    "en": "IBAN",
+    "ru": "IBAN"
+  },
+  "settings.import.note.bank-phone": {
+    "en": "Bank phone",
+    "ru": "Телефон банка"
+  },
+  "settings.import.note.license-class": {
+    "en": "License class",
+    "ru": "Категория прав"
+  },
+  "settings.import.note.sex": {
+    "en": "Sex",
+    "ru": "Пол"
+  },
+  "settings.import.note.birth-place": {
+    "en": "Place of birth",
+    "ru": "Место рождения"
+  },
+  "settings.import.note.nationality": {
+    "en": "Nationality",
+    "ru": "Гражданство"
+  },
+  "settings.import.note.passport-type": {
+    "en": "Passport type",
+    "ru": "Тип паспорта"
+  },
+  "settings.import.note.national-id": {
+    "en": "National ID number",
+    "ru": "Личный номер"
+  },
+  "settings.import.note.issued-on": {
+    "en": "Issued on",
+    "ru": "Дата выдачи"
+  },
+  "settings.import.note.expires-on": {
+    "en": "Expires on",
+    "ru": "Действует до"
+  },
+  "settings.import.note.birthday": {
+    "en": "Date of birth",
+    "ru": "Дата рождения"
+  },
+  "settings.import.note.issuer": {
+    "en": "Issued by",
+    "ru": "Кем выдан"
+  },
+  "settings.import.note.name": {
+    "en": "Name",
+    "ru": "Имя"
+  },
+  "settings.import.note.gender": {
+    "en": "Gender",
+    "ru": "Пол"
+  },
+  "settings.import.note.nickname": {
+    "en": "Nickname",
+    "ru": "Никнейм"
+  }
+}

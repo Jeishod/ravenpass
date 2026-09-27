@@ -1,0 +1,25 @@
+dev_mode:
+  root_path: ../..
+  debounce: 300
+  ignore:
+    dir:
+      - node_modules
+      - desktop
+    file:
+      - "*_test.go"
+    watched_extension:
+      - "*.go"
+    git_ignore: true
+  executes:
+    - cmd: make dev-prepare
+      dir: apps/mobile
+      type: once
+    - cmd: npm --prefix ../../packages/ui run dev
+      dir: apps/mobile
+      type: background
+    - cmd: make install
+      dir: apps/mobile
+      type: blocking
+    - cmd: make logs
+      dir: apps/mobile
+      type: primary

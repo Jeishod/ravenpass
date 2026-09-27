@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest a change or a new capability.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what gets in the way?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How should Ravenpass behave?
+    validations:
+      required: true
+  - type: dropdown
+    id: apps
+    attributes:
+      label: Apps
+      multiple: true
+      options: [macOS app, Android app, Chrome extension]

@@ -1,0 +1,5 @@
+/* Unlayered, this rule overrides the base layer's page background so the filled app shows through. */
+:root[data-surface="sheet"],
+:root[data-surface="sheet"] body {
+  background: transparent;
+}

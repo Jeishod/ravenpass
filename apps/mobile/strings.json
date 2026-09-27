@@ -1,0 +1,16 @@
+{
+  "app_name": "app.name",
+  "autofill_unlock": "confirmation.unlock.title",
+  "autofill_entry_unlock": "autofill.entry.unlock",
+  "autofill_search": "autofill.entry.search",
+  "autofill_search_title": "autofill.search.title",
+  "autofill_fill_failed": "fill.error",
+  "autofill_code_failed": "fill-code.error",
+  "autofill_save_failed": "saving.error",
+  "autofill_saved_created": "saving.saved.created",
+  "autofill_saved_updated": "saving.saved.updated",
+  "autofill_saved_site_added": "saving.saved.site-added",
+  "credential_provider_subtitle": "autofill.provider.subtitle",
+  "passkey_sign_in_failed": "autofill.failed.sign-in",
+  "passkey_save_failed": "autofill.failed.save-passkey"
+}

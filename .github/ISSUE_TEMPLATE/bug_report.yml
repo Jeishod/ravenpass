@@ -1,0 +1,55 @@
+name: Bug report
+description: Something does not work as expected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Never paste passwords, recovery phrases, vault files or other secrets. Report security problems privately instead.
+  - type: dropdown
+    id: app
+    attributes:
+      label: App
+      options: [macOS app, Android app, Chrome extension]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Ravenpass version
+      description: Settings → About.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: Build
+      description: Settings → About, in the macOS and Android apps.
+      placeholder: 1a2b3c4
+  - type: input
+    id: platform
+    attributes:
+      label: OS and browser version
+      placeholder: macOS 15.4, Chrome 140
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or logs
+      description: Remove anything that identifies an account or reveals a secret.

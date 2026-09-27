@@ -1,0 +1,21 @@
+{
+  "search": ["search", "поиск"],
+  "newPassword": ["new", "confirm", "repeat", "retype", "нов", "подтвер", "повтор"],
+  "login": [
+    "login",
+    "user",
+    "email",
+    "mail",
+    "account",
+    "identifier",
+    "логин",
+    "пользовател",
+    "почт",
+    "аккаунт",
+    "учетн",
+    "учётн",
+    "идентификатор"
+  ],
+  "oneTime": ["one time", "onetime", "otp", "totp", "2fa", "2 fa", "mfa"],
+  "code": ["code", "verif", "token", "код"]
+}

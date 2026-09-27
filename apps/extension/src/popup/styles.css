@@ -1,0 +1,9 @@
+@import "../styles.css";
+
+/* Chrome sizes a popup to its document, and the shared styles pin these to the window's height. */
+html,
+body,
+#root {
+  width: 360px;
+  height: auto;
+}

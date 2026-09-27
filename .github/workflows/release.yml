@@ -1,0 +1,273 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Release pull request
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      created: ${{ steps.release.outputs.release_created }}
+      tag: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          # A token other than GITHUB_TOKEN lets CI run on the release pull request.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  macos:
+    name: macOS app
+    needs: release-please
+    if: needs.release-please.outputs.created == 'true'
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      KEYCHAIN: ${{ github.workspace }}/../signing.keychain-db
+      PROFILES: ${{ github.workspace }}/../profiles
+      NOTARY_KEY: ${{ github.workspace }}/../notary.p8
+      RAVENPASS_COMMIT: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.work
+          cache: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - name: Signing secrets are set
+        env:
+          CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_P12 != '' }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD != '' }}
+          PROFILE_APP: ${{ secrets.MACOS_PROFILE_APP != '' }}
+          PROFILE_AUTOFILL: ${{ secrets.MACOS_PROFILE_AUTOFILL != '' }}
+          NOTARY_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 != '' }}
+          NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY_ID != '' }}
+          NOTARY_ISSUER: ${{ secrets.APPLE_API_ISSUER_ID != '' }}
+        run: |
+          for name in CERTIFICATE CERTIFICATE_PASSWORD PROFILE_APP PROFILE_AUTOFILL NOTARY_KEY_P8 NOTARY_KEY_ID NOTARY_ISSUER; do
+            if [ "${!name}" != true ]; then echo "::error::Signing secret for $name is not set"; exit 1; fi
+          done
+      - run: npm ci
+      - name: Build
+        run: make -C apps/desktop app autofill notices
+      - name: Install signing material
+        env:
+          CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          PROFILE_APP: ${{ secrets.MACOS_PROFILE_APP }}
+          PROFILE_AUTOFILL: ${{ secrets.MACOS_PROFILE_AUTOFILL }}
+          NOTARY_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          umask 077
+          keychain_password="$(openssl rand -hex 24)"
+          security create-keychain -p "$keychain_password" "$KEYCHAIN"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN"
+          security unlock-keychain -p "$keychain_password" "$KEYCHAIN"
+          printf '%s' "$CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$KEYCHAIN" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/certificate.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+          mkdir -p "$PROFILES"
+          printf '%s' "$PROFILE_APP" | base64 --decode > "$PROFILES/Ravenpass_Developer_ID.provisionprofile"
+          printf '%s' "$PROFILE_AUTOFILL" | base64 --decode > "$PROFILES/Ravenpass_Autofill_Developer_ID.provisionprofile"
+          printf '%s' "$NOTARY_KEY_P8" | base64 --decode > "$NOTARY_KEY"
+      - name: Sign and notarize
+        env:
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          NOTARY_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          NOTARY_ISSUER: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          make -C apps/desktop release-sign \
+            ${APPLE_TEAM_ID:+TEAM_ID="$APPLE_TEAM_ID"} \
+            PROFILES="$PROFILES" \
+            NOTARY_ARGS="--key $NOTARY_KEY --key-id $NOTARY_KEY_ID --issuer $NOTARY_ISSUER"
+      - name: Remove signing material
+        if: always()
+        run: |
+          security delete-keychain "$KEYCHAIN" || true
+          rm -rf "$PROFILES" "$NOTARY_KEY"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: macos
+          path: |
+            apps/desktop/bin/release/*.dmg
+            apps/desktop/bin/release/*-notices.txt
+          if-no-files-found: error
+
+  android:
+    name: Android app
+    needs: release-please
+    if: needs.release-please.outputs.created == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      RAVENPASS_COMMIT: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.work
+          cache: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-disabled: true
+      - run: npm ci
+      - name: Build and sign
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+          RAVENPASS_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          RAVENPASS_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          RAVENPASS_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for name in KEYSTORE RAVENPASS_ANDROID_KEYSTORE_PASSWORD RAVENPASS_ANDROID_KEY_ALIAS RAVENPASS_ANDROID_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then echo "::error::Signing secret for $name is not set"; exit 1; fi
+          done
+          umask 077
+          export RAVENPASS_ANDROID_KEYSTORE="$RUNNER_TEMP/release.keystore"
+          printf '%s' "$KEYSTORE" | base64 --decode > "$RAVENPASS_ANDROID_KEYSTORE"
+          make -C apps/mobile release
+      - name: Remove signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.keystore"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: android
+          path: |
+            apps/mobile/build/android/app/build/outputs/apk/release/Ravenpass-*.apk
+            apps/mobile/build/android/app/build/outputs/apk/release/*-notices.txt
+          if-no-files-found: error
+
+  extension:
+    name: Chrome extension
+    needs: release-please
+    if: needs.release-please.outputs.created == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      RAVENPASS_COMMIT: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - run: npm ci
+      - run: make -C apps/extension package
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: extension
+          path: |
+            apps/extension/dist/*.zip
+            apps/extension/dist/*-notices.txt
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    needs: [release-please, macos, android, extension]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: assets
+          merge-multiple: true
+      - name: Checksums
+        working-directory: assets
+        run: |
+          rm -f -- *-chrome-web-store.zip
+          sha256sum -- * > SHA256SUMS
+      # GitHub stores attestations only for public repositories and organization-owned ones.
+      - if: ${{ !github.event.repository.private }}
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: assets/*
+      - name: Attach assets and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag }}
+        run: |
+          gh release upload "$TAG" assets/* --repo "$GITHUB_REPOSITORY" --clobber
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+
+  chrome-web-store:
+    name: Chrome Web Store
+    needs: [release-please, publish]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: chrome-web-store
+    permissions: {}
+    steps:
+      - name: Store credentials
+        id: credentials
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID != '' }}
+          CHROME_PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID != '' }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID != '' }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET != '' }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN != '' }}
+        run: |
+          missing=()
+          for name in CHROME_EXTENSION_ID CHROME_PUBLISHER_ID CHROME_CLIENT_ID CHROME_CLIENT_SECRET CHROME_REFRESH_TOKEN; do
+            if [ "${!name}" != true ]; then missing+=("$name"); fi
+          done
+          if [ "${#missing[@]}" -eq 5 ]; then
+            echo "::notice::Chrome Web Store secrets are not set; skipping submission"
+          elif [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Chrome Web Store secrets are incomplete; set ${missing[*]}"
+            exit 1
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.credentials.outputs.present == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: extension
+          path: extension
+      - if: steps.credentials.outputs.present == 'true'
+        uses: mnao305/chrome-extension-upload@f549d5d654694a7722d6abfa64c97409ad5e64c1 # v7.0.0
+        with:
+          file-path: extension/*-chrome-web-store.zip
+          glob: true
+          extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
+          publisher-id: ${{ secrets.CHROME_PUBLISHER_ID }}
+          client-id: ${{ secrets.CHROME_CLIENT_ID }}
+          client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+          refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}

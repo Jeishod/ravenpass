@@ -1,0 +1,290 @@
+[
+  {
+    "name": "native sign-in declared with Android hints",
+    "fields": [
+      { "index": 0, "hints": ["username"], "inputType": 1, "visible": true },
+      { "index": 1, "hints": ["password"], "inputType": 129, "visible": true }
+    ],
+    "roles": ["login", "password"]
+  },
+  {
+    "name": "native sign-in told by input types",
+    "fields": [
+      { "index": 0, "inputType": 33, "visible": true },
+      { "index": 1, "inputType": 225, "visible": true }
+    ],
+    "roles": ["login", "password"]
+  },
+  {
+    "name": "native field before the password is its login",
+    "fields": [
+      { "index": 0, "inputType": 1, "idEntry": "field_one", "hint": "Phone", "visible": true },
+      { "index": 1, "inputType": 129, "visible": true }
+    ],
+    "roles": ["login", "password"]
+  },
+  {
+    "name": "native login named in camel case",
+    "fields": [{ "index": 0, "inputType": 1, "idEntry": "userName", "visible": true }],
+    "roles": ["login"]
+  },
+  {
+    "name": "native sign-up passwords are new",
+    "fields": [
+      { "index": 0, "inputType": 129, "idEntry": "new_password", "visible": true },
+      { "index": 1, "inputType": 129, "idEntry": "confirm_password", "visible": true }
+    ],
+    "roles": ["new-password", "new-password"]
+  },
+  {
+    "name": "native new password hint",
+    "fields": [{ "index": 0, "hints": ["newPassword"], "inputType": 129, "visible": true }],
+    "roles": ["new-password"]
+  },
+  {
+    "name": "native numeric password",
+    "fields": [{ "index": 0, "inputType": 18, "visible": true }],
+    "roles": ["password"]
+  },
+  {
+    "name": "native code field named for a code",
+    "fields": [{ "index": 0, "inputType": 2, "idEntry": "otp_input", "visible": true }],
+    "roles": ["code"]
+  },
+  {
+    "name": "native code declared per character",
+    "fields": [{ "index": 0, "hints": ["smsOTPCode1"], "inputType": 2, "visible": true }],
+    "roles": ["code"]
+  },
+  {
+    "name": "native authenticator code hint",
+    "fields": [{ "index": 0, "hints": ["2faAppOTPCode"], "inputType": 1, "visible": true }],
+    "roles": ["code"]
+  },
+  {
+    "name": "native search box",
+    "fields": [{ "index": 0, "inputType": 1, "idEntry": "search_src_text", "visible": true }],
+    "roles": ["none"]
+  },
+  {
+    "name": "hidden password",
+    "fields": [{ "index": 0, "inputType": 129, "visible": false }],
+    "roles": ["none"]
+  },
+  {
+    "name": "field declared not applicable",
+    "fields": [{ "index": 0, "hints": ["notApplicable"], "inputType": 1, "idEntry": "login", "visible": true }],
+    "roles": ["none"]
+  },
+  {
+    "name": "date field",
+    "fields": [{ "index": 0, "inputType": 4, "idEntry": "login_date", "visible": true }],
+    "roles": ["none"]
+  },
+  {
+    "name": "Russian naming",
+    "fields": [
+      { "index": 0, "inputType": 1, "hint": "Логин или почта", "visible": true },
+      { "index": 1, "inputType": 129, "hint": "Пароль", "visible": true },
+      { "index": 2, "inputType": 2, "hint": "Код из СМС", "visible": true }
+    ],
+    "roles": ["login", "password", "code"]
+  },
+  {
+    "name": "page sign-in with autocomplete tokens from Chrome",
+    "fields": [
+      { "index": 0, "hints": ["username", "webauthn"], "html": { "tag": "input", "attributes": { "type": "text" } }, "webDomain": "example.com", "visible": true },
+      { "index": 1, "hints": ["current-password"], "html": { "tag": "input", "attributes": { "type": "password" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["login", "password"]
+  },
+  {
+    "name": "page sign-up with new-password",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "email" } }, "webDomain": "example.com", "visible": true },
+      { "index": 1, "hints": ["new-password"], "html": { "tag": "input", "attributes": { "type": "password" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["login", "new-password"]
+  },
+  {
+    "name": "page told by Chrome's predictions",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "text", "computed-autofill-hints": "USERNAME" } }, "webDomain": "example.com", "visible": true },
+      { "index": 1, "html": { "tag": "input", "attributes": { "type": "password", "computed-autofill-hints": "PASSWORD" } }, "webDomain": "example.com", "visible": true },
+      { "index": 2, "html": { "tag": "input", "attributes": { "type": "password", "computed-autofill-hints": "CONFIRMATION_PASSWORD" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["login", "password", "none"]
+  },
+  {
+    "name": "Chrome's verdict outranks its heuristic",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "text", "computed-autofill-hints": "ONE_TIME_CODE", "ua-autofill-hints": "USERNAME" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["code"]
+  },
+  {
+    "name": "Chrome's unknown type leaves the field to its naming",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "text", "name": "login", "computed-autofill-hints": "UNKNOWN_TYPE,NO_SERVER_DATA" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["login"]
+  },
+  {
+    "name": "page code field by length and naming",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "text", "name": "otp", "maxlength": "6" } }, "webDomain": "example.com", "visible": true },
+      { "index": 1, "html": { "tag": "input", "attributes": { "type": "text", "name": "verificationCode", "inputmode": "numeric" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["code", "code"]
+  },
+  {
+    "name": "page promo code is not a one-time code",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "text", "name": "promo_code" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["none"]
+  },
+  {
+    "name": "page label names the login",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "text", "label": "Email or phone" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["login"]
+  },
+  {
+    "name": "page search, checkbox and invisible fields",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "search" } }, "webDomain": "example.com", "visible": true },
+      { "index": 1, "html": { "tag": "input", "attributes": { "type": "checkbox", "name": "remember_login" } }, "webDomain": "example.com", "visible": true },
+      { "index": 2, "html": { "tag": "input", "attributes": { "type": "password", "visibility": "invisible" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["none", "none", "none"]
+  },
+  {
+    "name": "page text before a hidden password is not its login",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "text", "name": "q1" } }, "webDomain": "example.com", "visible": true },
+      { "index": 1, "html": { "tag": "input", "attributes": { "type": "password" } }, "webDomain": "example.com", "visible": false }
+    ],
+    "roles": ["none", "none"]
+  },
+  {
+    "name": "page one-time-code token Chrome copies into the hints",
+    "fields": [
+      { "index": 0, "hints": ["one-time-code"], "html": { "tag": "input", "attributes": { "type": "text", "name": "app_otp" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["code"]
+  },
+  {
+    "name": "page code fields Chrome gives without inputmode, named for a one-time code",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "text", "name": "otp" } }, "webDomain": "example.com", "visible": true },
+      { "index": 1, "html": { "tag": "input", "attributes": { "type": "text", "name": "totp" } }, "webDomain": "example.com", "visible": true },
+      { "index": 2, "html": { "tag": "input", "attributes": { "type": "text", "id": "mfaCode" } }, "webDomain": "example.com", "visible": true },
+      { "index": 3, "html": { "tag": "input", "attributes": { "type": "text", "name": "2fa_code" } }, "webDomain": "example.com", "visible": true },
+      { "index": 4, "html": { "tag": "input", "attributes": { "type": "text", "label": "One-time password" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["code", "code", "code", "code", "code"]
+  },
+  {
+    "name": "page phone and number fields ask for digits",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "tel", "name": "otpCode", "id": "auth-mfa-otpcode", "maxlength": "20" } }, "webDomain": "example.com", "visible": true },
+      { "index": 1, "html": { "tag": "input", "attributes": { "type": "tel", "name": "verificationCode" } }, "webDomain": "example.com", "visible": true },
+      { "index": 2, "html": { "tag": "input", "attributes": { "type": "number", "name": "code" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["code", "code", "code"]
+  },
+  {
+    "name": "page code field whose label names the email the code went to",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "text", "maxlength": "6", "label": "Enter the code we sent to your email" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["code"]
+  },
+  {
+    "name": "page field named for a code without digits or a code's length",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "text", "name": "code", "maxlength": "524288" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["none"]
+  },
+  {
+    "name": "native SMS, email and authenticator code hints",
+    "fields": [
+      { "index": 0, "hints": ["smsOTPCode"], "inputType": 2, "visible": true },
+      { "index": 1, "hints": ["emailOTPCode"], "inputType": 1, "visible": true },
+      { "index": 2, "hints": ["2faAppOTPCode"], "inputType": 2, "visible": true }
+    ],
+    "roles": ["code", "code", "code"]
+  },
+  {
+    "name": "native code fields by length filter and phone keypad",
+    "fields": [
+      { "index": 0, "inputType": 1, "maxLength": 6, "idEntry": "verification_code", "visible": true },
+      { "index": 1, "inputType": 3, "maxLength": -1, "idEntry": "sms_code", "visible": true }
+    ],
+    "roles": ["code", "code"]
+  },
+  {
+    "name": "page split code boxes",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "text", "maxlength": "1", "autocomplete": "one-time-code" } }, "webDomain": "example.com", "visible": true },
+      { "index": 1, "html": { "tag": "input", "attributes": { "type": "text", "maxlength": "1" } }, "webDomain": "example.com", "visible": true },
+      { "index": 2, "html": { "tag": "input", "attributes": { "type": "text", "maxlength": "1" } }, "webDomain": "example.com", "visible": true },
+      { "index": 3, "html": { "tag": "input", "attributes": { "type": "tel", "maxlength": "1" } }, "webDomain": "example.com", "visible": true },
+      { "index": 4, "html": { "tag": "input", "attributes": { "type": "tel", "maxlength": "1" } }, "webDomain": "example.com", "visible": true },
+      { "index": 5, "html": { "tag": "input", "attributes": { "type": "tel", "maxlength": "1" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["code", "code", "code", "code", "code", "code"]
+  },
+  {
+    "name": "native split code boxes by length filter",
+    "fields": [
+      { "index": 0, "inputType": 2, "maxLength": 1, "idEntry": "et1", "visible": true },
+      { "index": 1, "inputType": 2, "maxLength": 1, "idEntry": "et2", "visible": true },
+      { "index": 2, "inputType": 2, "maxLength": 1, "idEntry": "et3", "visible": true },
+      { "index": 3, "inputType": 2, "maxLength": 1, "idEntry": "et4", "visible": true }
+    ],
+    "roles": ["code", "code", "code", "code"]
+  },
+  {
+    "name": "native split code boxes declared per character",
+    "fields": [
+      { "index": 0, "hints": ["smsOTPCode1"], "inputType": 2, "visible": true },
+      { "index": 1, "hints": ["smsOTPCode2"], "inputType": 2, "visible": true },
+      { "index": 2, "hints": ["smsOTPCode3"], "inputType": 2, "visible": true },
+      { "index": 3, "hints": ["smsOTPCode4"], "inputType": 2, "visible": true },
+      { "index": 4, "hints": ["smsOTPCode5"], "inputType": 2, "visible": true },
+      { "index": 5, "hints": ["smsOTPCode6"], "inputType": 2, "visible": true }
+    ],
+    "roles": ["code", "code", "code", "code", "code", "code"]
+  },
+  {
+    "name": "three boxes are not a split code field",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "text", "maxlength": "1" } }, "webDomain": "example.com", "visible": true },
+      { "index": 1, "html": { "tag": "input", "attributes": { "type": "text", "maxlength": "1" } }, "webDomain": "example.com", "visible": true },
+      { "index": 2, "html": { "tag": "input", "attributes": { "type": "text", "maxlength": "1" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["none", "none", "none"]
+  },
+  {
+    "name": "PIN boxes and fields that are passwords stay passwords",
+    "fields": [
+      { "index": 0, "inputType": 18, "idEntry": "pin", "maxLength": 4, "visible": true },
+      { "index": 1, "html": { "tag": "input", "attributes": { "type": "password", "name": "pin", "maxlength": "1" } }, "webDomain": "example.com", "visible": true },
+      { "index": 2, "html": { "tag": "input", "attributes": { "type": "password", "name": "pin", "maxlength": "1" } }, "webDomain": "example.com", "visible": true },
+      { "index": 3, "html": { "tag": "input", "attributes": { "type": "password", "name": "pin", "maxlength": "1" } }, "webDomain": "example.com", "visible": true },
+      { "index": 4, "html": { "tag": "input", "attributes": { "type": "password", "name": "pin", "maxlength": "1" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["password", "password", "password", "password", "password"]
+  },
+  {
+    "name": "postal PIN code is not a one-time code",
+    "fields": [
+      { "index": 0, "html": { "tag": "input", "attributes": { "type": "text", "name": "pincode", "maxlength": "6" } }, "webDomain": "example.com", "visible": true }
+    ],
+    "roles": ["none"]
+  }
+]

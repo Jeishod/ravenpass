@@ -1,0 +1,5 @@
+/* Unlayered, this rule overrides the base layer's page background with the panel card's surface. */
+html,
+body {
+  background: var(--card);
+}

@@ -1,0 +1,2 @@
+The interface includes components derived from shadcn/ui (https://github.com/shadcn-ui/ui),
+licensed under the MIT License, which follows.

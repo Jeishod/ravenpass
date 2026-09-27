@@ -1,0 +1,200 @@
+{
+  "keys": {
+    "valid": [
+      {
+        "key": "mlwTAc9977SV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKWAuviA",
+        "port": 53117,
+        "secret": "efb495d18aecb450bfbe1516d93543057aff47fed95ba50127ef72ef021570a5"
+      },
+      {
+        "key": "mlwTAQQAmLsxVY8D2zmIMTCD1pnpAkV2y_6K8i60c_9BtcXryy8ZTfQM",
+        "port": 1024,
+        "secret": "98bb31558f03db3988313083d699e9024576cbfe8af22eb473ff41b5c5ebcb2f"
+      },
+      {
+        "key": "mlwTAf__BG2tm3gnsiECPUbhl8dzVttpeRjiiF92yHm8m7YN-sm2GpqK",
+        "port": 65535,
+        "secret": "046dad9b7827b221023d46e197c77356db697918e2885f76c879bc9bb60dfac9"
+      }
+    ],
+    "invalid": [
+      {
+        "key": "",
+        "reason": "length"
+      },
+      {
+        "key": "mlwTAc9977SV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKWAuvi",
+        "reason": "length"
+      },
+      {
+        "key": "mlwTAc9977SV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKWAuviAA",
+        "reason": "length"
+      },
+      {
+        "key": "mlwTAc9977SV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKWAuvg=",
+        "reason": "encoding"
+      },
+      {
+        "key": "+lwTAc9977SV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKWAuviA",
+        "reason": "encoding"
+      },
+      {
+        "key": "/lwTAc9977SV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKWAuviA",
+        "reason": "encoding"
+      },
+      {
+        "key": "!lwTAc9977SV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKWAuviA",
+        "reason": "encoding"
+      },
+      {
+        "key": "m1wTAc9977SV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKXorufY",
+        "reason": "header"
+      },
+      {
+        "key": "mlwUAc9977SV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKV2C8i3",
+        "reason": "header"
+      },
+      {
+        "key": "mlwTAM9977SV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKUBK-9_",
+        "reason": "version"
+      },
+      {
+        "key": "mlwTAs9977SV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKWmGhU3",
+        "reason": "version"
+      },
+      {
+        "key": "mlwTAc9977SV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKWAuviB",
+        "reason": "checksum"
+      },
+      {
+        "key": "mlwTAc997rSV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKWAuviA",
+        "reason": "checksum"
+      },
+      {
+        "key": "mlwTAQP_77SV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKVASJgV",
+        "reason": "port"
+      },
+      {
+        "key": "mlwTAQAA77SV0YrstFC_vhUW2TVDBXr_R_7ZW6UBJ-9y7wIVcKXwWOgo",
+        "reason": "port"
+      }
+    ]
+  },
+  "handshakes": [
+    {
+      "protocol": "Noise_XXpsk3_25519_AESGCM_SHA256",
+      "prologue": "726176656e706173732d6c696e6b2f31",
+      "psk": "bf3c86750203797f488389e706cf6e1551ee8e6e546ab0fdab2becd19729b149",
+      "initiatorStatic": {
+        "private": "d93691bdd460ddfaf49e90d7b219367311318b622a5b327ee6fcf04388e9fc79",
+        "public": "216882a400aa19b9dd9335338d4ee4bd3b6fb3d76af771095ec2f78d8660e503"
+      },
+      "initiatorEphemeral": {
+        "private": "7f67e311fd7a862fc082413d6083fe7864cec81c99cdcd83f1c30f3f1f4ddc4a",
+        "public": "4e1153b9bca92099ff6a5ba4010f4db09a0de4b78d460f866dbd735296995430"
+      },
+      "responderStatic": {
+        "private": "bfb704377d6f2ba09367c294460a9702dd6da08f345fc2b15bf1f8236044b857",
+        "public": "0eda8d86bb8a981bc9fc72f9c77ee5f079c523e5dc87c74ffbacbfd2120c9134"
+      },
+      "responderEphemeral": {
+        "private": "2f0cca59a4235f410cf575fb51205a718e09bba3df488af05cc8b05a73e18ddc",
+        "public": "88ff41a75069656f1a8f05666e733bebc010701675af644cfc29a2d703032107"
+      },
+      "handshakeMessages": 3,
+      "handshakeHash": "9a803c7b31f107deb4f50f13921f22f61a3af46d196d5a88c15d0ae0c5b7326e",
+      "messages": [
+        {
+          "sender": "initiator",
+          "payload": "",
+          "ciphertext": "4e1153b9bca92099ff6a5ba4010f4db09a0de4b78d460f866dbd735296995430ea3018e6662d11e3fc4ba9a9c945c88f"
+        },
+        {
+          "sender": "responder",
+          "payload": "",
+          "ciphertext": "88ff41a75069656f1a8f05666e733bebc010701675af644cfc29a2d703032107730786deb7193615e2f92be2718b3125fd15a21ae654723f373148896fff3e2888e829af8c520329bc8b9e7c7d0687a71e0a4d74f682f4df819ee32b134e535b"
+        },
+        {
+          "sender": "initiator",
+          "payload": "7b226e616d65223a224368726f6d6520c2b7206d61634f53227d",
+          "ciphertext": "46cc874aa8a6ba3564ec6c11d112ea8e5a53a3a9f73b36c8958837a36852a66af8fa5590fd3554d0450db0ef24e0cbfcb98ef11188893943d3998f0b108445236744797e98e3ee6c1f82c68e14a8ab653ba9762892d4fdc88a3e"
+        },
+        {
+          "sender": "responder",
+          "payload": "7b2274797065223a226c696e6b6564222c226c616e6775616765223a227275222c227369676e496e223a226669656c64227d",
+          "ciphertext": "e7570923746443473bb2a50ca9ba50965a666ac3442794189ace6f0a0280d8ace61d2d6023b3a6b4b1e5b967ba5ad992d994a3a214de4fbcd24db19b1496e36a6832"
+        },
+        {
+          "sender": "initiator",
+          "payload": "",
+          "ciphertext": "d5e548b82acd3b2e37c6dd347974e421"
+        },
+        {
+          "sender": "responder",
+          "payload": "7365636f6e6420726573706f6e646572207472616e73706f7274206d657373616765",
+          "ciphertext": "064034163953fed5363fbd82c12050143d9ba165ad380987cfa3fd5292dd41bcc6cf0a00388b889dde91b44b9c18bdcf6bed"
+        },
+        {
+          "sender": "initiator",
+          "payload": "7365636f6e6420696e69746961746f72207472616e73706f7274206d657373616765",
+          "ciphertext": "58fa55048f7c95762b615be2e00c3b47f50310e54518c7d93d44e608e4f74d29665159f9bdb6b5896ba26299e4792018022d"
+        }
+      ]
+    },
+    {
+      "protocol": "Noise_IK_25519_AESGCM_SHA256",
+      "prologue": "726176656e706173732d6c696e6b2f31",
+      "psk": null,
+      "initiatorStatic": {
+        "private": "a7f980acfe362e50d7248376ca8da5b4a16bb4b719ca7ed5ca8172faa0831942",
+        "public": "e7615973f9890cdc2ec6b82fdb531557c83cb053c493126081cbbd48ac4fb738"
+      },
+      "initiatorEphemeral": {
+        "private": "cac4caafe16b4602adc857471e6373d64bdf34bab3f18f5546fdd40ab1a0ca51",
+        "public": "7508e2c258834ab72bedd6c1d0f0b411233e6ffedc87a113e743aca0328bf502"
+      },
+      "responderStatic": {
+        "private": "0e2550c337f5264a342c4b0baf1ab20d3d96b9f41e90183d0c70504bb2105dd0",
+        "public": "b9f91853147adfc95a1d93a68e5861ab441daac748f9f5bc50b14832ac677144"
+      },
+      "responderEphemeral": {
+        "private": "4a61abf3362d5f87602238035b3868d822b1b1b4c7d50befb713ddce13525d19",
+        "public": "32442dceb5297592475599b30850246f4df4a16e1d24e76c28fc35d69f39366e"
+      },
+      "handshakeMessages": 2,
+      "handshakeHash": "5498ee3aae83f3bb892eff51e166f443f707535ccf7ea1948068fa194683ea9c",
+      "messages": [
+        {
+          "sender": "initiator",
+          "payload": "",
+          "ciphertext": "7508e2c258834ab72bedd6c1d0f0b411233e6ffedc87a113e743aca0328bf5028d8abf9c2bf992bd8cdb570dd2e5be49534e821222e6d2c93dc32ffcfe3bf400819a39be6a352935e1886f561916b4992215ad1b54cf90d335a706423462f0be"
+        },
+        {
+          "sender": "responder",
+          "payload": "7b226c616e6775616765223a227275222c227369676e496e223a2263617264227d",
+          "ciphertext": "32442dceb5297592475599b30850246f4df4a16e1d24e76c28fc35d69f39366e3db2820aef8fa4f6aabc01dcdf3c83d87389614e966945742004950ceb9a85174e70189c7ccfe194e81664bbb42db4d2fd"
+        },
+        {
+          "sender": "initiator",
+          "payload": "7b226964223a312c2274797065223a22737461747573227d",
+          "ciphertext": "e7bfbdf8962f87db7200cea90a2cb8e638ed4a45a3b89f079f1163caf79fe8b0295c5bc11cedd26e"
+        },
+        {
+          "sender": "responder",
+          "payload": "7b226964223a312c22726573756c74223a7b227661756c74223a22756e6c6f636b6564227d7d",
+          "ciphertext": "372871e538e66e40eeae4ec2331008dbbd3496bc19d6c12bee8c3b15376cf72d16b4270fd18f25da33fa01dfc0b57989fd61b862004f"
+        },
+        {
+          "sender": "initiator",
+          "payload": "7b226964223a322c2274797065223a22756e6c696e6b227d",
+          "ciphertext": "52c2fbbf7759b95c458f8ddc9b0785ce428c664a6d0baa114f727a23f5ccf607456f73905bba0afb"
+        },
+        {
+          "sender": "responder",
+          "payload": "7b226964223a322c22726573756c74223a7b7d7d",
+          "ciphertext": "75afde8e911d7d81eec621f000ed9e70100923334a3983333cb4e8ae832d5f5202b2a735"
+        }
+      ]
+    }
+  ]
+}

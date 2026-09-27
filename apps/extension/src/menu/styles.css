@@ -1,0 +1,9 @@
+@import "../styles.css";
+
+/* The menu's frame is as tall as the menu and shows the page around its rounded surface. */
+html,
+body,
+#root {
+  height: auto;
+  background: transparent;
+}

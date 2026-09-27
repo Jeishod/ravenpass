@@ -1,0 +1,26 @@
+dev_mode:
+  root_path: ../..
+  debounce: 300
+  ignore:
+    dir:
+      - node_modules
+      - frontend
+      - bin
+    file:
+      - "*_test.go"
+    watched_extension:
+      - "*.go"
+    git_ignore: true
+  executes:
+    - cmd: make dev-prepare
+      dir: apps/desktop
+      type: once
+    - cmd: npm --prefix ../../packages/ui run dev
+      dir: apps/desktop
+      type: background
+    - cmd: make dev-build
+      dir: apps/desktop
+      type: blocking
+    - cmd: ./bin/Ravenpass-dev
+      dir: apps/desktop
+      type: primary

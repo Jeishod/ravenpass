@@ -1,0 +1,4 @@
+The Public Suffix List, maintained by the Mozilla Foundation and contributors, is compiled into
+this application by golang.org/x/net/publicsuffix. Its source form is available at
+https://publicsuffix.org/list/ under the Mozilla Public License 2.0, reproduced below.
+

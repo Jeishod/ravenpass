@@ -1,0 +1,236 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-fill: var(--destructive-fill);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-surface: var(--destructive-surface);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-control: var(--control);
+  --color-field: var(--field);
+  --color-field-hover: var(--field-hover);
+  --color-raised: var(--raised);
+  --color-tile: var(--tile);
+  --color-quiet: var(--quiet);
+  --color-faint: var(--faint);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.33);
+  --radius-row: 14px;
+  --radius-pane: 20px;
+}
+
+/* Shape states the role: full radius an action, circle identity or time, rounded rectangle data. */
+:root {
+  color-scheme: dark;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
+    sans-serif;
+  font-synthesis: none;
+  --radius: 0.75rem;
+  --background: #0a0a0a;
+  --foreground: #f2f1ef;
+  --card: #111111;
+  --card-foreground: #f2f1ef;
+  --popover: #181818;
+  --popover-foreground: #f2f1ef;
+  --primary: #f2f1ef;
+  --primary-foreground: #0a0a0a;
+  --secondary: #1c1c1c;
+  --secondary-foreground: #f2f1ef;
+  --muted: #161616;
+  --muted-foreground: #8e8c87;
+  --accent: #242424;
+  --accent-foreground: #f2f1ef;
+  /* The one hued token: light red for text and icons, deep red for the button that acts. */
+  --destructive: oklch(0.75 0.09 25);
+  --destructive-fill: #7e2f2b;
+  --destructive-foreground: #ffe4e1;
+  --destructive-surface: #231413;
+  --warning: oklch(0.79 0.08 75);
+  --border: oklch(1 0 0 / 5%);
+  --input: oklch(1 0 0 / 8%);
+  --ring: oklch(1 0 0 / 32%);
+  --sidebar: #0a0a0a;
+  --sidebar-foreground: #f2f1ef;
+  --sidebar-accent: #1c1c1c;
+  --sidebar-accent-foreground: #f2f1ef;
+  --sidebar-border: oklch(1 0 0 / 7%);
+  --control: #161616;
+  --field: #181818;
+  --field-hover: #1e1e1e;
+  --raised: #1c1c1c;
+  --tile: #242424;
+  --quiet: #2b2b2b;
+  --faint: #6e6c68;
+  --action-fill: linear-gradient(180deg, #ffffff, #cfcdc9);
+  --action-fill-hover: linear-gradient(180deg, #ffffff, #dedcd8);
+  --action-foreground: #0a0a0a;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+  }
+
+  /* Only panes scroll and nothing selects by default; copyable text opts in with `select-text`. */
+  html,
+  body {
+    overflow: hidden;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-size: 14px;
+    line-height: 1.45;
+    cursor: default;
+    user-select: none;
+  }
+
+  input,
+  textarea {
+    cursor: text;
+    user-select: text;
+  }
+
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* WebKit does not repaint a styled scrollbar on hover, so native scrollers stay faintly visible. */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    background-clip: padding-box;
+    background-color: oklch(1 0 0 / 12%);
+  }
+}
+
+@layer components {
+  /* The one emphasised action a pane is allowed. */
+  .action-fill {
+    background-image: var(--action-fill);
+    color: var(--action-foreground);
+  }
+
+  .action-fill:hover:not(:disabled) {
+    background-image: var(--action-fill-hover);
+  }
+
+  /* The delay keeps an icon the host already holds from flashing a spinner. */
+  .site-icon-pending {
+    animation: site-icon-dim 200ms ease-out 250ms both;
+  }
+
+  .site-icon-spinner {
+    animation:
+      site-icon-show 200ms ease-out 250ms both,
+      spin 800ms linear infinite;
+  }
+}
+
+@keyframes site-icon-dim {
+  to {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+@keyframes site-icon-show {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The window has no system title bar, so these regions move it instead. */
+.drag-region {
+  --wails-draggable: drag;
+}
+
+.drag-region button,
+.drag-region input,
+.drag-region a,
+.drag-region [role="button"] {
+  --wails-draggable: no-drag;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin {
+    animation: none;
+  }
+
+  .site-icon-pending {
+    animation: none;
+    opacity: 0;
+  }
+
+  .site-icon-spinner {
+    animation: site-icon-show 200ms ease-out 250ms both;
+  }
+
+  /* Dialogs, popovers and menus still fade, but do not grow or slide. */
+  .animate-in,
+  .animate-out {
+    --tw-enter-scale: 1;
+    --tw-enter-translate-x: 0;
+    --tw-enter-translate-y: 0;
+    --tw-exit-scale: 1;
+    --tw-exit-translate-x: 0;
+    --tw-exit-translate-y: 0;
+  }
+
+  [data-slot="button"],
+  [data-slot="input"],
+  [data-slot="textarea"],
+  [data-slot="checkbox"],
+  .transition-colors,
+  .transition-all {
+    transition-duration: 0ms;
+  }
+}

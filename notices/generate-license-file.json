@@ -1,0 +1,21 @@
+{
+  "lineEnding": "lf",
+  "replace": {
+    "@maskito/core": "./licenses/maskito.txt",
+    "@maskito/kit": "./licenses/maskito.txt",
+    "@maskito/phone": "./licenses/maskito.txt",
+    "@maskito/react": "./licenses/maskito.txt",
+    "@wailsio/runtime": "./licenses/wails.txt",
+    "libphonenumber-js": "../node_modules/libphonenumber-js/LICENSE",
+    "react-remove-scroll-bar": "./licenses/react-remove-scroll-bar.txt"
+  },
+  "exclude": ["/^@ravenpass\\//", "/^@types\\//", "/^@typescript\\//", "typescript"],
+  "append": [
+    "./overrides/libphonenumber-js.txt",
+    "../node_modules/libphonenumber-js/LICENSE.Apache",
+    "./overrides/tailwindcss.txt",
+    "../node_modules/tailwindcss/LICENSE",
+    "./overrides/shadcn-ui.txt",
+    "./licenses/shadcn-ui.txt"
+  ]
+}

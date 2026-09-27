@@ -1,0 +1,13 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.jar binary
+*.png binary
+*.icns binary
+*.jpg binary
+*.webp binary
+*.pdf binary
+
+packages/ui/src/bindings/** linguist-generated
+*.generated.json linguist-generated
+apps/mobile/build/android/app/src/main/res/values*/strings.xml linguist-generated
+CHANGELOG.md linguist-generated

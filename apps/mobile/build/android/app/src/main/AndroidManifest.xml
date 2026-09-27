@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- androidx.biometric also declares USE_FINGERPRINT, which only Android releases before 9 use. -->
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" tools:node="remove" />
+
+    <!-- From Android 11 a package another app cannot see has no signing certificates to read; autofill and passkeys
+         read the signers of the browser or app they serve, which every launchable app makes visible. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
+    <application
+        android:name="com.dortanes.ravenpass.RavenpassApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Ravenpass">
+
+        <!-- The system's autofill and passkey settings start it; it reads nothing from the intent.
+             Choosing a language in the interface changes the app's locale, which must not restart the interface. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode|locale|layoutDirection"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- A copied scan reaches the app it is pasted in only through the read grant the clipboard gives that app. -->
+        <provider
+            android:name="com.dortanes.ravenpass.ClipProvider"
+            android:authorities="${applicationId}.clip"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
+        <service
+            android:name="com.dortanes.ravenpass.autofill.FillService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_AUTOFILL_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.autofill.AutofillService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.autofill"
+                android:resource="@xml/autofill_service" />
+        </service>
+
+        <!-- Sharing the autofill service's package makes Android list both as one Ravenpass provider. -->
+        <service
+            android:name="com.dortanes.ravenpass.autofill.CredentialService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE"
+            tools:targetApi="34">
+            <intent-filter>
+                <action android:name="android.service.credentials.CredentialProviderService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.credentials.provider"
+                android:resource="@xml/credential_provider" />
+        </service>
+
+        <activity
+            android:name="com.dortanes.ravenpass.autofill.UnlockActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@style/Theme.Ravenpass.Autofill"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name="com.dortanes.ravenpass.autofill.FillActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@style/Theme.Ravenpass.Autofill.Invisible" />
+        <activity
+            android:name="com.dortanes.ravenpass.autofill.SearchActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@style/Theme.Ravenpass.Autofill"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name="com.dortanes.ravenpass.autofill.SaveActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@style/Theme.Ravenpass.Autofill"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name="com.dortanes.ravenpass.autofill.PasskeyActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@style/Theme.Ravenpass.Autofill"
+            android:windowSoftInputMode="adjustResize"
+            tools:targetApi="34" />
+    </application>
+
+</manifest>

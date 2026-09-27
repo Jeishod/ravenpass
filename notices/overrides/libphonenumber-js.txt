@@ -1,0 +1,2 @@
+libphonenumber-js bundles phone number metadata derived from Google's libphonenumber
+(https://github.com/google/libphonenumber), licensed under the Apache License 2.0, which follows.

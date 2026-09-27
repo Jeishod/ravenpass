@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "types": ["@rsbuild/core/types"]
+  },
+  "include": ["src", "scripts", "rsbuild.config.ts"]
+}
