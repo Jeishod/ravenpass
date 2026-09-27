@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "description": "__MSG_extension_description__",
   "default_locale": "en",
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxnoZHG3+GryZuOjXw7+kf2RVcmK4W54Fs5nOWZaXlJXGABluQ5xKuM5Qw0trYFaFZAXrZa1vc6SURvgqQiz5vryx2zq/mBZL8Di/l9BfUCduLDRwsYVMVR1pFveHb284XDXP+ABh+kEgP/inRhDaTNkCoYtsuYl1nAYoe7OpTuVfjUX8O5nOSoratDFOgN8hNrBMtJeTJP67OckMl8xAj71VHM0HD3chsX9IaaJmTYJOPWWARMHmj1r3YHZOlzVaNXym0DcuEBEvsNLTa8wP+b2RBPv72UaRg7gQoKCZnBIJagy2Xq0fJmf0b0MlTE6QpQ4z+P2uTX2rfSvrOnlDCwIDAQAB",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnJarT6if5GSRDvfi54imJthcPs0Bb6Yti2IScZj2zfWyjA3uJDRcqHioBFpjzkNYa7YATO48Rxvsj43NycJkCH3HJhwbRuSZFdTQdLXrAWHpQ0+/hd8FDeB5EH22B+cZ3ZCs1kqhsuPhvKFiwqFJcm7o0bx214ltyzmneu3UcBairP83JusvCvYGKWJdeTbkX6+VwKDwdG3MMAO/ygmHXe1GqOBPhzsFFsFZKgDDenQor9cFkwI9Xcxk1QGVnyZHGjV/gmYLVBTA9yc6IMtbn3YL2CezzvfFW2oKcXkcUAFPG0rFZEMwrO/bRGG0YzepApcE0ITkaO3+PnEl2LD4rQIDAQAB",
   "minimum_chrome_version": "133",
   "icons": {
     "16": "icons/icon-16.png",

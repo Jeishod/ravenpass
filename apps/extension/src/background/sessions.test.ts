@@ -4,7 +4,7 @@ import type { MenuContent } from "../messages.ts";
 import { MenuSessions, type PageFrame, type Sender } from "./sessions.ts";
 import { Clock, MemoryArea } from "./test-doubles.test-support.ts";
 
-const extensionId = "chdggglplghhkebggbbdbofeokkiiaio";
+const extensionId = "cceiadaelnccfbakmhcleifjfilkakag";
 const tabId = 7;
 const origin = "https://github.com";
 const content: MenuContent = {

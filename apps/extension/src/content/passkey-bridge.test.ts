@@ -17,7 +17,7 @@ import {
   type RuntimeMessages,
 } from "./passkey-bridge.ts";
 
-const extensionId = "chdggglplghhkebggbbdbofeokkiiaio";
+const extensionId = "cceiadaelnccfbakmhcleifjfilkakag";
 
 const options: GetOptions = {
   rpId: null,

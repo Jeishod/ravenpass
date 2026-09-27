@@ -421,7 +421,7 @@ func TestAnInvalidCaptureOriginIsRefusedBeforeTheVault(t *testing.T) {
 	server, vault := newServer(t, recordsPath(t))
 	vault.unlocked.Store(true)
 	session := openCaptureSession(t, server)
-	for _, origin := range []string{"", "example.com", "https://example.com/login", "chrome-extension://chdggglplghhkebggbbdbofeokkiiaio"} {
+	for _, origin := range []string{"", "example.com", "https://example.com/login", "chrome-extension://cceiadaelnccfbakmhcleifjfilkakag"} {
 		if reply := session.ask(map[string]any{"type": "capture", "origin": origin, "account": "sam", "password": "typed"}); reply != `{"id":1,"error":"invalid-origin"}` {
 			t.Fatalf("a capture for %q answered %s", origin, reply)
 		}

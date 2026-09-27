@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	extensionOrigin = "chrome-extension://chdggglplghhkebggbbdbofeokkiiaio"
+	extensionOrigin = "chrome-extension://cceiadaelnccfbakmhcleifjfilkakag"
 	extensionName   = "Chrome · macOS"
 	testWait        = 5 * time.Second
 )
@@ -1341,7 +1341,7 @@ func TestAnInvalidOriginIsRefusedBeforeTheVault(t *testing.T) {
 		"",
 		"example.com",
 		"ftp://example.com",
-		"chrome-extension://chdggglplghhkebggbbdbofeokkiiaio",
+		"chrome-extension://cceiadaelnccfbakmhcleifjfilkakag",
 		"https://",
 		"https://example.com/",
 		"https://example.com/login",

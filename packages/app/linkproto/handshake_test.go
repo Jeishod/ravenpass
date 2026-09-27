@@ -226,10 +226,10 @@ func TestKeyPairValidity(t *testing.T) {
 }
 
 func TestAllowedOrigins(t *testing.T) {
-	if !AllowedOrigin("chrome-extension://chdggglplghhkebggbbdbofeokkiiaio") {
+	if !AllowedOrigin("chrome-extension://cceiadaelnccfbakmhcleifjfilkakag") {
 		t.Fatal("the extension's origin is refused")
 	}
-	for _, origin := range []string{"", "null", "https://example.com", "chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "chrome-extension://chdggglplghhkebggbbdbofeokkiiaio/"} {
+	for _, origin := range []string{"", "null", "https://example.com", "chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "chrome-extension://cceiadaelnccfbakmhcleifjfilkakag/"} {
 		if AllowedOrigin(origin) {
 			t.Errorf("origin %q is allowed", origin)
 		}

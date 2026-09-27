@@ -38,7 +38,7 @@ const (
 )
 
 // The extension ID derives from the public key in the extension's manifest.
-var allowedOrigins = []string{"chrome-extension://chdggglplghhkebggbbdbofeokkiiaio"}
+var allowedOrigins = []string{"chrome-extension://cceiadaelnccfbakmhcleifjfilkakag"}
 
 // AllowedOrigins returns the extension origins the desktop app answers.
 func AllowedOrigins() []string {

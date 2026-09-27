@@ -113,7 +113,7 @@ export class Clock {
   readonly now = () => this.time;
 }
 
-export const extensionId = "chdggglplghhkebggbbdbofeokkiiaio";
+export const extensionId = "cceiadaelnccfbakmhcleifjfilkakag";
 
 /** The content script of a GitHub page's top frame in tab 7, as Chrome reports it. */
 export function pageSender(overrides: Partial<Sender> = {}): Sender {
