@@ -1,6 +1,6 @@
 cask "ravenpass" do
-  version "0.1.0"
-  sha256 "1c8d03ff0f2337ce5e2b568670e42ead617d90be6ac9959349f15589fec7e120"
+  version "0.1.1"
+  sha256 "7ef4911096d36cadcbf073c52162ba320b5c7106786ab4aa0aaebc781a62b9c3"
 
   url "https://github.com/dortanes/ravenpass/releases/download/v#{version}/Ravenpass-#{version}-macos-arm64.dmg"
   name "Ravenpass"
