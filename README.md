@@ -51,6 +51,15 @@ Get the latest version from [Releases](https://github.com/dortanes/ravenpass/rel
 - **Android:** open the APK and allow the install, then choose Ravenpass as your autofill service and, on Android 14 and later, as your passkey provider.
 - **Chrome:** the extension is coming to the Chrome Web Store soon. Until then, unzip the file, open `chrome://extensions`, turn on **Developer mode** and choose **Load unpacked**. The extension then shows how to link it to Ravenpass on your computer.
 
+On macOS, you can also install with Homebrew:
+
+```sh
+brew tap dortanes/ravenpass https://github.com/dortanes/ravenpass
+brew install --cask dortanes/ravenpass/ravenpass
+```
+
+To update, run `brew update` and `brew upgrade --cask dortanes/ravenpass/ravenpass`.
+
 > [!IMPORTANT]
 > Nobody can reset your vault for you. Keep backups on and keep a copy of your recovery key: it unlocks a vault file you still have, but it cannot bring back a file that is gone.
 

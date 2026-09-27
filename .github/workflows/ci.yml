@@ -13,6 +13,22 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  homebrew:
+    name: Homebrew cask
+    runs-on: macos-26
+    timeout-minutes: 15
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: brew style Casks/ravenpass.rb
+      - name: Audit cask
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}
+        run: |
+          brew tap --custom-remote dortanes/ravenpass "$GITHUB_WORKSPACE"
+          brew audit --cask --online dortanes/ravenpass/ravenpass
+
   core:
     name: Go core
     runs-on: ubuntu-24.04

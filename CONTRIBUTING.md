@@ -56,6 +56,16 @@ A failed build leaves the release as a draft, so the latest published release al
 
 No version number is edited by hand.
 
+### Homebrew
+
+This repository also serves as the Homebrew tap. After publishing a release, CI updates `Casks/ravenpass.rb` on `main` with the version and SHA-256 of the signed macOS artifact. Homebrew's cask updater, style check, and online audit run before the commit is pushed. This uses `GITHUB_TOKEN`; no additional secret or repository is needed.
+
+Release-please remains the source of the version. The cask is excluded from its `extra-files` because updating it in the release pull request would pair a new version with the previous artifact's checksum before the new DMG is published.
+
+If the Homebrew job fails, rerun it in the release workflow after fixing the failure. Rerunning a job for a release that is no longer the latest does not change the cask. A successful rerun with an unchanged cask does not create a commit.
+
+To check cask edits locally, run `brew style Casks/ravenpass.rb`. CI also audits the cask from the checked-out revision.
+
 ### Release configuration
 
 Repository secrets:
