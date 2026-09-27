@@ -29,7 +29,7 @@
 ## Features
 
 - **Native autofill, everywhere.** Built into your system's own autofill, so passwords, passkeys and two-factor codes fill in any app or browser. Chrome also has its own extension.
-- **Your vault, your choice.** Keep it on your device, or in a cloud drive folder to open the same vault on your computer and phone. Use one device at a time: changes made on two devices at once are not merged yet.
+- **Your vault, your choice.** Keep it on your device, or in a cloud drive folder to open the same vault on your computer and phone.
 - **Everything in one place.** Passwords, passkeys, two-factor codes, payment cards, identities with document scans, secure notes and crypto wallet seeds.
 - **Quick to unlock.** Your fingerprint or your device's screen lock, or a PIN.
 - **Hard to lose.** Automatic encrypted backups to a folder you choose, and a 24-word recovery key you can print or save.
@@ -47,7 +47,7 @@ Get the latest version from [Releases](https://github.com/dortanes/ravenpass/rel
 | Chrome | `.zip` | Chrome 133 or later and Ravenpass on your computer |
 | Windows, Linux, iOS | | Coming soon |
 
-- **macOS:** open the disk image and drag Ravenpass to Applications.
+- **macOS:** open the disk image and drag Ravenpass to Applications. On macOS 15 and later, turn on Ravenpass in **System Settings → General → AutoFill & Passwords**.
 - **Android:** open the APK and allow the install, then choose Ravenpass as your autofill service and, on Android 14 and later, as your passkey provider.
 - **Chrome:** the extension is coming to the Chrome Web Store soon. Until then, unzip the file, open `chrome://extensions`, turn on **Developer mode** and choose **Load unpacked**. The extension then shows how to link it to Ravenpass on your computer.
 
