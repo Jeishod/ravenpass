@@ -6,6 +6,7 @@
 <p>Passwords, passkeys and two-factor codes in one encrypted vault on your computer and phone, filled in wherever you sign in. No account needed, and you decide where your vault lives.</p>
 <p>
   <a href="https://github.com/dortanes/ravenpass/releases/latest"><img src="https://img.shields.io/github/v/release/dortanes/ravenpass?logo=github&amp;color=blue" alt="Latest release"></a>
+  <a href="https://chromewebstore.google.com/detail/cceiadaelnccfbakmhcleifjfilkakag"><img src="https://img.shields.io/chrome-web-store/v/cceiadaelnccfbakmhcleifjfilkakag?logo=googlechrome&amp;logoColor=white&amp;label=Chrome%20Web%20Store&amp;color=blue" alt="Chrome Web Store"></a>
   <a href="https://github.com/dortanes/ravenpass/actions/workflows/ci.yml"><img src="https://github.com/dortanes/ravenpass/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg" alt="GPL-3.0-or-later license"></a>
 </p>
@@ -44,12 +45,12 @@ Get the latest version from [Releases](https://github.com/dortanes/ravenpass/rel
 | --- | --- | --- |
 | macOS | `.dmg` | Apple silicon, macOS 13 or later; AutoFill needs macOS 15 |
 | Android | `.apk` | Android 12 or later; passkeys need Android 14 |
-| Chrome | `.zip` | Chrome 133 or later and Ravenpass on your computer |
+| Chrome | [Chrome Web Store](https://chromewebstore.google.com/detail/cceiadaelnccfbakmhcleifjfilkakag) | Chrome 133 or later and Ravenpass on your computer |
 | Windows, Linux, iOS | | Coming soon |
 
 - **macOS:** open the disk image and drag Ravenpass to Applications. On macOS 15 and later, turn on Ravenpass in **System Settings → General → AutoFill & Passwords**.
 - **Android:** open the APK and allow the install, then choose Ravenpass as your autofill service and, on Android 14 and later, as your passkey provider.
-- **Chrome:** the extension is coming to the Chrome Web Store soon. Until then, unzip the file, open `chrome://extensions`, turn on **Developer mode** and choose **Load unpacked**. The extension then shows how to link it to Ravenpass on your computer.
+- **Chrome:** add Ravenpass from the [Chrome Web Store](https://chromewebstore.google.com/detail/cceiadaelnccfbakmhcleifjfilkakag). The extension then shows how to link it to Ravenpass on your computer.
 
 On macOS, you can also install with Homebrew:
 
