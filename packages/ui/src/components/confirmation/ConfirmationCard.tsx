@@ -196,13 +196,13 @@ function RequestCard({
         </Button>
       )}
 
-      <footer className="flex items-center justify-end gap-1.5">
+      <footer className="flex flex-wrap items-center gap-1.5">
         {plan.recovery && (
           <Button
             type="button"
             variant="ghost"
             size="pill-sm"
-            className="mr-auto text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground"
             disabled={busy}
             onClick={() =>
               void answer(() => host.recoverFromConfirmation(id), plan.error)
@@ -211,32 +211,35 @@ function RequestCard({
             {t("unlock.recovery.action")}
           </Button>
         )}
-        <Button
-          type="button"
-          variant="quiet"
-          size="pill"
-          autoFocus={!plan.pin && !plan.biometry}
-          disabled={busy}
-          onClick={() =>
-            void answer(
-              () => host.declineConfirmation(id),
-              "confirmation.decline-error",
-            )
-          }
-        >
-          {t("confirmation.decline")}
-        </Button>
-        {plan.pin && (
+        {/* The answers wrap as one group below the recovery action when a language's labels overflow the fixed-width panel. */}
+        <div className="ml-auto flex gap-1.5">
           <Button
-            type="submit"
-            form="confirmation-pin"
-            variant="raised"
+            type="button"
+            variant="quiet"
             size="pill"
-            disabled={busy || !ready}
+            autoFocus={!plan.pin && !plan.biometry}
+            disabled={busy}
+            onClick={() =>
+              void answer(
+                () => host.declineConfirmation(id),
+                "confirmation.decline-error",
+              )
+            }
           >
-            {busy ? t("unlock.pin.busy") : t(plan.pin.confirm)}
+            {t("confirmation.decline")}
           </Button>
-        )}
+          {plan.pin && (
+            <Button
+              type="submit"
+              form="confirmation-pin"
+              variant="raised"
+              size="pill"
+              disabled={busy || !ready}
+            >
+              {busy ? t("unlock.pin.busy") : t(plan.pin.confirm)}
+            </Button>
+          )}
+        </div>
       </footer>
     </section>
   );
