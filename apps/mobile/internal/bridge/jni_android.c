@@ -34,6 +34,7 @@ static jmethodID passkeyProviderMethod;
 static jmethodID selectAutofillMethod;
 static jmethodID preferredLanguagesMethod;
 static jmethodID setLanguageMethod;
+static jmethodID setAppearanceMethod;
 static jmethodID systemVersionMethod;
 static jmethodID thirdPartyNoticesMethod;
 
@@ -86,6 +87,7 @@ int ravenpass_bridge_attach(JNIEnv *env, jclass bridge) {
     selectAutofillMethod = staticMethod(env, "selectAutofill", "()I");
     preferredLanguagesMethod = staticMethod(env, "preferredLanguages", "()[B");
     setLanguageMethod = staticMethod(env, "setLanguage", "([B)V");
+    setAppearanceMethod = staticMethod(env, "setAppearance", "([B)V");
     systemVersionMethod = staticMethod(env, "systemVersion", "()[B");
     thirdPartyNoticesMethod = staticMethod(env, "thirdPartyNotices", "()[B");
     return (*env)->ExceptionCheck(env) ? -1 : 0;
@@ -387,6 +389,15 @@ void ravenpass_bridge_set_language(JNIEnv *env, const void *tag, jsize tagLength
         return;
     }
     (*env)->CallStaticVoidMethod(env, bridgeClass, setLanguageMethod, tagBytes);
+    threw(env);
+}
+
+void ravenpass_bridge_set_appearance(JNIEnv *env, const void *appearance, jsize appearanceLength) {
+    jbyteArray appearanceBytes = newArray(env, appearance, appearanceLength);
+    if (threw(env)) {
+        return;
+    }
+    (*env)->CallStaticVoidMethod(env, bridgeClass, setAppearanceMethod, appearanceBytes);
     threw(env);
 }
 

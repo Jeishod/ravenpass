@@ -126,6 +126,8 @@ func (h *Handler) Call(request []byte) []byte {
 		return encode(h.language())
 	case "interface-size":
 		return encode(h.interfaceSize())
+	case "appearance":
+		return encode(h.appearance())
 	case "shown":
 		h.screens.show()
 		return encode(outcome{Status: statusOK})
@@ -544,6 +546,19 @@ func (h *Handler) interfaceSize() interfaceSizeAnswer {
 		return interfaceSizeAnswer{outcome: failure(err)}
 	}
 	return interfaceSizeAnswer{outcome: outcome{Status: statusOK}, InterfaceSize: size}
+}
+
+type appearanceAnswer struct {
+	outcome
+	api.Appearance
+}
+
+func (h *Handler) appearance() appearanceAnswer {
+	appearance, err := h.page.GetAppearance()
+	if err != nil {
+		return appearanceAnswer{outcome: failure(err)}
+	}
+	return appearanceAnswer{outcome: outcome{Status: statusOK}, Appearance: appearance}
 }
 
 type unlockRequest struct {

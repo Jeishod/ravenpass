@@ -374,6 +374,15 @@ func setLanguage(tag string) {
 	C.ravenpass_bridge_set_language(t.env, stringData(tag), C.jsize(len(tag)))
 }
 
+func setAppearance(appearance string) {
+	t, s := enter()
+	if s != statusOK {
+		return
+	}
+	defer t.leave()
+	C.ravenpass_bridge_set_appearance(t.env, stringData(appearance), C.jsize(len(appearance)))
+}
+
 func systemVersion() []byte {
 	t, s := enter()
 	if s != statusOK {

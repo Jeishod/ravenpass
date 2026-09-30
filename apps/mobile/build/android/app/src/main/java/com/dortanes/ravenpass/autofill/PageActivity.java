@@ -89,6 +89,7 @@ abstract class PageActivity extends AutofillActivity implements AutofillPage.Rec
             case "icon" -> read(request, Map.of("site", request.fields.optString("site")));
             case "language" -> read(request, Map.of());
             case "interface-size" -> read(request, Map.of());
+            case "appearance" -> read(request, Map.of());
             default -> {
                 if (!serve(request)) {
                     request.answer(Core.FAILED);

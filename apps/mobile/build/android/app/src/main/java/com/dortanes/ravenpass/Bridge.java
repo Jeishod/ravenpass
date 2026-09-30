@@ -459,6 +459,11 @@ final class Bridge {
         AppLanguage.follow(application, utf8(tagUtf8));
     }
 
+    /** "light", "dark" or "system". */
+    static void setAppearance(byte[] appearanceUtf8) {
+        AppAppearance.follow(application, utf8(appearanceUtf8));
+    }
+
     /** Returns the Android release and API level, such as "15 (API 35)". */
     static byte[] systemVersion() {
         return (Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")").getBytes(StandardCharsets.UTF_8);

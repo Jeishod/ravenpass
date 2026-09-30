@@ -130,6 +130,8 @@ func build() (*Core, error) {
 	settings := services.Settings
 	settings.OnLanguageChange(func() { followLanguage(settings) })
 	followLanguage(settings)
+	settings.OnAppearanceChange(func() { followAppearance(settings) })
+	followAppearance(settings)
 	c := &Core{vault: services.Vault, shows: &api.UnlockOnShow{}}
 	c.away = background.New(settings.AutoLock, c.lockAway)
 	c.Service, err = services.Serve(api.Host{
@@ -156,7 +158,7 @@ func build() (*Core, error) {
 		Screenshots:    bridge.Screens{},
 		SystemAutofill: bridge.SystemAutofill{},
 		TemporaryPicks: true,
-		Offers:         api.Capabilities{StorageLocations: true, InterfaceSize: true, CopyScans: true},
+		Offers:         api.Capabilities{StorageLocations: true, InterfaceSize: true, CopyScans: true, Appearance: true},
 	})
 	if err != nil {
 		return nil, err
@@ -192,4 +194,9 @@ func followLanguage(settings *preferences.Store) {
 		tag = string(language)
 	}
 	bridge.SetLanguage(tag)
+}
+
+// followAppearance gives Android's own screens and the app's windows the appearance the owner chose.
+func followAppearance(settings *preferences.Store) {
+	bridge.SetAppearance(string(settings.Appearance()))
 }

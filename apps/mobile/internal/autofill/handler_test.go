@@ -207,9 +207,10 @@ func (i *fakeIcons) Cached(site string) (string, error) {
 }
 
 type fakePage struct {
-	icons    map[string]api.SiteIcon
-	language api.LanguageSettings
-	size     api.InterfaceSize
+	icons      map[string]api.SiteIcon
+	language   api.LanguageSettings
+	size       api.InterfaceSize
+	appearance api.Appearance
 }
 
 func (p *fakePage) SiteIcon(site string) (api.SiteIcon, error) {
@@ -223,6 +224,8 @@ func (p *fakePage) SiteIcon(site string) (api.SiteIcon, error) {
 func (p *fakePage) GetLanguage() (api.LanguageSettings, error) { return p.language, nil }
 
 func (p *fakePage) GetInterfaceSize() (api.InterfaceSize, error) { return p.size, nil }
+
+func (p *fakePage) GetAppearance() (api.Appearance, error) { return p.appearance, nil }
 
 type harness struct {
 	handler   *Handler
@@ -829,6 +832,19 @@ func TestThePageReadsTheInterfaceSizeAsTheAppsWindowDoes(t *testing.T) {
 	h.call(t, map[string]any{"op": "interface-size"}, &size)
 	if size.Status != statusOK || size.Percent != 115 || !slices.Equal(size.Offered, []int{85, 100, 115}) {
 		t.Fatalf("interface size %+v", size)
+	}
+}
+
+func TestThePageReadsTheAppearanceAsTheAppsWindowDoes(t *testing.T) {
+	h := newHarness(&fakeService{open: true}, nil)
+	h.page.appearance = api.Appearance{Appearance: "light", Offered: []string{"system", "light", "dark"}}
+	var appearance struct {
+		outcome
+		Appearance string
+	}
+	h.call(t, map[string]any{"op": "appearance"}, &appearance)
+	if appearance.Status != statusOK || appearance.Appearance != "light" {
+		t.Fatalf("appearance %+v", appearance)
 	}
 }
 

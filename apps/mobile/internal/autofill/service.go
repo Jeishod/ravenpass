@@ -55,9 +55,10 @@ type Icons interface {
 	Cached(site string) (string, error)
 }
 
-// Page serves the screens' page the icons, language and interface size the app's window reads.
+// Page serves the screens' page the icons, language, interface size and appearance the app's window reads.
 type Page interface {
 	SiteIcon(site string) (api.SiteIcon, error)
 	GetLanguage() (api.LanguageSettings, error)
 	GetInterfaceSize() (api.InterfaceSize, error)
+	GetAppearance() (api.Appearance, error)
 }

@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -23,10 +24,12 @@ import android.webkit.WebViewClient;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.webkit.WebViewAssetLoader;
 
+import com.dortanes.ravenpass.AppAppearance;
 import com.dortanes.ravenpass.WebViewPolicy;
 
 import java.io.ByteArrayInputStream;
@@ -65,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        AppAppearance.paintSystemBars(this);
         bridge = new WailsBridge(this);
         bridge.initialize();
         setupWebView();
@@ -283,6 +287,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         bridge.onResume();
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration configuration) {
+        super.onConfigurationChanged(configuration);
+        AppAppearance.paintSystemBars(this);
     }
 
     @Override

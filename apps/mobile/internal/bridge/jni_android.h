@@ -52,6 +52,7 @@ int32_t ravenpass_bridge_select_autofill(JNIEnv *env);
 // Returns NULL where Bridge reports no language tags or throws.
 uint8_t *ravenpass_bridge_preferred_languages(JNIEnv *env, size_t *length);
 void ravenpass_bridge_set_language(JNIEnv *env, const void *tag, jsize tagLength);
+void ravenpass_bridge_set_appearance(JNIEnv *env, const void *appearance, jsize appearanceLength);
 // Returns NULL where Bridge throws.
 uint8_t *ravenpass_bridge_system_version(JNIEnv *env, size_t *length);
 // Returns -1 where Bridge throws or JNI fails.

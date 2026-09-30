@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Ravenpass" parent="Theme.AppCompat.NoActionBar">
+    <style name="Theme.Ravenpass" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/window_background</item>
     </style>
 
     <!-- The autofill screens: the page draws its sheet and the scrim over the app being filled. -->
-    <style name="Theme.Ravenpass.Autofill" parent="Theme.AppCompat.NoActionBar">
+    <style name="Theme.Ravenpass.Autofill" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
     </style>
