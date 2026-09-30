@@ -43,7 +43,7 @@ test("a host that fills values itself takes messages with placeholders", () => {
 
 test("apostrophes and placeholders come through as the catalogs write them", () => {
   const keys = {
-    failed: "settings.import.failed.title",
+    mismatch: "unlock-methods.pin.mismatch",
     password: "settings.import.password.detail",
   } as const;
   const exported = exportMessages(keys, { values: true });
@@ -53,5 +53,5 @@ test("apostrophes and placeholders come through as the catalogs write them", () 
       ru: catalogs.ru[key],
     });
   }
-  assert.equal(exported.failed?.en, "Can't import this file");
+  assert.equal(exported.mismatch?.en, "The PINs don't match.");
 });

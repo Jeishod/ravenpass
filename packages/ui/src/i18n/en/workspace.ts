@@ -62,6 +62,7 @@ export const workspace = {
   "workspace.delete.confirm": "Delete",
   "workspace.delete.busy": "Deleting…",
   "workspace.field.notes": "Notes",
+  "workspace.field.hidden": "Hidden",
   "workspace.notes.copy": "Copy notes",
 
   "workspace.editor.groups": "Groups",
@@ -117,7 +118,7 @@ export const workspace = {
   "workspace.error.copy":
     "Ravenpass could not copy that value. Open the password and try again.",
   "workspace.error.website":
-    "That site could not be opened. Copy the address and open it yourself.",
+    "That website could not be opened. Copy the address and open it yourself.",
   "workspace.error.clipboard":
     "Ravenpass could not save the clipboard setting. Try again.",
   "workspace.error.interface-size":
@@ -174,8 +175,8 @@ export const workspace = {
 
   "credential.untitled": "Untitled password",
   "credential.login.empty": "No login saved",
-  "credential.website.empty": "No site saved",
-  "credential.website.open": "Open site",
+  "credential.website.empty": "No website saved",
+  "credential.website.open": "Open website",
 
   "credential.field.label": "Name",
   "credential.field.website": "Website",
@@ -191,7 +192,7 @@ export const workspace = {
   "credential.copy.email": "Copy email",
   "credential.copy.password": "Copy password",
   "credential.copy.totp": "Copy one-time code",
-  "credential.copy.website": "Copy website",
+  "credential.copy.website": "Copy {address}",
   "credential.password.reveal": "Show password",
   "credential.password.conceal": "Hide password",
 

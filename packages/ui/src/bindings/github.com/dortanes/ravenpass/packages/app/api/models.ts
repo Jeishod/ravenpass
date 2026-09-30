@@ -808,6 +808,11 @@ export interface LinkedApp {
      * Signer is the lower-case hex SHA-256 digest of one signing certificate.
      */
     "signer": string;
+
+    /**
+     * Name is what the app installed on this device shows as its name; empty where the device has no such app.
+     */
+    "name": string;
 }
 
 /**

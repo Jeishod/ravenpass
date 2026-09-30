@@ -16,6 +16,7 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
+import { failureCode } from "../../failures.ts";
 import type { MessageKey } from "../../i18n/messages.ts";
 import { useTranslator } from "../../i18n/translator.tsx";
 import { queryKeys } from "../../query/keys.ts";
@@ -109,7 +110,9 @@ export function RecoveryKeyChange({
     api
       .cancelRecoveryPhraseChange()
       .catch((reason: unknown) =>
-        toast.error(failure(reason, "wizard.errors.cancel-failed")),
+        toast.error(
+          failure(reason, "recovery-key-change.errors.cancel-failed"),
+        ),
       );
   }
 
@@ -134,19 +137,22 @@ export function RecoveryKeyChange({
     close();
   }
 
-  async function begin(pin: string, current: string) {
+  // Answers the failure's code, or null once the new key is staged.
+  async function begin(pin: string, current: string): Promise<string | null> {
     setBusy(true);
     try {
       const next = await api.beginRecoveryPhraseChange(pin, current);
       staged.current = true;
       if (!mounted.current) {
         discardStaged();
-        return;
+        return null;
       }
       setPhrase(next);
       setStep("phrase");
+      return null;
     } catch (reason) {
       toast.error(failure(reason, "recovery-key-change.errors.begin-failed"));
+      return failureCode(reason);
     } finally {
       setBusy(false);
       void client.invalidateQueries({ queryKey: queryKeys.unlockMethods });
@@ -200,7 +206,7 @@ export function RecoveryKeyChange({
               methods={methods}
               busy={busy}
               onCancel={cancel}
-              onContinue={(pin, current) => void begin(pin, current)}
+              onContinue={begin}
             />
           )}
           {step === "phrase" && (
@@ -212,19 +218,22 @@ export function RecoveryKeyChange({
               onContinue={() => setStep("confirm")}
             />
           )}
-          {step === "confirm" &&
-            (busy ? (
-              <SetupProgress
-                title={t("recovery-key-change.saving")}
-                biometry={Boolean(methods?.biometryEnabled)}
-              />
-            ) : (
+          {/* The check stays mounted under the progress, so a failed save keeps the words it took. */}
+          {step === "confirm" && busy && (
+            <SetupProgress
+              title={t("recovery-key-change.saving")}
+              biometry={Boolean(methods?.biometryEnabled)}
+            />
+          )}
+          {step === "confirm" && (
+            <div hidden={busy}>
               <ConfirmStep
                 phrase={phrase}
                 onBack={() => setStep("phrase")}
                 onConfirmed={() => void finish()}
               />
-            ))}
+            </div>
+          )}
         </AccessShell>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
@@ -254,11 +263,12 @@ function VerifyStep({
   methods: UnlockMethods | null;
   busy: boolean;
   onCancel: () => void;
-  onContinue: (pin: string, current: string) => void;
+  onContinue: (pin: string, current: string) => Promise<string | null>;
 }) {
   const { t } = useTranslator();
   const id = useId();
   const [pin, setPin] = useState("");
+  const [rejections, setRejections] = useState(0);
   const [current, setCurrent] = useState(noWords);
   const [revealCurrent, setRevealCurrent] = useState(false);
   const fields = useRef<PhraseFieldsHandle>(null);
@@ -270,16 +280,22 @@ function VerifyStep({
     (!pinSet || pin.length >= methods.pinMinLength) &&
     (!needsCurrent || current.complete);
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  // A failure keeps what was typed for another try; only a wrong PIN is cleared.
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (needsCurrent && !current.complete) {
       fields.current?.focus(current.firstEmpty);
       return;
     }
     if (!ready || busy) return;
-    onContinue(pinSet ? pin : "", needsCurrent ? current.phrase : "");
-    setPin("");
-    setCurrent(noWords);
+    const failed = await onContinue(
+      pinSet ? pin : "",
+      needsCurrent ? current.phrase : "",
+    );
+    if (failed === "pin-wrong") {
+      setPin("");
+      setRejections((count) => count + 1);
+    }
   }
 
   return (
@@ -305,6 +321,7 @@ function VerifyStep({
             maxLength={methods.pinMaxLength}
             attemptsLeft={methods.pinAttemptsLeft}
             disabled={busy}
+            rejections={rejections}
           />
         </div>
       )}

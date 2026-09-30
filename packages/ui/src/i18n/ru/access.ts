@@ -46,7 +46,7 @@ export const access: typeof english = {
   "wizard.confirm.description":
     "Введите три слова из ключа, который вы только что сохранили.",
   "wizard.confirm.words": "Слова из ключа восстановления",
-  "wizard.confirm.hint": "Введите пробел, чтобы перейти к следующему слову.",
+  "wizard.confirm.hint": "Нажмите пробел, чтобы перейти к следующему слову.",
   "phrase.word": "Слово {number}",
   "wizard.unlock.title": "Выберите, как открывать это хранилище",
   "wizard.unlock.description":
@@ -54,7 +54,7 @@ export const access: typeof english = {
   "wizard.unlock.create": "Создать хранилище",
   "wizard.unlock.creating": "Создаём хранилище",
   "wizard.actions.back": "Назад",
-  "wizard.actions.cancel": "Отменить",
+  "wizard.actions.cancel": "Отмена",
   "wizard.actions.continue": "Продолжить",
   "wizard.actions.preparing": "Готовим…",
   "wizard.errors.storage-unreadable":
@@ -83,7 +83,7 @@ export const access: typeof english = {
   "unlock-methods.biometry.title": "Биометрия",
   "unlock-methods.biometry.description": "Биометрия устройства или его пароль.",
   "unlock-methods.biometry.unavailable":
-    "Биометрия недоступна. Используйте пин-код.",
+    "Биометрия недоступна на этом устройстве.",
   "unlock-methods.biometry.creating":
     "Создаём ключ в защищённом модуле устройства. Это может занять до 20 секунд.",
   "unlock-methods.biometry.last":
@@ -91,7 +91,7 @@ export const access: typeof english = {
   "unlock-methods.pin.last":
     "Это единственный способ разблокировки на этом устройстве. Включите биометрию, чтобы отключить пин-код.",
   "unlock-methods.pin.only":
-    "Пин-код — единственный доступный способ разблокировки.",
+    "Пин-код — единственный способ разблокировки, который работает на этом устройстве.",
   "unlock-methods.pin.title": "Пин-код",
   "unlock-methods.pin.description":
     "От {min} до {max, plural, one {# цифры} few {# цифр} many {# цифр} other {# цифры}}.",
@@ -107,6 +107,8 @@ export const access: typeof english = {
   "unlock-methods.pin.mismatch": "Пин-коды не совпадают.",
   "unlock-methods.pin.saved": "Пин-код сохранён.",
   "unlock-methods.pin.removed": "Пин-код удалён.",
+  "unlock-methods.biometry.on": "Биометрия включена.",
+  "unlock-methods.biometry.off": "Биометрия выключена.",
   "unlock-methods.confirm.title": "Введите пин-код",
   "unlock-methods.confirm.description":
     "Подтвердите, что это вы, чтобы изменить способ разблокировки хранилища.",
@@ -138,7 +140,7 @@ export const access: typeof english = {
   "unlock.missing.action": "Открыть файл хранилища…",
   "unlock.pin.label": "Пин-код",
   "unlock.pin.placeholder": "Ваш пин-код",
-  "unlock.pin.action": "Открыть",
+  "unlock.pin.action": "Разблокировать",
   "unlock.pin.busy": "Проверяем…",
   "unlock.pin.attempts":
     "{count, plural, one {Осталась # попытка} few {Осталось # попытки} many {Осталось # попыток} other {Осталось # попытки}} до удаления пин-кода.",
@@ -187,7 +189,7 @@ export const access: typeof english = {
   "recovery.errors.phrase-missing":
     "Сначала введите ключ восстановления из 24 слов.",
   "recovery.errors.local-failed":
-    "Не удалось открыть локальное хранилище. Проверьте слова и повторите.",
+    "Не удалось открыть хранилище. Повторите попытку.",
   "recovery.errors.confirm-failed":
     "Не удалось завершить восстановление. Перезапустите приложение и повторите.",
   "recovery.errors.cancel-failed":

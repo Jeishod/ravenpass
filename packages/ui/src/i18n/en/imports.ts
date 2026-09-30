@@ -40,7 +40,7 @@ export const imports = {
   "settings.import.password.cancel": "Cancel",
   "settings.import.password.continue": "Continue",
   "settings.import.password.opening": "Opening…",
-  "settings.import.failed.title": "Can't import this file",
+  "settings.import.failed.title": "Cannot import this file",
   "settings.import.failed.choose": "Choose another file…",
   "settings.import.file.detail":
     "{format} · {count, plural, one {# item} other {# items}}",
@@ -109,13 +109,13 @@ export const imports = {
   "settings.import.passkeys.detail":
     "The logins are imported without their passkeys.",
   "settings.import.dropped":
-    "{count, plural, one {# folder can't become a group} other {# folders can't become groups}}",
+    "{count, plural, one {# folder cannot become a group} other {# folders cannot become groups}}",
   "settings.import.dropped-tags":
-    "{count, plural, one {# folder or tag can't become a group} other {# folders and tags can't become groups}}",
+    "{count, plural, one {# folder or tag cannot become a group} other {# folders and tags cannot become groups}}",
   "settings.import.dropped.detail":
     "Their names are too long, or Ravenpass holds as many groups as it can.",
   "settings.import.nothing":
-    "Nothing to import: every item is already in Ravenpass or can't be imported.",
+    "Nothing to import: every item is already in Ravenpass or cannot be imported.",
   "settings.import.cancel": "Cancel",
   "settings.import.run": "Import ({count})",
   "settings.import.importing": "Importing…",
@@ -141,17 +141,17 @@ export const imports = {
     "The export file is in the Trash. Empty the Trash to remove it from this device.",
   "settings.import.another": "Import another file",
   "settings.import.error.choose":
-    "Ravenpass couldn't read this file. Choose it again.",
+    "Ravenpass could not read this file. Choose it again.",
   "settings.import.error.unlock":
-    "Ravenpass couldn't open this file. Choose it again.",
+    "Ravenpass could not open this file. Choose it again.",
   "settings.import.error.run":
-    "Ravenpass couldn't finish the import. Your vault is unchanged. Try again.",
+    "Ravenpass could not finish the import. Check whether your items were added before you try again.",
   "settings.import.error.refresh":
-    "Your items were imported, but Ravenpass couldn't show them. Lock and reopen the vault to see them.",
+    "Your items were imported, but Ravenpass could not show them. Lock and reopen the vault to see them.",
   "settings.import.error.trash":
-    "Ravenpass couldn't move the file to the Trash. Delete it yourself.",
+    "Ravenpass could not move the file to the Trash. Delete it yourself.",
   "settings.import.error.reveal":
-    "Ravenpass couldn't open the folder that holds the file. Find the file and delete it.",
+    "Ravenpass could not open the folder that holds the file. Find the file and delete it.",
   "settings.import.note.website": "Website",
   "settings.import.note.one-time-code": "One-time code setup",
   "settings.import.note.title": "Title",

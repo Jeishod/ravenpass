@@ -3,6 +3,7 @@ package api
 import (
 	"path/filepath"
 	"slices"
+	"sync"
 
 	"github.com/dortanes/ravenpass/packages/app/storage"
 )
@@ -101,11 +102,52 @@ func (s *Service) SelectStorageLocation(kind string) (StorageChange, error) {
 	return StorageChange{Changed: true, Path: target.Path}, nil
 }
 
-// MoveStorageLocation moves an open vault to another location, in a storage of kind.
-func (s *Service) MoveStorageLocation(kind string) (StorageChange, error) {
+// chosenMove holds the location ChooseStorageMove took, until MoveStorageLocation moves the vault there.
+type chosenMove struct {
+	mu     sync.Mutex
+	target *storage.Target
+}
+
+func (m *chosenMove) hold(target storage.Target) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.target = &target
+}
+
+func (m *chosenMove) drop() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.target = nil
+}
+
+func (m *chosenMove) take() (storage.Target, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	target := m.target
+	m.target = nil
+	if target == nil {
+		return storage.Target{}, false
+	}
+	return *target, true
+}
+
+// ChooseStorageMove asks where an open vault goes, in a storage of kind, and holds the answer for
+// MoveStorageLocation; false where the owner chose nothing, which holds no location.
+func (s *Service) ChooseStorageMove(kind string) (bool, error) {
+	s.moveTo.drop()
 	target, chosen, err := s.newVaultLocation(storage.Kind(kind))
 	if err != nil || !chosen {
-		return StorageChange{}, present(err)
+		return false, present(err)
+	}
+	s.moveTo.hold(target)
+	return true, nil
+}
+
+// MoveStorageLocation moves an open vault to the location ChooseStorageMove holds.
+func (s *Service) MoveStorageLocation() (StorageChange, error) {
+	target, chosen := s.moveTo.take()
+	if !chosen {
+		return StorageChange{}, fail(failureLocationNotSelected)
 	}
 	relocation, err := s.vault.MoveStorage(target)
 	if err != nil {

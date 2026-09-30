@@ -56,5 +56,5 @@ export const autofill: typeof english = {
   "autofill.failed.unsupported":
     "Ravenpass не может создать ключ доступа нужного этому сайту типа. Выберите другой способ входа.",
   "autofill.failed.other":
-    "Ravenpass не удалось выполнить этот запрос. Повторите попытку.",
+    "Не удалось выполнить этот запрос. Повторите попытку.",
 };

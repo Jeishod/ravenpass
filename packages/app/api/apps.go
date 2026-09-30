@@ -12,13 +12,25 @@ type LinkedApp struct {
 	Package string `json:"package"`
 	// Signer is the lower-case hex SHA-256 digest of one signing certificate.
 	Signer string `json:"signer"`
+	// Name is what the app installed on this device shows as its name; empty where the device has no such app.
+	Name string `json:"name"`
 }
 
+// AppNames names the apps installed on the device.
+type AppNames interface {
+	// Name is what the app of pkg, an Android package name, shows as its name; empty where the device has none.
+	Name(pkg string) string
+}
+
+type noAppNames struct{}
+
+func (noAppNames) Name(string) string { return "" }
+
 // linkedApps are a credential's app links as the interface shows them, never null.
-func linkedApps(apps []vault.App) []LinkedApp {
+func linkedApps(apps []vault.App, names AppNames) []LinkedApp {
 	views := make([]LinkedApp, len(apps))
 	for i, app := range apps {
-		views[i] = LinkedApp{Package: app.Package, Signer: hex.EncodeToString(app.Signer[:])}
+		views[i] = LinkedApp{Package: app.Package, Signer: hex.EncodeToString(app.Signer[:]), Name: names.Name(app.Package)}
 	}
 	return views
 }

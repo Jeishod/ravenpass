@@ -27,7 +27,7 @@ export interface HeadingAction {
 const heading =
   "flex min-h-[54px] w-full items-center gap-3 border-b px-[13px] py-[11px] text-left last:border-b-0";
 
-/** ValidityHeading states an item's expiry; with `action` the whole heading is that button. */
+/** ValidityHeading states an item's expiry; with `action` the whole heading is that button, named by what it shows. */
 export function ValidityHeading({
   validity,
   today,
@@ -90,7 +90,6 @@ export function ValidityHeading({
   return (
     <button
       type="button"
-      aria-label={action.label}
       title={action.label}
       disabled={action.disabled}
       onClick={action.run}

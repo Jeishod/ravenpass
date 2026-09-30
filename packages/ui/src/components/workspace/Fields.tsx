@@ -1,6 +1,7 @@
 import { cn } from "cn";
 import { Copy, Eye, EyeOff } from "lucide-react";
 import { type ComponentType, type ReactNode, useId } from "react";
+import { useTranslator } from "../../i18n/translator.tsx";
 import { Button } from "../ui/button.tsx";
 
 /** What a concealed secret shows in place of its value. */
@@ -40,7 +41,10 @@ export const dividedRow = "border-b last:border-b-0";
 export const actionRow =
   "outline-none hover:bg-field-hover focus-visible:bg-field-hover disabled:pointer-events-none disabled:opacity-50";
 
-/** FieldRow is one labelled line; with `onAction` the whole line is the button, and `accessory` sits outside it. */
+/**
+ * FieldRow is one labelled line; with `onAction` the whole line is the button, named by its label and value and
+ * described by its `action` title, and `accessory` sits outside it.
+ */
 export function FieldRow({
   label,
   action,
@@ -75,7 +79,6 @@ export function FieldRow({
   const button = (
     <button
       type="button"
-      aria-label={action}
       title={action}
       disabled={disabled}
       onClick={onAction}
@@ -191,25 +194,33 @@ export function SecretRow({
   onReveal: () => void;
   onCopy: () => void;
 }) {
+  const { t } = useTranslator();
+  // A screen reader hears "hidden" and whatever the mask leaves shown, never a run of dots.
+  const spoken = [
+    t("workspace.field.hidden"),
+    concealed.replaceAll("•", "").trim(),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <FieldRow
       label={label}
       action={copyLabel}
+      icon={Copy}
       disabled={busy}
       onAction={onCopy}
       accessory={
-        <>
-          <RevealButton
-            shown={revealed}
-            revealLabel={revealLabel}
-            concealLabel={concealLabel}
-            onToggle={onReveal}
-          />
-          <CopyButton label={copyLabel} busy={busy} onCopy={onCopy} />
-        </>
+        <RevealButton
+          shown={revealed}
+          revealLabel={revealLabel}
+          concealLabel={concealLabel}
+          onToggle={onReveal}
+        />
       }
     >
       <span
+        aria-hidden={!revealed || undefined}
         className={cn(
           "min-w-0 flex-1 font-mono text-[13px]",
           revealed && wrap ? "break-all" : "truncate",
@@ -218,6 +229,7 @@ export function SecretRow({
       >
         {revealed ? value : concealed}
       </span>
+      {!revealed && <span className="sr-only">{spoken}</span>}
     </FieldRow>
   );
 }

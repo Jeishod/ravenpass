@@ -61,7 +61,8 @@ export function VaultStorage({
               ? () => move(kind)
               : undefined
           }
-          busy={halted}
+          disabled={halted}
+          busy={moving}
         />
       </Block>
       {notices.length > 0 && (

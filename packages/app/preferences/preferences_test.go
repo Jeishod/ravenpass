@@ -399,7 +399,7 @@ func TestTitledPromptsGiveATitleAndASentence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if store.Dialogs().UnlockVault != "Unlock Ravenpass\nConfirm it’s you to unlock your vault." {
+	if store.Dialogs().UnlockVault != "Unlock Ravenpass\nConfirm it's you to unlock your vault." {
 		t.Fatalf("titled unlock prompt = %q", store.Dialogs().UnlockVault)
 	}
 }

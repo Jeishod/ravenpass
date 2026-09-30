@@ -9,8 +9,8 @@ export const confirmation = {
     "Enter your current PIN to confirm this change.",
   "confirmation.change-unlock.confirm": "Confirm",
   "confirmation.change-unlock.error":
-    "Couldn't confirm this change. Try again.",
+    "Could not confirm this change. Try again.",
   "confirmation.decline": "Decline",
   "confirmation.decline-error":
-    "Ravenpass couldn't decline this request. Try again.",
+    "Ravenpass could not decline this request. Try again.",
 };

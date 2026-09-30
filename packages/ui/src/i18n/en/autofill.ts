@@ -14,18 +14,18 @@ export const autofill = {
   "autofill.search.for-app": "For this app",
   "autofill.search.everything": "All passwords",
   "autofill.search.error":
-    "Ravenpass couldn't search your passwords. Try again.",
+    "Ravenpass could not search your passwords. Try again.",
   "autofill.add-site.title": "Add {site} to “{label}”?",
   "autofill.add-site.detail": "You can fill this login on {site} from now on.",
   "autofill.add-site.confirm": "Add and fill",
   "autofill.add-site.error":
-    "Ravenpass couldn't add this site to the item. Try again.",
+    "Ravenpass could not add this site to the item. Try again.",
   "autofill.link.title": "Use for this app?",
   "autofill.link.detail":
     "Ravenpass will suggest “{label}” in this app from now on.",
   "autofill.link.confirm": "Use",
   "autofill.link.error":
-    "Ravenpass couldn't link this app to the item. Try again.",
+    "Ravenpass could not link this app to the item. Try again.",
   "autofill.no-code": "This item has no one-time code. Choose another.",
   "autofill.cancel": "Cancel",
   "autofill.close": "Close",
@@ -42,12 +42,13 @@ export const autofill = {
     "Ravenpass was updated while it was open. Restart Ravenpass and try again.",
   "autofill.failed.not-found": "This item is no longer in your vault.",
   "autofill.failed.sign-in":
-    "Ravenpass couldn't sign in with this passkey. Try again.",
+    "Ravenpass could not sign in with this passkey. Try again.",
   "autofill.failed.save-passkey":
-    "Ravenpass couldn't save this passkey. Try again.",
+    "Ravenpass could not save this passkey. Try again.",
   "autofill.failed.unverifiable":
     "This website asks you to confirm it's you. Set a PIN or turn on biometrics in Ravenpass, then try again.",
   "autofill.failed.unsupported":
-    "Ravenpass can't create the passkey this website requires. Use another sign-in method.",
-  "autofill.failed.other": "Ravenpass couldn't finish this request. Try again.",
+    "Ravenpass cannot create the passkey this website requires. Use another sign-in method.",
+  "autofill.failed.other":
+    "Ravenpass could not finish this request. Try again.",
 };

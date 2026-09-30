@@ -3,7 +3,7 @@ export const sharing = {
   "sharing.prompt.description":
     "Enter your PIN to send this file from {identity} to {site}.",
   "sharing.prompt.share": "Share",
-  "sharing.prompt.error": "Ravenpass couldn't share this file. Try again.",
+  "sharing.prompt.error": "Ravenpass could not share this file. Try again.",
   "sharing.prompt.save-passkey.title": "Save a passkey for {site}?",
   "sharing.prompt.save-passkey.description":
     "Enter your PIN to save a passkey for {site} in Ravenpass.",
@@ -19,5 +19,5 @@ export const sharing = {
     "Enter your PIN to let the browser extension fill {account} on {site}.",
   "sharing.prompt.fill.confirm": "Fill",
   "sharing.prompt.passkey.error":
-    "Ravenpass couldn't confirm this request. Try again.",
+    "Ravenpass could not confirm this request. Try again.",
 };

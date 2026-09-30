@@ -1,4 +1,4 @@
-import { Copy, Eye, EyeOff, NotebookText } from "lucide-react";
+import { Eye, EyeOff, NotebookText } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslator } from "../../i18n/translator.tsx";
 import { splitWords } from "../../seeds/phrase.ts";
@@ -6,7 +6,7 @@ import type { Note } from "../../vault-api.ts";
 import { Button } from "../ui/button.tsx";
 import { ScrollArea } from "../ui/scroll-area.tsx";
 import { type DetailControls, DetailHeader } from "./DetailHeader.tsx";
-import { RevealButton } from "./Fields.tsx";
+import { CopyButton, RevealButton } from "./Fields.tsx";
 
 /** NoteDetail owns a hidden note's reveal, so it ends with this pane. */
 export function NoteDetail({
@@ -54,6 +54,9 @@ export function NoteDetail({
               onToggle={() => setShown(false)}
             />
           )}
+          {note.body && (
+            <CopyButton label={t("note.copy")} busy={busy} onCopy={onCopy} />
+          )}
         </div>
         {covered ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 pb-6 text-center">
@@ -88,18 +91,6 @@ export function NoteDetail({
           </ScrollArea>
         )}
       </section>
-
-      <Button
-        type="button"
-        variant="raised"
-        size="pill"
-        className="shrink-0 text-[13px]"
-        disabled={busy || !note.body}
-        onClick={onCopy}
-      >
-        <Copy data-icon="inline-start" />
-        {t("note.copy")}
-      </Button>
     </article>
   );
 }

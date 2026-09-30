@@ -159,8 +159,8 @@ func TestStorageActionsNeedAWindow(t *testing.T) {
 	if _, err := service.SelectStorageLocation("local-file"); err == nil {
 		t.Error("a location was selected without a window")
 	}
-	if _, err := service.MoveStorageLocation("local-file"); err == nil {
-		t.Error("a vault was moved without a window")
+	if _, err := service.ChooseStorageMove("local-file"); err == nil {
+		t.Error("a move was chosen without a window")
 	}
 	if _, err := service.OpenVault(context.Background()); err == nil {
 		t.Error("a vault file was opened without a window")
@@ -266,6 +266,68 @@ func TestPickedLocationsKeepTheirProvidersName(t *testing.T) {
 	}
 	if _, err := service.SelectStorageLocation(string(storage.Document)); err == nil {
 		t.Fatal("a kind this device does not offer was selected")
+	}
+}
+
+func TestAMoveGoesOnceToTheLocationChosenBeforeIt(t *testing.T) {
+	home := t.TempDir()
+	service, files := newServiceWithStorage(t, filepath.Join(home, "storage.json"), filepath.Join(home, localfile.DefaultVaultName))
+	if err := files.Open(); err != nil {
+		t.Fatal(err)
+	}
+	phrase, err := service.BeginCreation()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := service.ConfirmCreation(phrase, UnlockChoice{Biometry: true}); err != nil {
+		t.Fatal(err)
+	}
+	notChosen := failurePrefix + string(failureLocationNotSelected)
+	if _, err := service.MoveStorageLocation(); err == nil || err.Error() != notChosen {
+		t.Fatalf("a move to no chosen location reported %v", err)
+	}
+
+	picked := storage.Target{Kind: storage.LocalFile, Path: filepath.Join(t.TempDir(), "Moved.rpv")}
+	picker := &pickedFiles{kinds: []storage.Kind{storage.LocalFile}}
+	service.files = picker
+	if chosen, err := service.ChooseStorageMove(string(storage.LocalFile)); err != nil || chosen {
+		t.Fatalf("a cancelled picker chose %v, %v", chosen, err)
+	}
+	if _, err := service.MoveStorageLocation(); err == nil || err.Error() != notChosen {
+		t.Fatalf("a move after a cancelled picker reported %v", err)
+	}
+	picker.created = picked
+	if chosen, err := service.ChooseStorageMove(string(storage.LocalFile)); err != nil || !chosen {
+		t.Fatalf("choosing a move = %v, %v", chosen, err)
+	}
+	change, err := service.MoveStorageLocation()
+	if err != nil || !change.Changed || change.Path != picked.Path {
+		t.Fatalf("moving to the chosen location = %+v, %v", change, err)
+	}
+	if _, err := service.MoveStorageLocation(); err == nil || err.Error() != notChosen {
+		t.Fatalf("a second move to the same choice reported %v", err)
+	}
+
+	if chosen, err := service.ChooseStorageMove(string(storage.LocalFile)); err != nil || !chosen {
+		t.Fatalf("choosing another move = %v, %v", chosen, err)
+	}
+	picker.created = storage.Target{}
+	if chosen, err := service.ChooseStorageMove(string(storage.LocalFile)); err != nil || chosen {
+		t.Fatalf("a cancelled picker chose %v, %v", chosen, err)
+	}
+	if _, err := service.MoveStorageLocation(); err == nil || err.Error() != notChosen {
+		t.Fatalf("a move after a cancelled second pick reported %v", err)
+	}
+
+	picker.created = storage.Target{Kind: storage.LocalFile, Path: filepath.Join(t.TempDir(), "Later.rpv")}
+	if chosen, err := service.ChooseStorageMove(string(storage.LocalFile)); err != nil || !chosen {
+		t.Fatalf("choosing a move before locking = %v, %v", chosen, err)
+	}
+	if err := service.Lock(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.MoveStorageLocation(); err == nil || err.Error() != notChosen {
+		t.Fatalf("a move chosen before the lock reported %v", err)
 	}
 }
 

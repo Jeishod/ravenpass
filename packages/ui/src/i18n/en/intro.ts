@@ -6,7 +6,7 @@ export const intro = {
   "intro.open": "Open it",
   "intro.open-busy": "Opening…",
   "intro.errors.open-failed":
-    "That file couldn't be opened. Select a Ravenpass vault file.",
+    "That file could not be opened. Select a Ravenpass vault file.",
   "intro.card.code": "One-time code",
   "intro.card.card": "Payment card",
   "intro.card.phrase": "Recovery key",

@@ -59,6 +59,8 @@ export function ConfirmationCard({ host }: { host: ConfirmationHost }) {
   );
 }
 
+type Answer = "pin" | "biometry" | "recovery" | "decline";
+
 /** RequestCard answers one request; Escape declines it. */
 function RequestCard({
   host,
@@ -76,12 +78,19 @@ function RequestCard({
   });
   const methods = methodsQuery.data ?? null;
   const [pin, setPin] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [rejections, setRejections] = useState(0);
+  // The answer being given; only its own control says it is busy.
+  const [answering, setAnswering] = useState<Answer | null>(null);
   const [error, setError] = useState("");
   const id = request.id;
+  const busy = answering !== null;
 
-  async function answer(action: () => Promise<void>, fallback: MessageKey) {
-    setBusy(true);
+  async function answer(
+    kind: Answer,
+    action: () => Promise<void>,
+    fallback: MessageKey,
+  ) {
+    setAnswering(kind);
     setError("");
     try {
       await action();
@@ -89,8 +98,9 @@ function RequestCard({
       if (failureCode(cause) === "confirmation-ended") return;
       setError(failure(cause, fallback));
       setPin("");
+      if (kind === "pin") setRejections((count) => count + 1);
       await client.invalidateQueries({ queryKey: methodsKey });
-      setBusy(false);
+      setAnswering(null);
     }
   }
 
@@ -98,6 +108,7 @@ function RequestCard({
     if (event.key !== "Escape" || busy) return;
     event.preventDefault();
     void answer(
+      "decline",
       () => host.declineConfirmation(id),
       "confirmation.decline-error",
     );
@@ -119,7 +130,7 @@ function RequestCard({
   function submitPin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || !ready) return;
-    void answer(() => host.confirmWithPin(id, pin), plan.error);
+    void answer("pin", () => host.confirmWithPin(id, pin), plan.error);
   }
 
   return (
@@ -169,6 +180,7 @@ function RequestCard({
             maxLength={methods?.pinMaxLength}
             attemptsLeft={methods?.pinAttemptsLeft}
             disabled={busy}
+            rejections={rejections}
           />
         </form>
       )}
@@ -188,11 +200,17 @@ function RequestCard({
           autoFocus={!plan.pin}
           disabled={busy}
           onClick={() =>
-            void answer(() => host.unlockFromConfirmation(id), plan.error)
+            void answer(
+              "biometry",
+              () => host.unlockFromConfirmation(id),
+              plan.error,
+            )
           }
         >
           <Fingerprint data-icon="inline-start" />
-          {busy ? t("unlock.action-busy") : t(plan.biometry)}
+          {answering === "biometry"
+            ? t("unlock.action-busy")
+            : t(plan.biometry)}
         </Button>
       )}
 
@@ -205,7 +223,11 @@ function RequestCard({
             className="text-muted-foreground hover:text-foreground"
             disabled={busy}
             onClick={() =>
-              void answer(() => host.recoverFromConfirmation(id), plan.error)
+              void answer(
+                "recovery",
+                () => host.recoverFromConfirmation(id),
+                plan.error,
+              )
             }
           >
             {t("unlock.recovery.action")}
@@ -221,6 +243,7 @@ function RequestCard({
             disabled={busy}
             onClick={() =>
               void answer(
+                "decline",
                 () => host.declineConfirmation(id),
                 "confirmation.decline-error",
               )
@@ -236,7 +259,7 @@ function RequestCard({
               size="pill"
               disabled={busy || !ready}
             >
-              {busy ? t("unlock.pin.busy") : t(plan.pin.confirm)}
+              {answering === "pin" ? t("unlock.pin.busy") : t(plan.pin.confirm)}
             </Button>
           )}
         </div>

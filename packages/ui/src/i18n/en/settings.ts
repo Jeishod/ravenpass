@@ -54,7 +54,7 @@ export const settings = {
     "On this device, you'll open the vault with the new key.",
   "recovery-key-change.verify.pin": "Enter your PIN to continue.",
   "recovery-key-change.verify.current":
-    "This device has no PIN or biometrics, so enter your current recovery key to continue.",
+    "This device cannot confirm it's you with a PIN or biometrics, so enter your current recovery key to continue.",
   "recovery-key-change.verify.pin-then-biometry":
     "Enter your PIN so it keeps working after the key change. Then confirm it's you with biometrics.",
   "recovery-key-change.verify.busy": "Checking…",
@@ -70,6 +70,8 @@ export const settings = {
     "Ravenpass could not make a new recovery key. Try again.",
   "recovery-key-change.errors.finish-failed":
     "Ravenpass could not change your recovery key. Try again.",
+  "recovery-key-change.errors.cancel-failed":
+    "Ravenpass could not discard the new recovery key. Your current key stays in use. Restart the app.",
   "settings.clipboard.clear": "Clear copied data",
   "settings.clipboard.clear.detail":
     "Clears the clipboard only while it still contains data copied from Ravenpass.",
@@ -81,7 +83,7 @@ export const settings = {
   "settings.screenshots.detail":
     "Your vault also shows in recent apps. Autofill screens stay hidden.",
   "settings.screenshots.error":
-    "Ravenpass couldn't change screenshots. Try again.",
+    "Ravenpass could not change screenshots. Try again.",
   "settings.site-icons": "Website icon",
   "settings.site-icons.detail":
     "Load icons directly from the websites saved in your vault.",
@@ -125,7 +127,7 @@ export const settings = {
   "settings.shortcuts.taken":
     "{keys} is already used for “{action}”. Choose another shortcut.",
   "settings.security.heading": "Unlock",
-  "settings.security.summary": "Unlock methods and automatic locking.",
+  "settings.security.summary": "Ways to unlock and automatic locking.",
   "settings.autofill.heading": "Autofill",
   "settings.autofill.summary":
     "Fill in passwords, passkeys and codes in apps and browsers.",
@@ -141,7 +143,7 @@ export const settings = {
   "settings.autofill.system.chrome":
     "In Chrome, also turn on “Autofill using another service”.",
   "settings.autofill.system.error":
-    "Ravenpass couldn't open Android settings. Try again.",
+    "Ravenpass could not open Android settings. Try again.",
   "settings.autofill.suggestions.title": "System AutoFill",
   "settings.autofill.suggestions": "Suggest saved accounts",
   "settings.autofill.suggestions.detail":
@@ -149,14 +151,14 @@ export const settings = {
   "settings.autofill.suggestions.note":
     "macOS stores website addresses and usernames outside your encrypted vault. Passwords, codes, and passkey private keys stay in Ravenpass.",
   "settings.autofill.error.suggestions":
-    "Ravenpass couldn't change account suggestions. Try again.",
+    "Ravenpass could not change account suggestions. Try again.",
   "settings.extensions.title": "Linked browser extensions",
   "settings.extensions.linked": "Linked {date}",
   "settings.extensions.unlink": "Unlink…",
   "settings.extensions.unlink.action": "Unlink {name}, linked {date}",
   "settings.extensions.unlink.title": "Unlink {name}?",
   "settings.extensions.unlink.detail":
-    "This extension will stop filling passwords from Ravenpass. Other linked extensions will keep working.",
+    "This extension, linked {date}, will stop filling passwords from Ravenpass. Other linked extensions will keep working.",
   "settings.extensions.unlink.confirm": "Unlink",
   "settings.extensions.unlink.cancel": "Cancel",
   "settings.extensions.rename": "Rename…",
@@ -176,7 +178,7 @@ export const settings = {
   "settings.extensions.confirm-fills.unavailable":
     "Set a PIN or turn on biometrics to use this.",
   "settings.extensions.unreachable":
-    "Linked extensions can't reach Ravenpass right now. Another app may be using its connection.",
+    "Linked extensions cannot reach Ravenpass right now. Another app may be using its connection.",
   "settings.extensions.dialog.title": "Link browser extension",
   "settings.extensions.dialog.step.open":
     "Open the Ravenpass extension in your browser.",
@@ -193,19 +195,19 @@ export const settings = {
   "settings.extensions.dialog.cancel": "Cancel",
   "settings.extensions.linked-notice": "{name} linked.",
   "settings.extensions.error.link":
-    "Ravenpass couldn't link the extension. Try again.",
+    "Ravenpass could not link the extension. Try again.",
   "settings.extensions.error.unlink":
-    "Ravenpass couldn't unlink this extension. Try again.",
+    "Ravenpass could not unlink this extension. Try again.",
   "settings.extensions.error.copy":
-    "Ravenpass couldn't copy the key. Select it and copy it yourself.",
+    "Ravenpass could not copy the key. Select it and copy it yourself.",
   "settings.extensions.error.sign-in":
-    "Ravenpass couldn't change how you sign in on websites. Try again.",
+    "Ravenpass could not change how you sign in on websites. Try again.",
   "settings.extensions.error.confirm-fills":
-    "Ravenpass couldn't change fill confirmation. Try again.",
+    "Ravenpass could not change fill confirmation. Try again.",
   "settings.extensions.error.rename":
-    "Ravenpass couldn't rename this extension. Try again.",
+    "Ravenpass could not rename this extension. Try again.",
   "settings.extensions.error.load":
-    "Ravenpass couldn't load linked extensions. Open this section again to retry.",
+    "Ravenpass could not load linked extensions. Open this section again to retry.",
   "settings.storage.type": "Type",
   "settings.storage.file": "Vault file",
   "settings.storage.checking": "Checking…",
@@ -245,7 +247,7 @@ export const settings = {
   "storage.type.document.detail":
     "Google Drive, Dropbox, or a folder on this device.",
   "storage.type.document.concurrent":
-    "Changes made on two devices at the same time can't be merged.",
+    "Changes made on two devices at the same time cannot be merged.",
   "settings.privacy.heading": "Privacy",
   "settings.privacy.summary": "Website data and copied information.",
   "settings.privacy.clipboard": "Clipboard",
@@ -272,7 +274,7 @@ export const settings = {
   "settings.backup.note.open":
     "Automatic backups are saved while your vault is open.",
   "settings.backup.error":
-    "Ravenpass couldn't change automatic backups. Try again.",
+    "Ravenpass could not change automatic backups. Try again.",
   "settings.about.heading": "About",
   "settings.about.summary": "Version, license and support.",
   "settings.about.version": "Version",

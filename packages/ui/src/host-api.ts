@@ -149,8 +149,8 @@ async function selectStorageLocation(
   return storageChange(await service.SelectStorageLocation(kind));
 }
 
-async function moveStorageLocation(kind: StorageKind): Promise<StorageChange> {
-  return storageChange(await service.MoveStorageLocation(kind));
+async function moveStorageLocation(): Promise<StorageChange> {
+  return storageChange(await service.MoveStorageLocation());
 }
 
 async function createVault(): Promise<StorageChange> {
@@ -624,6 +624,7 @@ export const hostApi: VaultApi = {
   },
   setShortcut: service.SetShortcut,
   selectStorageLocation,
+  chooseStorageMove: service.ChooseStorageMove,
   moveStorageLocation,
   retryStorage: service.RetryStorage,
   switchVault: service.SwitchVault,

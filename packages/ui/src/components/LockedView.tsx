@@ -34,6 +34,8 @@ import { VaultScreen } from "./VaultScreen.tsx";
 
 const arrive: BezierDefinition = [0.22, 1, 0.36, 1];
 
+type Way = "pin" | "device" | "changed-vault";
+
 const headings: Record<LockedScreen, MessageKey> = {
   missing: "unlock.missing.title",
   restore: "unlock.restore.title",
@@ -67,7 +69,10 @@ export function LockedView({
   const methodsRead = useQuery(unlockMethodsQuery(api));
   const methods = methodsRead.data ?? null;
   const [pin, setPin] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [rejections, setRejections] = useState(0);
+  // The way in being tried; only its own control says it is busy.
+  const [trying, setTrying] = useState<Way | null>(null);
+  const busy = trying !== null;
   const [changingVault, setChangingVault] = useState(false);
   // Set while a vault the owner chose waits to ask for its device unlock.
   const [chosenToUnlock, setChosenToUnlock] = useState(unlockAtOnce);
@@ -118,11 +123,12 @@ export function LockedView({
 
   // The owner closing a prompt the screen raised by itself is no failure.
   async function attempt(
+    way: Way,
     open: () => Promise<void>,
     message: MessageKey,
     raisedBySelf = false,
   ) {
-    setBusy(true);
+    setTrying(way);
     try {
       await open();
     } catch (reason) {
@@ -134,11 +140,12 @@ export function LockedView({
         shake();
       }
       setPin("");
+      if (way === "pin") setRejections((count) => count + 1);
       await Promise.all([
         methodsRead.refetch(),
         code === "vault-missing" ? storageRead.refetch() : null,
       ]);
-      setBusy(false);
+      setTrying(null);
       return;
     }
     await swingOpen();
@@ -148,18 +155,27 @@ export function LockedView({
   // Any device unlock answers a chosen vault's wait for one, so the screen never asks twice.
   function unlock(raisedBySelf = false) {
     setChosenToUnlock(false);
-    return attempt(() => api.unlock(), "unlock.errors.failed", raisedBySelf);
+    return attempt(
+      "device",
+      () => api.unlock(),
+      "unlock.errors.failed",
+      raisedBySelf,
+    );
   }
 
   // The host lets go of the held vault whether or not it opens.
   function adoptChangedVault() {
-    return attempt(async () => {
-      try {
-        await api.adoptChangedVault();
-      } finally {
-        setDiverged(false);
-      }
-    }, "unlock.errors.adopt-failed");
+    return attempt(
+      "changed-vault",
+      async () => {
+        try {
+          await api.adoptChangedVault();
+        } finally {
+          setDiverged(false);
+        }
+      },
+      "unlock.errors.adopt-failed",
+    );
   }
 
   // Locking lets go of the vault the host holds for the owner's answer.
@@ -207,7 +223,7 @@ export function LockedView({
 
   function unlockWithPin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    return attempt(() => api.unlockWithPin(pin), "unlock.errors.failed");
+    return attempt("pin", () => api.unlockWithPin(pin), "unlock.errors.failed");
   }
 
   // A switch that leaves the vault locked keeps this screen; `chosen` marks a vault the owner chose to open.
@@ -313,13 +329,14 @@ export function LockedView({
               maxLength={methods.pinMaxLength}
               attemptsLeft={methods.pinAttemptsLeft}
               disabled={halted}
+              rejections={rejections}
             />
             <ForwardButton
               type="submit"
               className="mt-1 h-11 w-full text-sm"
               disabled={halted || !pinReady}
             >
-              {busy ? t("unlock.pin.busy") : t("unlock.pin.action")}
+              {trying === "pin" ? t("unlock.pin.busy") : t("unlock.pin.action")}
             </ForwardButton>
           </form>
         )}
@@ -334,7 +351,7 @@ export function LockedView({
             disabled={halted}
           >
             <Fingerprint data-icon="inline-start" />
-            {busy
+            {trying === "device"
               ? t("unlock.action-busy")
               : actions.pin
                 ? t("unlock.biometry-action")

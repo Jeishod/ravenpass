@@ -15,9 +15,9 @@ export const extension = {
   "extension.link.error.not-open":
     "Ravenpass isn't open on this computer. Open it and try again.",
   "extension.link.error.failed":
-    "Ravenpass couldn't link this extension. Try again.",
+    "Ravenpass could not link this extension. Try again.",
   "extension.link.error.clipboard":
-    "Ravenpass couldn't read the clipboard. Paste the key into the field.",
+    "Ravenpass could not read the clipboard. Paste the key into the field.",
   "extension.linked.title": "Linked to Ravenpass",
   "extension.linked.description":
     "Ravenpass suggests passwords in sign-in fields.",
@@ -32,14 +32,14 @@ export const extension = {
   "extension.chrome-autofill.detail":
     "Chrome's own suggestions won't cover Ravenpass's.",
   "extension.chrome-autofill.error":
-    "Ravenpass couldn't change this setting. Try again.",
+    "Ravenpass could not change this setting. Try again.",
   "extension.unlink.action": "Unlink",
   "extension.unlink.title": "Unlink this extension?",
   "extension.unlink.detail":
     "Ravenpass stops suggesting passwords in this browser. To link it again, you'll need a new key from Ravenpass.",
   "extension.unlink.cancel": "Cancel",
   "extension.unlink.error":
-    "Ravenpass couldn't unlink this extension. Try again.",
+    "Ravenpass could not unlink this extension. Try again.",
   "extension.unlinked":
     "This extension was unlinked in Ravenpass. Link it again to use it.",
   "extension.menu.label": "Passwords for {site}",
@@ -48,7 +48,7 @@ export const extension = {
   "extension.menu.locked.detail": "Unlock it to fill in passwords.",
   "extension.menu.locked.action": "Unlock",
   "extension.menu.unlock.error":
-    "Ravenpass couldn't unlock. Open the Ravenpass app and try again.",
+    "Ravenpass could not unlock. Open the Ravenpass app and try again.",
   "extension.menu.not-open.title": "Ravenpass isn't open",
   "extension.menu.not-open.detail":
     "Open it on this computer to fill in passwords.",
@@ -112,15 +112,15 @@ export const extension = {
   "extension.passkey.confirm-in-ravenpass.detail":
     "Enter your PIN in the Ravenpass window.",
   "extension.passkey.declined":
-    "Couldn't confirm it's you. Try again or use another device.",
+    "Could not confirm it's you. Try again or use another device.",
   "extension.passkey.unverifiable":
     "Turn on biometrics or set a PIN in Ravenpass to use passkeys.",
   "extension.passkey.full":
     "This item holds as many passkeys as it can. Save the passkey as a new item.",
   "extension.passkey.sign-in.error":
-    "Ravenpass couldn't sign in with this passkey. Try again.",
+    "Ravenpass could not sign in with this passkey. Try again.",
   "extension.passkey.save.error":
-    "Ravenpass couldn't save this passkey. Try again.",
+    "Ravenpass could not save this passkey. Try again.",
   "extension.upload.menu": "Upload identity file…",
   "extension.upload.identities.label": "Identity files for {site}",
   "extension.upload.files.label": "Files of {identity}",
@@ -131,7 +131,7 @@ export const extension = {
   "extension.upload.empty.title": "No identities yet",
   "extension.upload.empty.detail":
     "Photos and document scans from identities you add to Ravenpass appear here.",
-  "extension.upload.no-destination.title": "You can't upload a file here",
+  "extension.upload.no-destination.title": "You cannot upload a file here",
   "extension.upload.no-destination.detail":
     "Right-click a file field or a drop area.",
   "extension.upload.locked.detail": "Unlock it to upload files.",
@@ -149,13 +149,13 @@ export const extension = {
   "extension.upload.declined.title": "Sharing was declined",
   "extension.upload.declined.detail":
     "Nothing was shared. Choose the file again to retry.",
-  "extension.upload.unverifiable.title": "Ravenpass can't confirm it's you",
+  "extension.upload.unverifiable.title": "Ravenpass cannot confirm it's you",
   "extension.upload.unverifiable.detail":
     "Turn on biometrics or set a PIN in Ravenpass to upload files.",
   "extension.upload.not-taken.title": "The page didn't accept the file",
   "extension.upload.not-taken.detail":
     "Right-click the file field itself and try again.",
   "extension.upload.identities.error":
-    "Ravenpass couldn't list your identities. Try again.",
-  "extension.upload.error": "Ravenpass couldn't upload this file. Try again.",
+    "Ravenpass could not list your identities. Try again.",
+  "extension.upload.error": "Ravenpass could not upload this file. Try again.",
 };

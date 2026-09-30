@@ -53,16 +53,19 @@ export function LinkScreen({ onLinked }: { onLinked: () => Promise<void> }) {
     event.preventDefault();
     if (empty) return;
     setBusy(true);
-    const answer = await ask({ kind: "link", key }).catch(
-      () => ({ ok: false, reason: "failed" }) as const,
-    );
-    if (answer.ok) {
-      void clipboard.release();
-      await onLinked();
-    } else {
-      toast.error(t(refusals[answer.reason]));
+    try {
+      const answer = await ask({ kind: "link", key }).catch(
+        () => ({ ok: false, reason: "failed" }) as const,
+      );
+      if (answer.ok) {
+        void clipboard.release();
+        await onLinked();
+      } else {
+        toast.error(t(refusals[answer.reason]));
+      }
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   return (

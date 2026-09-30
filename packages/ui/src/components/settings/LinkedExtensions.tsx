@@ -252,7 +252,9 @@ export function LinkedExtensions({
         })}
         detail={
           unlinking
-            ? `${t("settings.extensions.linked", { date: linkedDate(unlinking) })}. ${t("settings.extensions.unlink.detail", { name: unlinking.name })}`
+            ? t("settings.extensions.unlink.detail", {
+                date: linkedDate(unlinking),
+              })
             : ""
         }
         confirm={t("settings.extensions.unlink.confirm")}

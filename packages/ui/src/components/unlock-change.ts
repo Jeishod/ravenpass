@@ -12,6 +12,20 @@ export function ownerCheck(methods: UnlockMethods): OwnerCheck {
   return methods.pinSet ? "pin" : "recovery-key";
 }
 
+/** The ways in a vault that exists keeps on: each one whose loss would leave no other that works on the device. */
+export function heldWays(methods: UnlockMethods | null): {
+  biometry: boolean;
+  pin: boolean;
+} {
+  const biometryWorks = Boolean(
+    methods?.biometryEnabled && methods.biometryAvailable,
+  );
+  return {
+    biometry: Boolean(methods?.biometryEnabled && !methods.pinSet),
+    pin: Boolean(methods?.pinSet) && !biometryWorks,
+  };
+}
+
 /** The choice of no way in; committed in recovery, it keeps the ways in the device holds. */
 export const noUnlockChoice: UnlockChoice = { biometry: false, pin: "" };
 

@@ -108,7 +108,7 @@
     "ru": "Передача файла"
   },
   "system.prompt.share-file": {
-    "en": "Confirm it’s you to share “{file}” from {identity} with {site}.",
+    "en": "Confirm it's you to share “{file}” from {identity} with {site}.",
     "ru": "Подтвердите, что это вы, чтобы передать сайту {site} файл «{file}» из профиля «{identity}»."
   },
   "system.prompt.save-passkey.title": {
@@ -116,7 +116,7 @@
     "ru": "Сохранение ключа доступа"
   },
   "system.prompt.save-passkey": {
-    "en": "Confirm it’s you to save a passkey for {site}.",
+    "en": "Confirm it's you to save a passkey for {site}.",
     "ru": "Подтвердите, что это вы, чтобы сохранить ключ доступа для сайта {site}."
   },
   "system.prompt.sign-in-passkey.title": {
@@ -124,7 +124,7 @@
     "ru": "Вход с ключом доступа"
   },
   "system.prompt.sign-in-passkey": {
-    "en": "Confirm it’s you to sign in to {site} as {account}.",
+    "en": "Confirm it's you to sign in to {site} as {account}.",
     "ru": "Подтвердите, что это вы, чтобы войти на сайт {site} как «{account}»."
   },
   "system.prompt.fill-sign-in.title": {
@@ -132,7 +132,7 @@
     "ru": "Вставка данных входа"
   },
   "system.prompt.fill-sign-in": {
-    "en": "Confirm it’s you to fill the sign-in for {account} on {site}.",
+    "en": "Confirm it's you to fill the sign-in for {account} on {site}.",
     "ru": "Подтвердите, что это вы, чтобы вставить данные входа «{account}» на сайте {site}."
   },
   "system.prompt.change-unlock.title": {
@@ -140,7 +140,7 @@
     "ru": "Изменение разблокировки"
   },
   "system.prompt.change-unlock": {
-    "en": "Confirm it’s you to change how your vault unlocks.",
+    "en": "Confirm it's you to change how your vault unlocks.",
     "ru": "Подтвердите, что это вы, чтобы изменить способ разблокировки хранилища."
   },
   "system.prompt.create-vault.title": {
@@ -148,7 +148,7 @@
     "ru": "Создание хранилища"
   },
   "system.prompt.create-vault": {
-    "en": "Confirm it’s you to create a new vault.",
+    "en": "Confirm it's you to create a new vault.",
     "ru": "Подтвердите, что это вы, чтобы создать новое хранилище."
   },
   "system.prompt.open-vault.title": {
@@ -156,7 +156,7 @@
     "ru": "Открытие файла хранилища"
   },
   "system.prompt.open-vault": {
-    "en": "Confirm it’s you to open another vault file.",
+    "en": "Confirm it's you to open another vault file.",
     "ru": "Подтвердите, что это вы, чтобы открыть другой файл хранилища."
   },
   "system.prompt.delete-vault.title": {
@@ -164,7 +164,7 @@
     "ru": "Удаление хранилища"
   },
   "system.prompt.delete-vault": {
-    "en": "Confirm it’s you to delete the vault “{vault}”.",
+    "en": "Confirm it's you to delete the vault “{vault}”.",
     "ru": "Подтвердите, что это вы, чтобы удалить хранилище «{vault}»."
   },
   "system.prompt.unlock-vault.title": {
@@ -172,7 +172,7 @@
     "ru": "Разблокировка Ravenpass"
   },
   "system.prompt.unlock-vault": {
-    "en": "Confirm it’s you to unlock your vault.",
+    "en": "Confirm it's you to unlock your vault.",
     "ru": "Подтвердите, что это вы, чтобы разблокировать хранилище."
   },
   "system.place.on-this-device": {

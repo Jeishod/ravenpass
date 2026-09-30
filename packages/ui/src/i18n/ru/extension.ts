@@ -7,7 +7,7 @@ export const extension: typeof english = {
   "extension.link.key": "Ключ подключения",
   "extension.link.paste": "Вставить ключ",
   "extension.link.action": "Привязать",
-  "extension.link.busy": "Привязка…",
+  "extension.link.busy": "Привязываем…",
   "extension.link.note": "Ключ можно использовать один раз в течение 5 минут.",
   "extension.link.error.not-key":
     "Это не ключ Ravenpass. Скопируйте его в Ravenpass ещё раз.",

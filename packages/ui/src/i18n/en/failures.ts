@@ -92,11 +92,11 @@ export const failures = {
   "failure.copy-failed":
     "The value could not be copied. Open the item and copy it by hand.",
   "failure.website-missing":
-    "This password has no site saved. Add the site's address to the item, then try again.",
+    "This password has no website saved. Add the website's address to the item, then try again.",
   "failure.website-unsupported":
-    "That site address is not a web address Ravenpass can open. Change it to an address that starts with https://, or copy it and open it yourself.",
+    "That website address is not a web address Ravenpass can open. Change it to an address that starts with https://, or copy it and open it yourself.",
   "failure.website-open-failed":
-    "That site could not be opened. Copy the address and open it yourself.",
+    "That website could not be opened. Copy the address and open it yourself.",
   "failure.export-canceled":
     "Export canceled. Choose a file location to save a copy.",
   "failure.export-stale":
@@ -158,11 +158,11 @@ export const failures = {
   "failure.pin-too-soon":
     "Too many wrong PINs in a row. Wait a few seconds, then try again.",
   "failure.pin-removed":
-    "Too many incorrect PIN attempts. Your PIN was removed. Use biometrics or restore access with your recovery key.",
+    "Too many incorrect PIN attempts, so your PIN was removed. Unlock another way, or restore access with your recovery key.",
   "failure.pin-missing":
     "This vault has no PIN on this device. Unlock another way, or set a PIN in Settings.",
   "failure.biometry-unavailable":
-    "This device cannot verify who you are. Set up a password and biometrics in system settings, or use a PIN.",
+    "This device cannot verify who you are. Turn on its screen lock in your device's settings, or use a PIN.",
   "failure.biometry-disabled":
     "Biometrics are turned off for this vault. Use your PIN, or turn them back on in Settings.",
   "failure.unlock-method-required":
@@ -172,9 +172,9 @@ export const failures = {
   "failure.owner-unverified":
     "Your identity wasn't confirmed, so nothing changed. Try again.",
   "failure.import-source-unknown":
-    "Ravenpass can't import from this app. Choose one of the apps in the list.",
+    "Ravenpass cannot import from this app. Choose one of the apps in the list.",
   "failure.import-unrecognized":
-    "Ravenpass can't read this file as a {source} export. Choose the file {source} saved.",
+    "Ravenpass cannot read this file as a {source} export. Choose the file {source} saved.",
   "failure.import-too-large":
     "This file is too large to import. Export fewer items into a smaller file and try again.",
   "failure.import-account-bound":
@@ -182,22 +182,22 @@ export const failures = {
   "failure.import-password-wrong":
     "That password doesn't open this file. Enter the password you set when exporting it.",
   "failure.import-encryption-unsupported":
-    "This file is encrypted in a way Ravenpass can't open. Export it again from {source}.",
+    "This file is encrypted in a way Ravenpass cannot open. Export it again from {source}.",
   "failure.import-not-active": "Choose the file again to import it.",
   "failure.import-empty":
-    "Nothing to import: every item is already in Ravenpass or can't be imported.",
+    "Nothing to import: every item is already in Ravenpass or cannot be imported.",
   "failure.import-limit":
-    "Your vault can't hold everything in this file. Turn off grouping by folder, or remove items from the export and try again.",
+    "Your vault cannot hold everything in this file. Turn off grouping by folder, or remove items from the export and try again.",
   "failure.import-trash-failed":
-    "Ravenpass couldn't move the file to the Trash. Delete it yourself.",
+    "Ravenpass could not move the file to the Trash. Delete it yourself.",
   "failure.import-reveal-failed":
-    "Ravenpass couldn't open the folder that holds the file. Find the file and delete it.",
+    "Ravenpass could not open the folder that holds the file. Find the file and delete it.",
   "failure.link-expired":
     "This connection key expired. Create a new one to link an extension.",
   "failure.link-canceled":
     "Linking was canceled. Create a new key to link an extension.",
   "failure.link-unavailable":
-    "Ravenpass can't open its connection for extensions. Another app may be using it. Try again later.",
+    "Ravenpass cannot open its connection for extensions. Another app may be using it. Try again later.",
   "failure.extension-not-found":
     "That extension is already unlinked. Reopen Settings to see the extensions still linked.",
   "failure.extension-name-invalid":

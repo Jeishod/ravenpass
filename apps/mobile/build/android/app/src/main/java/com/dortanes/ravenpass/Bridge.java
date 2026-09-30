@@ -10,6 +10,7 @@ import android.content.ComponentName;
 import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ProviderInfo;
 import android.content.res.Resources;
@@ -474,6 +475,26 @@ final class Bridge {
     /** "light", "dark" or "system". */
     static void setAppearance(byte[] appearanceUtf8) {
         AppAppearance.follow(application, utf8(appearanceUtf8));
+    }
+
+    /** Returns the name an installed app shows, empty for a package this device does not have or cannot see. */
+    static byte[] appName(byte[] packageUtf8) {
+        PackageManager packages = application.getPackageManager();
+        try {
+            return packages.getApplicationLabel(applicationInfo(packages, utf8(packageUtf8))).toString()
+                    .getBytes(StandardCharsets.UTF_8);
+        } catch (PackageManager.NameNotFoundException e) {
+            return new byte[0];
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static ApplicationInfo applicationInfo(PackageManager packages, String packageName)
+            throws PackageManager.NameNotFoundException {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return packages.getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0));
+        }
+        return packages.getApplicationInfo(packageName, 0);
     }
 
     /** Returns the Android release and API level, such as "15 (API 35)". */

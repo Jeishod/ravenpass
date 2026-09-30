@@ -56,10 +56,10 @@ export const settings: typeof english = {
     "На этом устройстве хранилище будет открываться новым ключом.",
   "recovery-key-change.verify.pin": "Введите пин-код, чтобы продолжить.",
   "recovery-key-change.verify.current":
-    "На этом устройстве нет ни пин-кода, ни биометрии, поэтому введите текущий ключ восстановления.",
+    "Подтвердить вашу личность пин-кодом или биометрией на этом устройстве нельзя, поэтому введите текущий ключ восстановления.",
   "recovery-key-change.verify.pin-then-biometry":
-    "Введите пин-код, чтобы он работал и после смены ключа. Затем подтвердите, что это вы, биометрией.",
-  "recovery-key-change.verify.busy": "Проверка…",
+    "Введите пин-код, чтобы он продолжил работать с новым ключом. Затем подтвердите личность биометрией.",
+  "recovery-key-change.verify.busy": "Проверяем…",
   "recovery-key-change.phrase.title": "Сохраните новый ключ восстановления",
   "recovery-key-change.phrase.description":
     "Хранилище перейдёт на этот ключ, когда вы его проверите.",
@@ -72,6 +72,8 @@ export const settings: typeof english = {
     "Не удалось создать новый ключ восстановления. Повторите попытку.",
   "recovery-key-change.errors.finish-failed":
     "Не удалось сменить ключ восстановления. Повторите попытку.",
+  "recovery-key-change.errors.cancel-failed":
+    "Не удалось отменить новый ключ восстановления. Текущий ключ остаётся в силе. Перезапустите приложение.",
   "settings.clipboard.clear": "Удалять скопированные данные",
   "settings.clipboard.clear.detail":
     "Буфер очищается, только если в нём всё ещё находятся данные, скопированные из Ravenpass.",
@@ -84,7 +86,7 @@ export const settings: typeof english = {
   "settings.screenshots.detail":
     "Хранилище также будет видно в недавних приложениях. Экраны автозаполнения останутся скрытыми.",
   "settings.screenshots.error":
-    "Ravenpass не удалось изменить настройку снимков экрана. Попробуйте ещё раз.",
+    "Не удалось изменить настройку снимков экрана. Повторите попытку.",
   "settings.site-icons": "Значок сайта",
   "settings.site-icons.detail":
     "Загружать значки с сайтов, сохранённых в хранилище.",
@@ -160,7 +162,7 @@ export const settings: typeof english = {
   "settings.extensions.unlink.action": "Отвязать {name}, привязано {date}",
   "settings.extensions.unlink.title": "Отвязать «{name}»?",
   "settings.extensions.unlink.detail":
-    "Это расширение перестанет подставлять пароли из Ravenpass. Остальные привязанные расширения продолжат работать.",
+    "Это расширение, привязанное {date}, перестанет подставлять пароли из Ravenpass. Остальные привязанные расширения продолжат работать.",
   "settings.extensions.unlink.confirm": "Отвязать",
   "settings.extensions.unlink.cancel": "Отмена",
   "settings.extensions.rename": "Переименовать…",
@@ -214,8 +216,8 @@ export const settings: typeof english = {
   "settings.storage.type": "Тип",
   "settings.storage.file": "Файл хранилища",
   "settings.storage.checking": "Проверяем…",
-  "settings.storage.move": "Переместить…",
-  "settings.storage.moving": "Перемещаем…",
+  "settings.storage.move": "Перенести…",
+  "settings.storage.moving": "Переносим…",
   "settings.storage.unrestricted":
     "В этом расположении нельзя ограничить доступ к файлу.",
   "settings.storage.shared.title": "Перенести хранилище?",

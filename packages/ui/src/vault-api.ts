@@ -158,10 +158,14 @@ export interface CredentialInput {
   apps: LinkedApp[];
 }
 
-/** `signer` is the lower-case hexadecimal SHA-256 digest of one signing certificate. */
+/**
+ * `signer` is the lower-case hexadecimal SHA-256 digest of one signing certificate; `name` is what the app installed on
+ * this device shows, empty where the device has no such app.
+ */
 export interface LinkedApp {
   package: string;
   signer: string;
+  name: string;
 }
 
 export interface CredentialSummary {
@@ -843,8 +847,10 @@ export interface VaultApi {
   setShortcut(action: string, hotkey: string): Promise<void>;
   /** Uses the host's picker for a kind in `StorageStatus.chosen`, else a free file where the host keeps vaults. */
   selectStorageLocation(kind: StorageKind): Promise<StorageChange>;
-  /** Chooses the destination as `selectStorageLocation` does. */
-  moveStorageLocation(kind: StorageKind): Promise<StorageChange>;
+  /** Chooses where the open vault goes as `selectStorageLocation` does, for `moveStorageLocation`; false where the owner chose nothing. */
+  chooseStorageMove(kind: StorageKind): Promise<boolean>;
+  /** Moves the open vault to the location `chooseStorageMove` chose last. */
+  moveStorageLocation(): Promise<StorageChange>;
   retryStorage(): Promise<void>;
   switchVault(path: string): Promise<void>;
   /** Whether any location the device knows holds a vault. */

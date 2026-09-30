@@ -33,7 +33,7 @@ test("a PIN is tried once it is long enough", async () => {
   screen.enter("123456");
   await screen.submit();
   assert.deepEqual(attempts, ["123456"]);
-  assert.equal(screen.state.get().busy, true);
+  assert.equal(screen.state.get().trying, "pin");
 });
 
 test("a wrong PIN clears the field and counts the attempts left", async () => {
@@ -44,7 +44,8 @@ test("a wrong PIN clears the field and counts the attempts left", async () => {
   assert.equal(view.pin, "");
   assert.equal(view.note, "wrong-pin");
   assert.equal(view.methods.pinAttemptsLeft, 2);
-  assert.equal(view.busy, false);
+  assert.equal(view.trying, null);
+  assert.equal(view.rejections, 1);
 });
 
 test("a PIN tried too soon clears the field and keeps the attempts left", async () => {
@@ -59,7 +60,7 @@ test("a PIN tried too soon clears the field and keeps the attempts left", async 
   assert.equal(view.note, "too-soon");
   assert.equal(view.methods.pinAttemptsLeft, 5);
   assert.equal(view.methods.pinSet, true);
-  assert.equal(view.busy, false);
+  assert.equal(view.trying, null);
   screen.enter("123456");
   await screen.submit();
   assert.deepEqual(attempts, ["000000", "123456"]);
@@ -83,7 +84,16 @@ test("a device unlock the owner turned down is no failure", async () => {
   const { screen } = screenAnswering({ kind: "canceled" });
   await screen.unlockWithDevice();
   assert.equal(screen.state.get().note, null);
-  assert.equal(screen.state.get().busy, false);
+  assert.equal(screen.state.get().trying, null);
+});
+
+test("a failed device unlock turns down no PIN", async () => {
+  const { screen, attempts } = screenAnswering({ kind: "failed" });
+  const tried = screen.unlockWithDevice();
+  assert.equal(screen.state.get().trying, "device");
+  await tried;
+  assert.deepEqual(attempts, [""]);
+  assert.equal(screen.state.get().rejections, 0);
 });
 
 test("the device's own unlock is not offered where the vault does not take it", async () => {

@@ -114,7 +114,7 @@ test("an unlock offers what the vault opens with and the recovery key", () => {
   const both = planCard(unlock, methods({}));
   assert.equal(both.title, "confirmation.unlock.title");
   assert.deepEqual(both.pin, { confirm: "unlock.pin.action" });
-  assert.equal(both.biometry, "unlock-methods.biometry.title");
+  assert.equal(both.biometry, "unlock.biometry-action");
   assert.equal(both.recovery, true);
   assert.equal(both.noMethod, false);
   assert.equal(both.error, "unlock.errors.failed");

@@ -36,6 +36,7 @@ static jmethodID preferredLanguagesMethod;
 static jmethodID setLanguageMethod;
 static jmethodID setAppearanceMethod;
 static jmethodID systemVersionMethod;
+static jmethodID appNameMethod;
 static jmethodID thirdPartyNoticesMethod;
 
 // Clears a pending Java exception and reports whether there was one.
@@ -89,6 +90,7 @@ int ravenpass_bridge_attach(JNIEnv *env, jclass bridge) {
     setLanguageMethod = staticMethod(env, "setLanguage", "([B)V");
     setAppearanceMethod = staticMethod(env, "setAppearance", "([B)V");
     systemVersionMethod = staticMethod(env, "systemVersion", "()[B");
+    appNameMethod = staticMethod(env, "appName", "([B)[B");
     thirdPartyNoticesMethod = staticMethod(env, "thirdPartyNotices", "()[B");
     return (*env)->ExceptionCheck(env) ? -1 : 0;
 }
@@ -408,6 +410,19 @@ uint8_t *ravenpass_bridge_system_version(JNIEnv *env, size_t *length) {
         return NULL;
     }
     return ravenpass_bridge_copy(env, version, length);
+}
+
+uint8_t *ravenpass_bridge_app_name(JNIEnv *env, const void *package, jsize packageLength, size_t *length) {
+    *length = 0;
+    jbyteArray packageBytes = newArray(env, package, packageLength);
+    if (threw(env)) {
+        return NULL;
+    }
+    jbyteArray name = (*env)->CallStaticObjectMethod(env, bridgeClass, appNameMethod, packageBytes);
+    if (threw(env)) {
+        return NULL;
+    }
+    return ravenpass_bridge_copy(env, name, length);
 }
 
 int32_t ravenpass_bridge_third_party_notices(JNIEnv *env, uint8_t **payload, size_t *payloadLength) {

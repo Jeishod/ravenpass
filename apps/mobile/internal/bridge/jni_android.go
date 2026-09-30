@@ -394,6 +394,17 @@ func systemVersion() []byte {
 	return out.take()
 }
 
+func appName(pkg string) []byte {
+	t, s := enter()
+	if s != statusOK {
+		return nil
+	}
+	defer t.leave()
+	var out payload
+	out.data = C.ravenpass_bridge_app_name(t.env, stringData(pkg), C.jsize(len(pkg)), &out.length)
+	return out.take()
+}
+
 func thirdPartyNotices() (status, []byte) {
 	t, s := enter()
 	if s != statusOK {

@@ -70,6 +70,7 @@ export function StorageFileRow({
   busyLabel,
   emptyLabel,
   onAction,
+  disabled = false,
   busy = false,
 }: {
   label: string;
@@ -78,6 +79,8 @@ export function StorageFileRow({
   busyLabel: string;
   emptyLabel: string;
   onAction?: () => void;
+  disabled?: boolean;
+  /** Set while the action itself runs. */
   busy?: boolean;
 }) {
   return (
@@ -100,7 +103,7 @@ export function StorageFileRow({
           size="pill-sm"
           variant="quiet"
           onClick={onAction}
-          disabled={busy}
+          disabled={disabled || busy}
         >
           {busy ? busyLabel : actionLabel}
         </Button>

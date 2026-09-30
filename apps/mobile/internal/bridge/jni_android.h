@@ -55,6 +55,8 @@ void ravenpass_bridge_set_language(JNIEnv *env, const void *tag, jsize tagLength
 void ravenpass_bridge_set_appearance(JNIEnv *env, const void *appearance, jsize appearanceLength);
 // Returns NULL where Bridge throws.
 uint8_t *ravenpass_bridge_system_version(JNIEnv *env, size_t *length);
+// Returns NULL where the device names no such app or Bridge throws.
+uint8_t *ravenpass_bridge_app_name(JNIEnv *env, const void *package, jsize packageLength, size_t *length);
 // Returns -1 where Bridge throws or JNI fails.
 int32_t ravenpass_bridge_third_party_notices(JNIEnv *env, uint8_t **payload, size_t *payloadLength);
 void ravenpass_bridge_release(uint8_t *payload, size_t length);

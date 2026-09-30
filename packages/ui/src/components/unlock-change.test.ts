@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { UnlockMethods } from "../vault-api.ts";
-import { bindsBiometry, ownerCheck } from "./unlock-change.ts";
+import { bindsBiometry, heldWays, ownerCheck } from "./unlock-change.ts";
 
 const methods: UnlockMethods = {
   biometryAvailable: true,
@@ -31,6 +31,26 @@ test("a vault with no way in the device can use asks for its recovery key", () =
     ownerCheck({ ...methods, biometryAvailable: false, pinSet: false }),
     "recovery-key",
   );
+});
+
+test("a way in stays on only while no other works on the device", () => {
+  assert.deepEqual(heldWays(methods), { biometry: false, pin: false });
+  assert.deepEqual(heldWays({ ...methods, pinSet: false }), {
+    biometry: true,
+    pin: false,
+  });
+  assert.deepEqual(heldWays({ ...methods, biometryEnabled: false }), {
+    biometry: false,
+    pin: true,
+  });
+  assert.deepEqual(heldWays(null), { biometry: false, pin: false });
+});
+
+test("device authentication the device cannot give holds the PIN on and may itself be turned off", () => {
+  assert.deepEqual(heldWays({ ...methods, biometryAvailable: false }), {
+    biometry: false,
+    pin: true,
+  });
 });
 
 test("choosing device authentication creates its key", () => {

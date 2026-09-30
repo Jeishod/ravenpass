@@ -1,4 +1,5 @@
 import { cn } from "cn";
+import { useEffect, useRef } from "react";
 import { useTranslator } from "../i18n/translator.tsx";
 import { AccessField } from "./AccessField.tsx";
 import { PinAttemptsWarning } from "./PinAttemptsWarning.tsx";
@@ -14,6 +15,7 @@ export function PinField({
   label,
   autoFocus = true,
   invalid = false,
+  rejections = 0,
   className,
 }: {
   id: string;
@@ -28,16 +30,27 @@ export function PinField({
   /** Unset for a field that follows another in its form. */
   autoFocus?: boolean;
   invalid?: boolean;
+  /** Counts the PINs turned down; each one gives the field the focus for the next try once it is enabled. */
+  rejections?: number;
   /** Sizes the field beyond the access field's own height. */
   className?: string;
 }) {
   const { t } = useTranslator();
+  const field = useRef<HTMLInputElement>(null);
+  const answered = useRef(rejections);
+  useEffect(() => {
+    if (disabled || answered.current === rejections) return;
+    answered.current = rejections;
+    field.current?.focus();
+  }, [disabled, rejections]);
+
   return (
     <>
       <label className="sr-only" htmlFor={id}>
         {label ?? t("unlock.pin.label")}
       </label>
       <AccessField
+        ref={field}
         id={id}
         className={cn("font-mono text-[19px] tracking-[0.4em]", className)}
         type="password"

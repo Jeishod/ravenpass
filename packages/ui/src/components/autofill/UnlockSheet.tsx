@@ -32,7 +32,8 @@ export function UnlockSheet({
     () => new UnlockScreen(opening, (pin) => api.unlock(pin)),
   );
   const view = useSyncExternalStore(screen.state.subscribe, screen.state.get);
-  const { methods, busy } = view;
+  const { methods, trying } = view;
+  const busy = trying !== null;
 
   useEffect(() => {
     if (!opening.methods.pinSet) return;
@@ -71,6 +72,7 @@ export function UnlockSheet({
             maxLength={methods.pinMaxLength}
             attemptsLeft={methods.pinAttemptsLeft}
             disabled={busy}
+            rejections={view.rejections}
           />
         )}
         {view.note && <AutofillNote>{t(notes[view.note])}</AutofillNote>}
@@ -94,7 +96,11 @@ export function UnlockSheet({
             onClick={() => void screen.unlockWithDevice()}
           >
             <Fingerprint data-icon="inline-start" />
-            {t("unlock.biometry-action")}
+            {t(
+              trying === "device"
+                ? "unlock.action-busy"
+                : "unlock.biometry-action",
+            )}
           </Button>
         )}
         {methods.pinSet && (
@@ -105,7 +111,7 @@ export function UnlockSheet({
             size="pill"
             disabled={busy || !screen.pinReady}
           >
-            {busy
+            {trying === "pin"
               ? t("unlock.pin.busy")
               : t(
                   opening.verify

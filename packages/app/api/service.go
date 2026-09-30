@@ -106,6 +106,7 @@ type Service struct {
 	clipboard   clipboardState
 	pasteboard  Pasteboard
 	files       VaultFiles
+	moveTo      chosenMove
 	places      VaultPlaces
 	openURL     func(address string) error
 	hold        func() (release func())
@@ -134,6 +135,7 @@ type Service struct {
 	backups *backups.Keeper
 	folders BackupFolders
 	about   About
+	apps    AppNames
 }
 
 // Confirmations is how the service reaches the confirmation panel.
@@ -185,6 +187,8 @@ type Host struct {
 	BackupFolders BackupFolders
 	// About is nil where the process runs from a macOS app bundle.
 	About About
+	// Apps is nil on a host that runs no Android apps.
+	Apps AppNames
 	// TemporaryPicks reports a file dialog that hands over a plaintext copy the service deletes after reading.
 	TemporaryPicks bool
 	Offers         Capabilities
@@ -287,6 +291,10 @@ func New(vault *vaultservice.Service, settings *preferences.Store, icons *siteic
 	if host.About != nil {
 		about = host.About
 	}
+	var apps AppNames = noAppNames{}
+	if host.Apps != nil {
+		apps = host.Apps
+	}
 	offers.LockWhenHidden = settings.LocksWhenHidden()
 	s := &Service{
 		vault: vault, preferences: settings, icons: icons, brands: siteicons.NewFetcher(), currentApp: host.CurrentApp,
@@ -295,7 +303,7 @@ func New(vault *vaultservice.Service, settings *preferences.Store, icons *siteic
 		shows: shows, screens: screens, systemAutofill: systemAutofill,
 		confirmations: confirmations.Queue, panel: panel,
 		showMain: confirmations.ShowMain, reloadMain: confirmations.ReloadMain, owner: confirmations.Owner,
-		backups: host.Backups, folders: folders, about: about,
+		backups: host.Backups, folders: folders, about: about, apps: apps,
 	}
 	s.confirmations.UnlockOnDevice(s.unlockOnDevice)
 	vault.OnLock(s.lockedInside)
@@ -479,7 +487,7 @@ func (s *Service) ReadCredential(id string) (Credential, error) {
 	if err != nil {
 		return Credential{}, err
 	}
-	return Credential{ID: item.ID.String(), Groups: groups, Site: item.Site(), Passkeys: passkeyViews(item.Passkeys), CredentialInput: fromVaultInput(item.CredentialInput)}, nil
+	return Credential{ID: item.ID.String(), Groups: groups, Site: item.Site(), Passkeys: passkeyViews(item.Passkeys), CredentialInput: fromVaultInput(item.CredentialInput, s.apps)}, nil
 }
 
 // copyableFields reads each copyable field; "totp" yields the current code, never the shared secret.
@@ -775,13 +783,15 @@ func (s *Service) lockedInside() {
 	s.clearClipboard()
 }
 
-// dropOpenVault ends pending confirmations and drops the staged photo, scans and import and any link share.
+// dropOpenVault ends pending confirmations and drops the staged photo, scans and import, any link share and the
+// location a move was to go to.
 func (s *Service) dropOpenVault() {
 	s.confirmations.EndAll(vaultservice.ErrNotReady)
 	s.photo.clear()
 	s.scans.clear()
 	s.imports.clear()
 	s.links.Cancel()
+	s.moveTo.drop()
 }
 
 func (input CredentialInput) toVault() vault.CredentialInput {
@@ -792,12 +802,12 @@ func (input CredentialInput) toVault() vault.CredentialInput {
 	}
 }
 
-// fromVaultInput reports websites and apps as arrays, never null.
-func fromVaultInput(input vault.CredentialInput) CredentialInput {
+// fromVaultInput reports websites and apps as arrays, never null, with each app named as apps name it.
+func fromVaultInput(input vault.CredentialInput, apps AppNames) CredentialInput {
 	return CredentialInput{
 		Label: input.Label, Websites: append([]string{}, input.Websites...), Login: input.Login,
 		Email: input.Email, Password: input.Password, Notes: input.Notes,
-		TOTP: input.TOTP, Apps: linkedApps(input.Apps),
+		TOTP: input.TOTP, Apps: linkedApps(input.Apps, apps),
 	}
 }
 

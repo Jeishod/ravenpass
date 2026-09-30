@@ -250,7 +250,9 @@ export function VaultView({
   const [query, setQuery] = useState("");
   const [working, setWorking] = useState(false);
   const [syncState, setSyncState] = useState<StorageSyncState>("synced");
-  const [movingStorage, setMovingStorage] = useState(false);
+  const [storageMove, setStorageMove] = useState<"choosing" | "moving" | null>(
+    null,
+  );
   const [addingCode, setAddingCode] = useState<string | null>(null);
   const selection = useMemo(
     () => new SelectionQueue(() => api.clearSelection()),
@@ -277,7 +279,8 @@ export function VaultView({
     bankDetailsSetting.changing ||
     shortcutSetting.changing ||
     interfaceSizeChange.isPending ||
-    appearanceChange.isPending;
+    appearanceChange.isPending ||
+    storageMove === "choosing";
   const unlockPending = unlockChange.isPending
     ? (unlockChange.variables?.pending ?? "other")
     : null;
@@ -593,15 +596,27 @@ export function VaultView({
 
   function setBiometry(enabled: boolean, current: string) {
     return changeUnlock(
-      () => api.setBiometryUnlock(enabled, current),
+      async () => {
+        await api.setBiometryUnlock(enabled, current);
+        toast.success(
+          t(
+            enabled
+              ? "unlock-methods.biometry.on"
+              : "unlock-methods.biometry.off",
+          ),
+        );
+      },
       enabled ? "biometry-on" : "other",
     );
   }
 
+  // The move shows only once the owner has chosen where it goes.
   async function moveStorage(kind: StorageKind) {
-    setMovingStorage(true);
+    setStorageMove("choosing");
     try {
-      const change = await api.moveStorageLocation(kind);
+      if (!(await api.chooseStorageMove(kind))) return;
+      setStorageMove("moving");
+      const change = await api.moveStorageLocation();
       if (change.changed) {
         await storageRead.refetch();
         toast.success(
@@ -615,7 +630,7 @@ export function VaultView({
     } catch (cause) {
       report(cause, "workspace.error.storage-move");
     } finally {
-      setMovingStorage(false);
+      setStorageMove(null);
     }
   }
 
@@ -834,7 +849,7 @@ export function VaultView({
                   onBankDetails={bankDetailsSetting.change}
                   screenshots={api}
                   storage={storage}
-                  movingStorage={movingStorage}
+                  movingStorage={storageMove === "moving"}
                   onMoveStorage={moveStorage}
                   groups={groups}
                   items={[

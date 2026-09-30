@@ -11,7 +11,7 @@ export const confirmation: typeof english = {
     "Введите текущий пин-код, чтобы подтвердить изменение.",
   "confirmation.change-unlock.confirm": "Подтвердить",
   "confirmation.change-unlock.error":
-    "Не удалось подтвердить изменение. Попробуйте ещё раз.",
+    "Не удалось подтвердить изменение. Повторите попытку.",
   "confirmation.decline": "Отклонить",
   "confirmation.decline-error":
     "Не удалось отклонить запрос. Повторите попытку.",

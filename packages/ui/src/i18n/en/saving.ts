@@ -6,8 +6,8 @@ export const saving = {
   "saving.target.add-site": "Add site to “{label}”",
   "saving.name": "Name",
   "saving.account": "Login",
-  "saving.name.refused": "Ravenpass can't use this name. Enter another.",
-  "saving.account.refused": "Ravenpass can't use this login. Enter another.",
+  "saving.name.refused": "Ravenpass cannot use this name. Enter another.",
+  "saving.account.refused": "Ravenpass cannot use this login. Enter another.",
   "saving.save": "Save",
   "saving.update": "Update",
   "saving.add-site": "Add site",
@@ -15,5 +15,5 @@ export const saving = {
   "saving.saved.created": "Saved to Ravenpass",
   "saving.saved.updated": "Password updated",
   "saving.saved.site-added": "Site added",
-  "saving.error": "Ravenpass couldn't save this password. Try again.",
+  "saving.error": "Ravenpass could not save this password. Try again.",
 };

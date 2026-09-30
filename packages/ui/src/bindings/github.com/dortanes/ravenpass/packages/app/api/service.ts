@@ -173,6 +173,14 @@ export function ChooseScanPhoto(): $CancellablePromise<$models.ScanDraft> {
 }
 
 /**
+ * ChooseStorageMove asks where an open vault goes, in a storage of kind, and holds the answer for
+ * MoveStorageLocation; false where the owner chose nothing, which holds no location.
+ */
+export function ChooseStorageMove(kind: string): $CancellablePromise<boolean> {
+    return $Call.ByID(1064516981, kind);
+}
+
+/**
  * ChooseSystemAutofill shows the system autofill screen, holding the host until the owner leaves it.
  */
 export function ChooseSystemAutofill(): $CancellablePromise<void> {
@@ -680,10 +688,10 @@ export function LookupBank(site: string): $CancellablePromise<$models.BankLookup
 }
 
 /**
- * MoveStorageLocation moves an open vault to another location, in a storage of kind.
+ * MoveStorageLocation moves an open vault to the location ChooseStorageMove holds.
  */
-export function MoveStorageLocation(kind: string): $CancellablePromise<$models.StorageChange> {
-    return $Call.ByID(1592179435, kind);
+export function MoveStorageLocation(): $CancellablePromise<$models.StorageChange> {
+    return $Call.ByID(1592179435);
 }
 
 /**

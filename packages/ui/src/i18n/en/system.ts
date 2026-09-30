@@ -32,28 +32,28 @@ export const system = {
   "system.reason.unlock-vault": "unlock your vault",
   "system.prompt.share-file.title": "Share a file",
   "system.prompt.share-file":
-    "Confirm it’s you to share “{file}” from {identity} with {site}.",
+    "Confirm it's you to share “{file}” from {identity} with {site}.",
   "system.prompt.save-passkey.title": "Save a passkey",
   "system.prompt.save-passkey":
-    "Confirm it’s you to save a passkey for {site}.",
+    "Confirm it's you to save a passkey for {site}.",
   "system.prompt.sign-in-passkey.title": "Sign in with a passkey",
   "system.prompt.sign-in-passkey":
-    "Confirm it’s you to sign in to {site} as {account}.",
+    "Confirm it's you to sign in to {site} as {account}.",
   "system.prompt.fill-sign-in.title": "Fill a sign-in",
   "system.prompt.fill-sign-in":
-    "Confirm it’s you to fill the sign-in for {account} on {site}.",
+    "Confirm it's you to fill the sign-in for {account} on {site}.",
   "system.prompt.change-unlock.title": "Change unlock settings",
   "system.prompt.change-unlock":
-    "Confirm it’s you to change how your vault unlocks.",
+    "Confirm it's you to change how your vault unlocks.",
   "system.prompt.create-vault.title": "Create a vault",
-  "system.prompt.create-vault": "Confirm it’s you to create a new vault.",
+  "system.prompt.create-vault": "Confirm it's you to create a new vault.",
   "system.prompt.open-vault.title": "Open a vault file",
-  "system.prompt.open-vault": "Confirm it’s you to open another vault file.",
+  "system.prompt.open-vault": "Confirm it's you to open another vault file.",
   "system.prompt.delete-vault.title": "Delete a vault",
   "system.prompt.delete-vault":
-    "Confirm it’s you to delete the vault “{vault}”.",
+    "Confirm it's you to delete the vault “{vault}”.",
   "system.prompt.unlock-vault.title": "Unlock Ravenpass",
-  "system.prompt.unlock-vault": "Confirm it’s you to unlock your vault.",
+  "system.prompt.unlock-vault": "Confirm it's you to unlock your vault.",
   "system.place.on-this-device": "On this device",
   "system.recovery-file.title": "Ravenpass recovery key",
   "system.recovery-file.notice":

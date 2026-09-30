@@ -107,7 +107,7 @@ export function CredentialDetail({
                 onAction={() => onOpenWebsite(address)}
                 accessory={
                   <CopyButton
-                    label={t("credential.copy.website")}
+                    label={t("credential.copy.website", { address })}
                     busy={busy}
                     onCopy={() =>
                       onCopy(`website:${index}`, "workspace.copy.website")

@@ -80,14 +80,15 @@ export const access = {
   "unlock-methods.biometry.description":
     "Your device's biometrics or its password.",
   "unlock-methods.biometry.unavailable":
-    "Biometrics are unavailable. Use your PIN.",
+    "Biometrics are unavailable on this device.",
   "unlock-methods.biometry.creating":
     "Creating a key in your device's secure hardware. This can take up to 20 seconds.",
   "unlock-methods.biometry.last":
     "This is the only way to unlock on this device. Set a PIN to turn off biometrics.",
   "unlock-methods.pin.last":
     "This is the only way to unlock on this device. Turn on biometrics to turn off the PIN.",
-  "unlock-methods.pin.only": "PIN is the only available unlock method.",
+  "unlock-methods.pin.only":
+    "The PIN is the only way to unlock that works on this device.",
   "unlock-methods.pin.title": "PIN",
   "unlock-methods.pin.description":
     "{min} to {max, plural, one {# digit} other {# digits}}.",
@@ -103,6 +104,8 @@ export const access = {
   "unlock-methods.pin.mismatch": "The PINs don't match.",
   "unlock-methods.pin.saved": "PIN saved.",
   "unlock-methods.pin.removed": "PIN removed.",
+  "unlock-methods.biometry.on": "Biometrics turned on.",
+  "unlock-methods.biometry.off": "Biometrics turned off.",
   "unlock-methods.confirm.title": "Enter your PIN",
   "unlock-methods.confirm.description":
     "Confirm it's you to change how this vault unlocks.",
@@ -122,9 +125,9 @@ export const access = {
   "unlock.biometry-action": "Use biometrics",
   "unlock.back": "Back to start",
   "unlock.restore.title": "Restore access to this vault",
-  "unlock.restore.reason": "This device has no unlock method for this vault.",
+  "unlock.restore.reason": "This device has no way to unlock this vault.",
   "unlock.restore.next":
-    "Enter your recovery key and set up a new unlock method.",
+    "Enter your recovery key and set up a new way to unlock.",
   "unlock.missing.title": "Vault file not found",
   "unlock.missing.reason":
     "The vault file is no longer at {location}. It may have been moved on another device.",
@@ -138,7 +141,7 @@ export const access = {
     "{count, plural, one {# attempt} other {# attempts}} left before the PIN is removed.",
   "unlock.none.title": "No way to open this vault on this device",
   "unlock.none.description":
-    "Use your recovery key to set up a new unlock method.",
+    "Use your recovery key to set up a new way to unlock.",
   "unlock.recovery.title": "Restore access",
   "unlock.recovery.description":
     "Enter your 24-word recovery key to open this vault.",
@@ -174,12 +177,12 @@ export const access = {
   "recovery.actions.checking": "Checking…",
   "recovery.unlock.title": "Choose how to open this vault",
   "recovery.unlock.description":
-    "Choose an unlock method for this device. You can change it later in Settings.",
+    "Choose how to unlock on this device. You can change it later in Settings.",
   "recovery.actions.restore": "Restore access",
   "recovery.restoring": "Restoring access to your vault",
   "recovery.errors.phrase-missing": "Enter your 24-word recovery key first.",
   "recovery.errors.local-failed":
-    "The local vault could not be opened. Check your words and try again.",
+    "Ravenpass could not open the vault. Try again.",
   "recovery.errors.confirm-failed":
     "Ravenpass could not finish recovery. Restart the app before trying again.",
   "recovery.errors.cancel-failed":
@@ -204,5 +207,5 @@ export const access = {
   "storage-unavailable.errors.create-failed":
     "Ravenpass could not start a new vault. Try again.",
   "storage-unavailable.errors.open-failed":
-    "That file couldn't be opened. Select a Ravenpass vault file.",
+    "That file could not be opened. Select a Ravenpass vault file.",
 };

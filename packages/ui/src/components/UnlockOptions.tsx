@@ -18,7 +18,7 @@ import {
 import { recoveryKeyWords } from "./recovery-challenge.ts";
 import { Button } from "./ui/button.tsx";
 import { Switch } from "./ui/switch.tsx";
-import { ownerCheck, type UnlockPending } from "./unlock-change.ts";
+import { heldWays, ownerCheck, type UnlockPending } from "./unlock-change.ts";
 
 const noWords = PhraseEntry.empty(recoveryKeyWords);
 
@@ -66,10 +66,9 @@ export function UnlockOptions({
   // Device authentication that comes back leaves nothing to ask for.
   if (held !== null && !askPin && !askKey) setHeld(null);
   // The last way in cannot be given up, so its switch is held where nothing would replace it.
-  const biometryIsLast =
-    keepOne && Boolean(methods?.biometryEnabled) && !methods?.pinSet;
-  const pinIsLast =
-    keepOne && Boolean(methods?.pinSet) && !methods?.biometryEnabled;
+  const kept = keepOne ? heldWays(methods) : { biometry: false, pin: false };
+  const biometryIsLast = kept.biometry;
+  const pinIsLast = kept.pin;
 
   function apply(change: HeldChange) {
     if (askPin || askKey) {
@@ -115,7 +114,9 @@ export function UnlockOptions({
             checked={Boolean(methods?.biometryEnabled) || enablingBiometry}
             aria-busy={enablingBiometry || undefined}
             disabled={
-              busyOrUnknown || !methods?.biometryAvailable || biometryIsLast
+              busyOrUnknown ||
+              (!methods?.biometryAvailable && !methods?.biometryEnabled) ||
+              biometryIsLast
             }
             onCheckedChange={(enabled) =>
               apply((current) => onBiometry(enabled, current))
@@ -222,6 +223,7 @@ function PinDialog({
   const [pin, setPin] = useState("");
   const [repeat, setRepeat] = useState("");
   const [saving, setSaving] = useState(false);
+  const [rejections, setRejections] = useState(0);
 
   const check = checkNewPin(pin, repeat, minimum);
   const mismatched = check === "mismatched";
@@ -240,8 +242,12 @@ function PinDialog({
     if (!ready || saving) return;
     setSaving(true);
     try {
-      if (await onSave(pin, askCurrent ? current : "")) close();
-      else setCurrent("");
+      if (await onSave(pin, askCurrent ? current : "")) {
+        close();
+      } else {
+        setCurrent("");
+        setRejections((count) => count + 1);
+      }
     } finally {
       setSaving(false);
     }
@@ -276,6 +282,7 @@ function PinDialog({
               maxLength={maximum}
               attemptsLeft={attemptsLeft}
               disabled={saving}
+              rejections={rejections}
             />
           )}
           <PinField
@@ -472,6 +479,7 @@ function CurrentPinDialog({
   const id = useId();
   const [current, setCurrent] = useState("");
   const [saving, setSaving] = useState(false);
+  const [rejections, setRejections] = useState(0);
   const ready = current.length >= minimum;
 
   function close() {
@@ -484,8 +492,12 @@ function CurrentPinDialog({
     if (!ready || saving) return;
     setSaving(true);
     try {
-      if (await onConfirm(current)) close();
-      else setCurrent("");
+      if (await onConfirm(current)) {
+        close();
+      } else {
+        setCurrent("");
+        setRejections((count) => count + 1);
+      }
     } finally {
       setSaving(false);
     }
@@ -516,6 +528,7 @@ function CurrentPinDialog({
             maxLength={maximum}
             attemptsLeft={attemptsLeft}
             disabled={saving}
+            rejections={rejections}
           />
           {saving && note && (
             <p

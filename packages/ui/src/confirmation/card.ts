@@ -106,7 +106,7 @@ export function planCard(
     pin: pinSet ? { confirm: "unlock.pin.action" } : null,
     biometry: biometry
       ? pinSet
-        ? "unlock-methods.biometry.title"
+        ? "unlock.biometry-action"
         : "unlock.action"
       : null,
     recovery: true,

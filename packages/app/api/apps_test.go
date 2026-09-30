@@ -64,6 +64,33 @@ func TestACredentialShowsItsLinkedAppsAndAnEditDropsButNeverAddsThem(t *testing.
 	}
 }
 
+type installedApps map[string]string
+
+func (apps installedApps) Name(pkg string) string { return apps[pkg] }
+
+func TestALinkedAppIsNamedAsTheAppInstalledOnTheDevice(t *testing.T) {
+	service := newReadyService(t)
+	service.apps = installedApps{"com.example.mail": "Example Mail"}
+	created, err := service.vault.CreateCredential(vault.CredentialInput{Label: "Mail", Password: "secret", Apps: []vault.App{
+		{Package: "com.example.mail", Signer: [32]byte{0xab}},
+		{Package: "com.example.chat", Signer: [32]byte{0xcd}},
+	}}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	credential, err := service.ReadCredential(created.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(credential.Apps) != 2 || credential.Apps[0].Name != "Example Mail" || credential.Apps[1].Name != "" {
+		t.Fatalf("apps = %+v, want the installed one named and the other not", credential.Apps)
+	}
+	input := credential.CredentialInput
+	if err := service.UpdateCredential(created.String(), input, nil, nil); err != nil {
+		t.Fatalf("an edit that sends back the named apps failed: %v", err)
+	}
+}
+
 func TestANewCredentialNamesNoApp(t *testing.T) {
 	service := newReadyService(t)
 	_, err := service.CreateCredential(CredentialInput{Label: "Mail", Password: "secret", Apps: []LinkedApp{{Package: "com.example.mail", Signer: "ab" + strings.Repeat("00", 31)}}}, nil)

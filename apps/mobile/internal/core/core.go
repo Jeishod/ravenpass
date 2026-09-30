@@ -185,6 +185,7 @@ func build() (*Core, error) {
 		Printer:       bridge.Printer{},
 		BackupFolders: folders,
 		About:         bridge.About{},
+		Apps:          bridge.Apps{},
 		// Wails' browser manager runs desktop tools; its Android bridge sends an ACTION_VIEW intent.
 		OpenURL: func(address string) error {
 			application.Android.OpenURL(address)
