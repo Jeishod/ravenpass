@@ -88,22 +88,25 @@ export function LockedRow({
 }) {
   const { t } = useTranslator();
   return (
-    <StateRow
-      icon={Lock}
-      title={t("extension.menu.locked.title")}
-      detail={detail}
-      action={
+    <div className="grid gap-1">
+      <StateRow
+        icon={Lock}
+        title={t("extension.menu.locked.title")}
+        detail={detail}
+      />
+      <div className="px-2 pb-1.5">
         <Button
           type="button"
-          variant="quiet"
+          variant="raised"
           size="pill-sm"
+          className="w-full"
           data-menu-item
           onClick={onUnlock}
         >
           {t("extension.menu.locked.action")}
         </Button>
-      }
-    />
+      </div>
+    </div>
   );
 }
 
