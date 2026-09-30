@@ -160,15 +160,15 @@ func (s *store) head(expected *[sha256.Size]byte) ([]byte, error) {
 	return current, nil
 }
 
-// load reports an empty or gone document as storage.ErrNotFound; an unreadable one must stay an error or a new vault
-// overwrites it.
+// load reports a gone document as storage.ErrNotFound and an empty one as storage.ErrEmptyFile; an unreadable one must
+// stay an error or a new vault overwrites it.
 func (s *store) load() ([]byte, error) {
 	content, err := s.read()
 	if err != nil {
 		return nil, err
 	}
 	if len(content) == 0 {
-		return nil, storage.ErrNotFound
+		return nil, storage.ErrEmptyFile
 	}
 	return content, nil
 }
@@ -190,8 +190,9 @@ func (s *store) failedWrite(previous []byte, writeErr error) error {
 	return fmt.Errorf("%w: %v", storage.ErrDurabilityUncertain, writeErr)
 }
 
+// remove treats a document its provider no longer has as removed, as storage.Store.Remove asks.
 func (s *store) remove() error {
-	if err := s.backend.provider.Delete(s.address); err != nil {
+	if err := s.backend.provider.Delete(s.address); err != nil && !errors.Is(err, storage.ErrNotFound) {
 		return fmt.Errorf("remove vault document: %w", err)
 	}
 	return nil

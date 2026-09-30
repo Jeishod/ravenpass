@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/dortanes/ravenpass/packages/app/api"
@@ -23,13 +24,17 @@ import (
 // lookupWait bounds the Asset Links lookup within the 5 seconds Android gives a whole fill answer.
 const lookupWait = 1500 * time.Millisecond
 
+// followWait bounds the wait for the vault file within the same deadline, beside lookupWait; a slower read goes on
+// after the request is answered from the vault as it is open.
+const followWait = 1500 * time.Millisecond
+
 // maxIconBytes is a siteicons.IconSize square's raw RGBA size; a larger PNG is left out of an answer.
 const (
 	maxIconBytes       = siteicons.IconSize * siteicons.IconSize * 4
 	maxAnswerIconBytes = 256 << 10
 )
 
-// waitingSender is the one sender of the sign-ins that wait for the vault to open.
+// waitingSender is the one sender of the sign-ins that wait for the save screen.
 const waitingSender = "system"
 
 // Handler answers Java's JSON requests, dispatched on their "op", with JSON answers headed by a "status".
@@ -46,7 +51,11 @@ type Handler struct {
 	follow    func()
 	requested func()
 	screens   screens
-	waiting   *captures.Held[autofill.Capture]
+	waiting   *captures.Held[pendingSave]
+
+	followMu sync.Mutex
+	// following closes once the file read under way ends; nil while none runs.
+	following chan struct{}
 }
 
 // Options are the dependencies of a Handler.
@@ -74,22 +83,48 @@ func NewHandler(options Options) *Handler {
 		service: options.Service, vault: options.Vault, owner: options.Owner, icons: options.Icons, page: options.Page,
 		links: options.Links, reason: options.Reason, words: options.Words, opened: options.Opened, follow: options.Follow,
 		requested: options.Requested, screens: screens{hold: options.Hold},
-		waiting: captures.New[autofill.Capture](captures.Lifetime),
+		waiting: captures.New[pendingSave](captures.Lifetime),
 	}
 }
 
-// Call answers one JSON request by its op; malformed JSON or an unknown op answers a failed status.
-func (h *Handler) Call(request []byte) []byte {
+// opOf is the op a request names, false for malformed JSON.
+func opOf(request []byte) (string, bool) {
 	var head struct {
 		Op string `json:"op"`
 	}
 	if err := json.Unmarshal(request, &head); err != nil {
+		return "", false
+	}
+	return head.Op, true
+}
+
+// ScreenNotice reports whether request is a screen's shown or hidden notice, which Java sends from the main thread, and
+// which of the two it is.
+func ScreenNotice(request []byte) (shown, notice bool) {
+	op, _ := opOf(request)
+	return op == "shown", op == "shown" || op == "hidden"
+}
+
+// ShowScreens holds the automatic lock for count screens shown before the handler existed.
+func (h *Handler) ShowScreens(count int) {
+	for range count {
+		h.screens.show()
+	}
+}
+
+// Noted answers a screen notice.
+func Noted() []byte { return encode(outcome{Status: statusOK}) }
+
+// Call answers one JSON request by its op; malformed JSON or an unknown op answers a failed status.
+func (h *Handler) Call(request []byte) []byte {
+	op, ok := opOf(request)
+	if !ok {
 		return encode(outcome{Status: statusFailed})
 	}
 	defer h.requested()
-	switch head.Op {
+	switch op {
 	case "suggest":
-		h.follow()
+		h.followWithin()
 		return serve(request, h.suggest)
 	case "fill":
 		return serve(request, h.fill)
@@ -100,19 +135,19 @@ func (h *Handler) Call(request []byte) []byte {
 	case "link":
 		return serve(request, h.link)
 	case "capture":
-		h.follow()
+		h.followWithin()
 		return serve(request, h.capture)
 	case "offer":
 		return serve(request, h.offerWaiting)
 	case "save":
 		return serve(request, h.save)
 	case "passkeys":
-		h.follow()
+		h.followWithin()
 		return serve(request, h.passkeys)
 	case "sign-passkey":
 		return serve(request, h.signPasskey)
 	case "create-passkey":
-		h.follow()
+		h.followWithin()
 		return serve(request, h.createPasskey)
 	case "privileged-apps":
 		return encode(allowlistAnswer{outcome: outcome{Status: statusOK}, Allowlist: privilegedApps})
@@ -130,12 +165,35 @@ func (h *Handler) Call(request []byte) []byte {
 		return encode(h.appearance())
 	case "shown":
 		h.screens.show()
-		return encode(outcome{Status: statusOK})
+		return Noted()
 	case "hidden":
 		h.screens.hide()
-		return encode(outcome{Status: statusOK})
+		return Noted()
 	default:
 		return encode(outcome{Status: statusFailed})
+	}
+}
+
+// followWithin brings the open vault up to its file, waiting at most followWait for the read; a request made while a
+// read runs waits on that one rather than starting another.
+func (h *Handler) followWithin() {
+	h.followMu.Lock()
+	followed := h.following
+	if followed == nil {
+		followed = make(chan struct{})
+		h.following = followed
+		go func() {
+			h.follow()
+			h.followMu.Lock()
+			h.following = nil
+			h.followMu.Unlock()
+			close(followed)
+		}()
+	}
+	h.followMu.Unlock()
+	select {
+	case <-followed:
+	case <-time.After(followWait):
 	}
 }
 
@@ -401,42 +459,60 @@ type captureRequest struct {
 	Password  string        `json:"password"`
 }
 
-// captureAnswer's Capture is the token of a sign-in waiting for the vault to open.
+// captureAnswer's Capture is the token the save screen asks for its sign-in by; Offer answers that screen alone.
 type captureAnswer struct {
 	outcome
 	Offer   *offerWire `json:"offer,omitempty"`
 	Capture string     `json:"capture,omitempty"`
 }
 
-// capture keeps a sign-in for a locked vault in memory only, until the save screen opens the vault.
+// pendingSave is a sign-in the save screen asks for by token, with the offer made for it while the vault was open.
+type pendingSave struct {
+	capture autofill.Capture
+	offer   *offerWire
+}
+
+// capture holds a sign-in in memory only and answers with a token alone, since the system keeps the save screen's
+// intent: the offer names items and accounts of the vault.
 func (h *Handler) capture(q captureRequest) captureAnswer {
 	requester, ok := q.Requester.requester()
 	if !ok || q.Password == "" {
 		return captureAnswer{outcome: outcome{Status: statusFailed}}
 	}
-	captured := autofill.Capture{Requester: requester, Account: q.Account, Password: q.Password}
+	pending := pendingSave{capture: autofill.Capture{Requester: requester, Account: q.Account, Password: q.Password}}
+	status := statusLocked
 	if h.service.Open() {
-		if answer := h.offer(captured); answer.Status != statusLocked {
+		answer := h.offer(pending.capture)
+		switch answer.Status {
+		case statusOK:
+			pending.offer, status = answer.Offer, statusOK
+		case statusLocked:
+		default:
 			return answer
 		}
 	}
-	token, err := h.waiting.Keep(waitingSender, captured, nil)
+	token, err := h.waiting.Keep(waitingSender, pending, nil)
 	if err != nil {
 		return captureAnswer{outcome: outcome{Status: statusFailed}}
 	}
-	return captureAnswer{outcome: outcome{Status: statusLocked}, Capture: token}
+	return captureAnswer{outcome: outcome{Status: status}, Capture: token}
 }
 
 type offerRequest struct {
 	Capture string `json:"capture"`
 }
 
+// offerWaiting answers the save screen with the offer its token names, once, and only while the vault is open, since
+// the offer names its items; a sign-in waiting for the vault is offered once the vault opens.
 func (h *Handler) offerWaiting(q offerRequest) captureAnswer {
-	captured, ok := h.waiting.Find(waitingSender, q.Capture)
+	pending, ok := h.waiting.Find(waitingSender, q.Capture)
 	if !ok {
 		return captureAnswer{outcome: outcome{Status: statusFailed}}
 	}
-	answer := h.offer(captured)
+	answer := captureAnswer{outcome: outcome{Status: statusOK}, Offer: pending.offer}
+	if pending.offer == nil || !h.service.Open() {
+		answer = h.offer(pending.capture)
+	}
 	if answer.Status != statusLocked {
 		h.waiting.Forget(waitingSender, q.Capture)
 	}

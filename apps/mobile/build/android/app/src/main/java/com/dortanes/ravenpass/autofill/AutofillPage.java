@@ -3,11 +3,11 @@ package com.dortanes.ravenpass.autofill;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
-import android.webkit.JavascriptInterface;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -15,7 +15,11 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import androidx.webkit.JavaScriptReplyProxy;
+import androidx.webkit.WebMessageCompat;
 import androidx.webkit.WebViewAssetLoader;
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
 
 import com.dortanes.ravenpass.WebViewPolicy;
 import com.wails.app.R;
@@ -25,14 +29,18 @@ import org.json.JSONObject;
 
 import java.io.ByteArrayInputStream;
 import java.util.Map;
+import java.util.Set;
 
 /** The autofill page from the APK's assets; any other request is answered empty and navigation is blocked. */
 final class AutofillPage {
-    /** A request here names "op" and an id, which the JSON answer to {@value #ANSWER} returns. */
+    /**
+     * Takes {"id", "request"} as JSON text, where the request names "op"; the JSON answer to {@value #ANSWER} returns
+     * the id. Only frames of the page's own origin see the object, and only its main frame's messages are taken.
+     */
     private static final String BRIDGE = "ravenpassAutofill";
     private static final String ANSWER = "window.ravenpassAutofillAnswer";
-    private static final String ADDRESS = "https://" + WebViewAssetLoader.DEFAULT_DOMAIN
-            + "/assets/autofill/autofill.html";
+    private static final String ORIGIN = "https://" + WebViewAssetLoader.DEFAULT_DOMAIN;
+    private static final String ADDRESS = ORIGIN + "/assets/autofill/autofill.html";
 
     /** Receives the page's requests on the main thread while the page lives. */
     interface Receiver {
@@ -74,11 +82,13 @@ final class AutofillPage {
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final WebView view;
+    private final Receiver receiver;
     // Main thread only.
     private boolean destroyed;
 
-    @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
+    @SuppressLint("SetJavaScriptEnabled")
     AutofillPage(Context context, Receiver receiver) {
+        this.receiver = receiver;
         view = new WebView(context);
         // RavenpassApplication sends the back gesture to the history of the WebView with this id.
         view.setId(R.id.webview);
@@ -124,20 +134,30 @@ final class AutofillPage {
                 return true;
             }
         });
-        view.addJavascriptInterface(new Bridge(receiver), BRIDGE);
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            WebViewCompat.addWebMessageListener(view, BRIDGE, Set.of(ORIGIN), this::posted);
+        }
     }
 
     WebView view() {
         return view;
     }
 
+    /** A WebView without web message listeners cannot reach the page's requests, so the page counts as lost. */
     void load() {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            Log.w(AutofillActivity.TAG, "The system WebView cannot carry the autofill page's requests");
+            receiver.lost();
+            return;
+        }
         view.loadUrl(ADDRESS);
     }
 
     void destroy() {
         destroyed = true;
-        view.removeJavascriptInterface(BRIDGE);
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            WebViewCompat.removeWebMessageListener(view, BRIDGE);
+        }
         view.destroy();
     }
 
@@ -146,32 +166,25 @@ final class AutofillPage {
                 new ByteArrayInputStream(new byte[0]));
     }
 
-    /** WebView calls it on a thread of its own. */
-    private final class Bridge {
-        private final Receiver receiver;
-
-        Bridge(Receiver receiver) {
-            this.receiver = receiver;
+    /** WebView calls it on the main thread, for the page's origin alone. */
+    private void posted(WebView page, WebMessageCompat message, Uri origin, boolean mainFrame,
+            JavaScriptReplyProxy reply) {
+        String data = message.getType() == WebMessageCompat.TYPE_STRING ? message.getData() : null;
+        if (destroyed || !mainFrame || data == null) {
+            return;
         }
-
-        @JavascriptInterface
-        public void post(int id, String request) {
-            JSONObject fields;
-            try {
-                fields = new JSONObject(request);
-            } catch (JSONException e) {
-                return;
-            }
-            Object op = fields.remove("op");
-            if (!(op instanceof String)) {
-                return;
-            }
-            Request received = new Request(id, (String) op, fields);
-            main.post(() -> {
-                if (!destroyed) {
-                    receiver.receive(received);
-                }
-            });
+        JSONObject fields;
+        int id;
+        try {
+            JSONObject posted = new JSONObject(data);
+            id = posted.getInt("id");
+            fields = new JSONObject(posted.getString("request"));
+        } catch (JSONException e) {
+            return;
+        }
+        Object op = fields.remove("op");
+        if (op instanceof String) {
+            receiver.receive(new Request(id, (String) op, fields));
         }
     }
 }

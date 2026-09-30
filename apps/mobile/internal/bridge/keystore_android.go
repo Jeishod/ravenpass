@@ -26,6 +26,9 @@ func (Keystore) Agree(alias string, peer []byte) ([]byte, error) {
 
 // Decrypt shows the owner a prompt for reason that authorizes this one decryption alone.
 func (Keystore) Decrypt(alias string, ciphertext []byte, reason string) ([]byte, error) {
+	if err := titled(reason); err != nil {
+		return nil, err
+	}
 	prompting <- struct{}{}
 	defer func() { <-prompting }()
 	s, plaintext := decrypt(alias, ciphertext, reason)

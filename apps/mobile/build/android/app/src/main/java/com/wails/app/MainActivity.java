@@ -123,7 +123,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Every frame sees window.wails, so no origin but the app's may ever load in this WebView.
+        // Every frame sees window.wails, so no origin but the app's may ever load in this WebView, and the page's
+        // Content-Security-Policy refuses every frame, a data: frame included.
         // @wailsio/runtime calls window.wails.invoke synchronously, which only addJavascriptInterface answers.
         webView.addJavascriptInterface(new WailsJSBridge(bridge, webView), "wails");
     }

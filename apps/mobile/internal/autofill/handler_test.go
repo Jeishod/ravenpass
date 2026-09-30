@@ -9,7 +9,10 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"sync/atomic"
 	"testing"
+	"testing/synctest"
+	"time"
 
 	"github.com/dortanes/ravenpass/packages/app/api"
 	"github.com/dortanes/ravenpass/packages/app/autofill"
@@ -335,6 +338,77 @@ func TestOnlyAFormToFillOrASubmittedSignInFollowTheVaultFile(t *testing.T) {
 	h.call(t, map[string]any{"op": "methods"}, &answer)
 	if h.follows != 2 {
 		t.Fatalf("the vault file was followed %d times, want 2", h.follows)
+	}
+}
+
+func TestASlowVaultFileLeavesTheRequestItsDeadline(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		h := newHarness(&fakeService{open: true}, nil)
+		release := make(chan struct{})
+		h.handler.follow = func() { <-release }
+		start := time.Now()
+		var answer suggestAnswer
+		h.call(t, asking(chrome(t), pageSignIn("example.com")...), &answer)
+		if waited := time.Since(start); waited != followWait {
+			t.Fatalf("the request waited %v for the file, want %v", waited, followWait)
+		}
+		if answer.Status != statusOK {
+			t.Fatalf("answer %+v", answer)
+		}
+		close(release)
+	})
+}
+
+func TestRequestsDuringASlowReadWaitOnIt(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		h := newHarness(&fakeService{open: true}, nil)
+		release := make(chan struct{})
+		var reads atomic.Int32
+		h.handler.follow = func() {
+			reads.Add(1)
+			<-release
+		}
+		for range 3 {
+			var answer suggestAnswer
+			h.call(t, asking(chrome(t), pageSignIn("example.com")...), &answer)
+		}
+		if reads.Load() != 1 {
+			t.Fatalf("a slow read started %d reads", reads.Load())
+		}
+		close(release)
+		synctest.Wait()
+		var answer suggestAnswer
+		h.call(t, asking(chrome(t), pageSignIn("example.com")...), &answer)
+		if reads.Load() != 2 {
+			t.Fatalf("a request after the read ended started %d reads in all", reads.Load())
+		}
+	})
+}
+
+func TestAScreenNoticeIsKnownWithoutTheVault(t *testing.T) {
+	for request, want := range map[string][2]bool{
+		`{"op":"shown"}`: {true, true}, `{"op":"hidden"}`: {false, true}, `{"op":"suggest"}`: {}, `not json`: {},
+	} {
+		if shown, notice := ScreenNotice([]byte(request)); [2]bool{shown, notice} != want {
+			t.Errorf("%s: shown = %t, notice = %t", request, shown, notice)
+		}
+	}
+	if string(Noted()) != `{"status":"ok"}` {
+		t.Fatalf("a notice is answered %s", Noted())
+	}
+}
+
+func TestScreensShownBeforeTheHandlerHoldTheLockUntilHidden(t *testing.T) {
+	h := newHarness(&fakeService{}, nil)
+	h.handler.ShowScreens(2)
+	var answer outcome
+	h.call(t, map[string]any{"op": "hidden"}, &answer)
+	if h.holds != 1 {
+		t.Fatalf("one of two early screens hidden leaves %d holds, want 1", h.holds)
+	}
+	h.call(t, map[string]any{"op": "hidden"}, &answer)
+	if h.holds != 0 {
+		t.Fatalf("both early screens hidden leave %d holds", h.holds)
 	}
 }
 
@@ -858,13 +932,23 @@ func TestACaptureIsHeldAndSavedWhereTheOwnerChooses(t *testing.T) {
 	h := newHarness(service, nil)
 	var held captureAnswer
 	h.call(t, map[string]any{"op": "capture", "requester": map[string]any{"app": wireOf(app)}, "account": "alex", "password": "pw"}, &held)
-	want := &offerWire{Token: "t", Name: "Example", Account: "alex", Suggested: "a",
-		Targets: []targetWire{{ID: "a", Label: "Example", Account: "alex", Action: "update"}}}
-	if held.Status != statusOK || !reflect.DeepEqual(held.Offer, want) {
-		t.Fatalf("answer %+v", held)
+	if held.Status != statusOK || held.Capture == "" || held.Offer != nil {
+		t.Fatalf("the capture answered more than its token: %+v", held)
 	}
 	if len(service.held) != 1 || service.held[0].Password != "pw" || !reflect.DeepEqual(service.held[0].Requester.App, app) {
 		t.Fatalf("held %+v", service.held)
+	}
+	var offered captureAnswer
+	h.call(t, map[string]any{"op": "offer", "capture": held.Capture}, &offered)
+	want := &offerWire{Token: "t", Name: "Example", Account: "alex", Suggested: "a",
+		Targets: []targetWire{{ID: "a", Label: "Example", Account: "alex", Action: "update"}}}
+	if offered.Status != statusOK || !reflect.DeepEqual(offered.Offer, want) || len(service.held) != 1 {
+		t.Fatalf("the save screen was offered %+v, held %d", offered, len(service.held))
+	}
+	var again captureAnswer
+	h.call(t, map[string]any{"op": "offer", "capture": held.Capture}, &again)
+	if again.Status != statusFailed {
+		t.Fatalf("an offer was given twice: %+v", again)
 	}
 	var saved saveAnswer
 	h.call(t, map[string]any{"op": "save", "token": "t", "choice": map[string]any{"name": "Example", "account": "alex"}}, &saved)
@@ -875,6 +959,26 @@ func TestACaptureIsHeldAndSavedWhereTheOwnerChooses(t *testing.T) {
 	h.call(t, map[string]any{"op": "capture", "requester": origin, "account": "alex"}, &empty)
 	if empty.Status != statusFailed {
 		t.Fatalf("a capture without a password was held: %+v", empty)
+	}
+}
+
+func TestAnOfferMadeWhileOpenWaitsWhileTheVaultIsLocked(t *testing.T) {
+	service := &fakeService{open: true, offer: autofill.Offer{Token: "t", Name: "Example",
+		Targets: []autofill.Target{{ID: "a", Label: "Example", Account: "alex", Action: autofill.SaveUpdate}}}}
+	h := newHarness(service, nil)
+	var held captureAnswer
+	h.call(t, map[string]any{"op": "capture", "requester": origin, "account": "alex", "password": "pw"}, &held)
+	service.open, service.err = false, autofill.ErrLocked
+	var locked captureAnswer
+	h.call(t, map[string]any{"op": "offer", "capture": held.Capture}, &locked)
+	if locked.Status != statusLocked || locked.Offer != nil {
+		t.Fatalf("a locked vault's items were offered: %+v", locked)
+	}
+	service.open, service.err = true, nil
+	var offered captureAnswer
+	h.call(t, map[string]any{"op": "offer", "capture": held.Capture}, &offered)
+	if offered.Status != statusOK || offered.Offer == nil || offered.Offer.Targets[0].Label != "Example" {
+		t.Fatalf("the sign-in once the vault opened: %+v", offered)
 	}
 }
 

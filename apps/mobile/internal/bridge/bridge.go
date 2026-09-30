@@ -30,7 +30,17 @@ var (
 	ErrNoticesUnreadable = errors.New("the third-party notices could not be read")
 	// ErrPrintUnavailable reports a print dialog the device did not show, or a page it did not load.
 	ErrPrintUnavailable = errors.New("the print dialog cannot be shown now")
+	// ErrUntitledPrompt refuses an owner prompt without a title, which BiometricPrompt rejects by throwing.
+	ErrUntitledPrompt = errors.New("the owner prompt has no title")
 )
+
+// titled refuses a prompt reason that would leave BiometricPrompt without a title.
+func titled(reason string) error {
+	if strings.TrimSpace(reason) == "" {
+		return ErrUntitledPrompt
+	}
+	return nil
+}
 
 // printError treats a dialog the owner closed without printing as done.
 func printError(s status) error {

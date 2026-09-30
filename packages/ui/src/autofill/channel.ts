@@ -1,11 +1,22 @@
-/** The Android host's `ravenpassAutofill` object; a request with id 0 expects no answer. */
+/** How the page reaches its host; a request with id 0 expects no answer. */
 export interface NativeAutofill {
   post(id: number, request: string): void;
 }
 
+/** A posted request: its id and the request itself as JSON text. */
+interface Posted {
+  id: number;
+  request: string;
+}
+
+/** The Android host's `ravenpassAutofill` web message listener, which takes a `Posted` as JSON text. */
+interface AndroidListener {
+  postMessage(message: string): void;
+}
+
 /** The macOS AutoFill extension's `ravenpassAutofill` message handler. */
 interface WebKitHandler {
-  postMessage(message: { id: number; request: string }): void;
+  postMessage(message: Posted): void;
 }
 
 /** A host answer or notice: a JSON object whose `status` says how it ended or what it reports. */
@@ -18,7 +29,7 @@ export type AutofillSurface = "sheet" | "window";
 
 declare global {
   interface Window {
-    ravenpassAutofill?: NativeAutofill;
+    ravenpassAutofill?: AndroidListener;
     webkit?: {
       messageHandlers?: { ravenpassAutofill?: WebKitHandler };
     };
@@ -93,8 +104,17 @@ export function hostOf(page: Pick<Window, "ravenpassAutofill" | "webkit">): {
   native: NativeAutofill;
   surface: AutofillSurface;
 } {
-  if (page.ravenpassAutofill) {
-    return { native: page.ravenpassAutofill, surface: "sheet" };
+  const listener = page.ravenpassAutofill;
+  if (listener) {
+    return {
+      native: {
+        post: (id, request) =>
+          listener.postMessage(
+            JSON.stringify({ id, request } satisfies Posted),
+          ),
+      },
+      surface: "sheet",
+    };
   }
   const handler = page.webkit?.messageHandlers?.ravenpassAutofill;
   if (handler) {

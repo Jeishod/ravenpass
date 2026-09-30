@@ -1,7 +1,9 @@
 package documents
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 
 	"github.com/dortanes/ravenpass/packages/app/api"
 	"github.com/dortanes/ravenpass/packages/app/backups"
@@ -40,9 +42,14 @@ func (folders BackupFolders) Save(folder, name string, data []byte) (string, err
 	return address, nil
 }
 
-// Remove deletes the backup document; one already gone fails with the provider's error, not fs.ErrNotExist.
+// Remove deletes the backup document; one its folder no longer holds fails with fs.ErrNotExist, as backups count
+// removed.
 func (folders BackupFolders) Remove(address string) error {
-	if err := folders.Provider.Delete(address); err != nil {
+	err := folders.Provider.Delete(address)
+	switch {
+	case errors.Is(err, storage.ErrNotFound):
+		return fmt.Errorf("remove backup document: %w", fs.ErrNotExist)
+	case err != nil:
 		return fmt.Errorf("remove backup document: %w", err)
 	}
 	return nil

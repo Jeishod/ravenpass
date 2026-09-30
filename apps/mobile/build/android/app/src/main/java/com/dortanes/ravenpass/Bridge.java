@@ -19,10 +19,13 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CancellationSignal;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
+import android.os.storage.StorageManager;
+import android.os.storage.StorageVolume;
 import android.print.PageRange;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
@@ -76,6 +79,7 @@ import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -101,6 +105,11 @@ final class Bridge {
     private static final int STATUS_ERROR = 5;
     private static final int STATUS_TOO_LARGE = 6;
     private static final int STATUS_GONE = 7;
+
+    private static final String EXTERNAL_STORAGE = "com.android.externalstorage.documents";
+    /** Document providers that keep files on the device, with no network behind a not-found. */
+    private static final Set<String> LOCAL_PROVIDERS = Set.of(EXTERNAL_STORAGE,
+            "com.android.providers.downloads.documents", "com.android.providers.media.documents");
 
     private static final String KEYSTORE = "AndroidKeyStore";
     private static final int PRESENCE_KEY_BITS = 2048;
@@ -342,7 +351,7 @@ final class Bridge {
         }
     }
 
-    /** Returns STATUS_GONE where opening the document fails as not found and its provider's query finds none either. */
+    /** Returns STATUS_GONE where opening the document fails as not found and gone confirms it. */
     static byte[] readDocument(byte[] addressUtf8, long limit) {
         try {
             ParcelFileDescriptor descriptor = resolver().openFileDescriptor(document(addressUtf8), "r");
@@ -393,17 +402,20 @@ final class Bridge {
         }
     }
 
+    /** Returns STATUS_GONE where the delete fails and the folder the document was created in no longer lists it. */
     static int deleteDocument(byte[] addressUtf8) {
         Uri document = document(addressUtf8);
+        boolean deleted;
         try {
-            if (!DocumentsContract.deleteDocument(resolver(), document)) {
-                return STATUS_ERROR;
-            }
+            deleted = DocumentsContract.deleteDocument(resolver(), document);
         } catch (Exception e) {
+            deleted = false;
+        }
+        if (!deleted && !absentFromFolder(document)) {
             return STATUS_ERROR;
         }
         release(document);
-        return STATUS_OK;
+        return deleted ? STATUS_OK : STATUS_GONE;
     }
 
     /** Returns the picture's address, readable until the app stops, and its name, separated by NUL. */
@@ -627,11 +639,42 @@ final class Bridge {
         return segment != null ? segment : "";
     }
 
-    // Only a query answered with zero rows is a definite not-found. DocumentsProvider.query answers every queryDocument
-    // that throws FileNotFoundException with no cursor, transient failures included, so no cursor leaves it unreadable.
+    // A document created in a picked folder is gone for certain where the folder's complete listing lacks it; a listing
+    // the provider is still loading, such as a cloud drive's, proves nothing.
+    private static boolean absentFromFolder(Uri document) {
+        if (!DocumentsContract.isTreeUri(document)) {
+            return false;
+        }
+        try {
+            String id = DocumentsContract.getDocumentId(document);
+            Uri children = DocumentsContract.buildChildDocumentsUriUsingTree(document,
+                    DocumentsContract.getTreeDocumentId(document));
+            try (Cursor cursor = resolver().query(children,
+                    new String[] {DocumentsContract.Document.COLUMN_DOCUMENT_ID}, null, null, null)) {
+                if (cursor == null || cursor.getExtras().getBoolean(DocumentsContract.EXTRA_LOADING)) {
+                    return false;
+                }
+                while (cursor.moveToNext()) {
+                    if (id.equals(cursor.getString(0))) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // A cloud provider's not-found can mean offline: there only a query answered with zero rows is definite, since
+    // DocumentsProvider.query answers every queryDocument that throws FileNotFoundException with no cursor. A local
+    // provider has no network behind it, so the caller's not-found is definite while the document's volume is mounted.
     private static boolean gone(Uri document) {
         if (!DocumentsContract.isDocumentUri(application, document)) {
             return false;
+        }
+        if (LOCAL_PROVIDERS.contains(document.getAuthority())) {
+            return mounted(document);
         }
         try (ContentProviderClient provider = resolver().acquireUnstableContentProviderClient(document)) {
             if (provider == null) {
@@ -644,6 +687,31 @@ final class Bridge {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    // The external storage provider names a document "volume:path", the volume being "primary", "home" for the primary
+    // volume's Documents folder, or a removable one's UUID; the downloads and media providers keep theirs on the primary
+    // volume.
+    private static boolean mounted(Uri document) {
+        if (!EXTERNAL_STORAGE.equals(document.getAuthority())) {
+            return true;
+        }
+        String id = DocumentsContract.getDocumentId(document);
+        int colon = id.indexOf(':');
+        if (colon < 0) {
+            return false;
+        }
+        String volume = id.substring(0, colon);
+        StorageManager storage = application.getSystemService(StorageManager.class);
+        for (StorageVolume candidate : storage.getStorageVolumes()) {
+            boolean named = candidate.isPrimary()
+                    ? "primary".equals(volume) || "home".equals(volume)
+                    : volume.equals(candidate.getUuid());
+            if (named) {
+                return Environment.MEDIA_MOUNTED.equals(candidate.getState());
+            }
+        }
+        return false;
     }
 
     private static int errorStatus(int code) {

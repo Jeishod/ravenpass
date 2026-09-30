@@ -14,9 +14,7 @@ import java.util.Map;
 
 /** The token that names the sign-in the core holds stays here and never reaches the page. */
 public final class SaveActivity extends PageActivity {
-    /** The core's offer for a sign-in it holds, as JSON. */
-    static final String OFFER = "com.dortanes.ravenpass.autofill.OFFER";
-    /** A sign-in waiting in the core for the vault to open. */
+    /** The token of a sign-in the core holds for this screen. */
     static final String CAPTURE = "com.dortanes.ravenpass.autofill.CAPTURE";
 
     private static final String UPDATE = "update";
@@ -33,17 +31,14 @@ public final class SaveActivity extends PageActivity {
             finish();
             return;
         }
-        String offer = getIntent().getStringExtra(OFFER);
-        if (offer != null) {
-            review(offer);
-        } else if (getIntent().hasExtra(CAPTURE)) {
-            offerWaiting();
+        if (getIntent().hasExtra(CAPTURE)) {
+            offerHeld();
         } else {
             finish();
         }
     }
 
-    private void offerWaiting() {
+    private void offerHeld() {
         String capture = getIntent().getStringExtra(CAPTURE);
         ask(() -> {
             Map<String, Object> request = Core.request("offer");
@@ -52,7 +47,7 @@ public final class SaveActivity extends PageActivity {
         }, answer -> {
             JSONObject offer = answer != null && Core.ok(answer) ? answer.optJSONObject("offer") : null;
             if (offer != null) {
-                review(offer.toString());
+                review(offer);
             } else {
                 finish();
             }
@@ -60,10 +55,9 @@ public final class SaveActivity extends PageActivity {
     }
 
     /** Shows the page on the offer, which it receives without the token. */
-    private void review(String text) {
+    private void review(JSONObject offer) {
         showPage();
         try {
-            JSONObject offer = new JSONObject(text);
             token = offer.optString("token");
             offer.remove("token");
             JSONArray targets = offer.optJSONArray("targets");

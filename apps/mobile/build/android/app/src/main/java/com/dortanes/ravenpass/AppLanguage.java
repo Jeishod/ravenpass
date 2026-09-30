@@ -3,6 +3,7 @@ package com.dortanes.ravenpass;
 import android.app.LocaleManager;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.os.Build;
 import android.os.LocaleList;
 
@@ -40,5 +41,29 @@ public final class AppLanguage {
         Configuration configuration = new Configuration(base.getResources().getConfiguration());
         configuration.setLocales(LocaleList.forLanguageTags(tag));
         return base.createConfigurationContext(configuration);
+    }
+
+    /**
+     * Resources in the language chosen now, for a component that outlives a change of it: before API 33 nothing tells
+     * a running service, and the autofill service keeps running while it is the device's choice.
+     */
+    public static final class Following {
+        private final Context base;
+        private String tag;
+        private Resources resources;
+
+        /** base is the component's context before apply. */
+        public Following(Context base) {
+            this.base = base;
+        }
+
+        public synchronized Resources resources() {
+            String chosen = base.getSharedPreferences(STORE, Context.MODE_PRIVATE).getString(TAG, "");
+            if (resources == null || !chosen.equals(tag)) {
+                tag = chosen;
+                resources = apply(base).getResources();
+            }
+            return resources;
+        }
     }
 }

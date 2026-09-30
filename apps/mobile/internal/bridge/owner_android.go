@@ -28,6 +28,9 @@ func (Owner) Authenticate(ctx context.Context, reason string) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+	if err := titled(reason); err != nil {
+		return err
+	}
 	select {
 	case prompting <- struct{}{}:
 	case <-ctx.Done():

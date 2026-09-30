@@ -39,19 +39,56 @@ type Core struct {
 	window   atomic.Pointer[application.WebviewWindow]
 }
 
-var built = sync.OnceValues(build)
+var (
+	built = sync.OnceValues(build)
+	// early counts the screens shown while no core exists; the core takes their holds once built.
+	early struct {
+		sync.Mutex
+		ready bool
+		shown int
+	}
+)
 
 // Get returns the process's core, built on first use.
 func Get() (*Core, error) { return built() }
 
-// Autofill answers a request of the autofill service or its screens, or nothing when the core cannot be built.
+// Autofill answers a request of the autofill service or its screens, or nothing when the core cannot be built. A
+// screen's shown or hidden notice comes from the main thread, so it never builds the core, which reads files and the
+// keystore; its screen's first request, made on a worker, does.
 func Autofill(request []byte) []byte {
+	if shown, notice := autofill.ScreenNotice(request); notice && noteEarly(shown) {
+		return autofill.Noted()
+	}
 	c, err := Get()
 	if err != nil {
 		slog.Warn("the app could not start for an autofill request", "err", err)
 		return nil
 	}
 	return c.autofill.Call(request)
+}
+
+// noteEarly counts a screen notice while no core exists, reporting whether it did.
+func noteEarly(shown bool) bool {
+	early.Lock()
+	defer early.Unlock()
+	switch {
+	case early.ready:
+		return false
+	case shown:
+		early.shown++
+	case early.shown > 0:
+		early.shown--
+	}
+	return true
+}
+
+// takeEarly hands the screens shown before c existed to its handler, after which c answers every notice.
+func takeEarly(c *Core) {
+	early.Lock()
+	defer early.Unlock()
+	c.autofill.ShowScreens(early.shown)
+	early.shown = 0
+	early.ready = true
 }
 
 // Attach makes window, in app, the interface's window as its activity starts.
@@ -184,6 +221,7 @@ func build() (*Core, error) {
 		Requested: c.away.AutofillRequested,
 		Hold:      c.away.Hold,
 	})
+	takeEarly(c)
 	return c, nil
 }
 

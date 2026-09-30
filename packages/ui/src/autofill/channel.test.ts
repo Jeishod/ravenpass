@@ -67,12 +67,17 @@ test("the host's notices reach each watcher until it stops, and one that is no o
   assert.deepEqual(seen, [{ status: "wait", wait: "opening" }]);
 });
 
-test("the phone takes requests through its object and shows the page as sheets", () => {
-  const native = new RecordingNative();
-  const { native: found, surface } = hostOf({ ravenpassAutofill: native });
-  found.post(1, '{"op":"open"}');
+test("the phone takes requests as text through its listener and shows the page as sheets", () => {
+  const messages: string[] = [];
+  const { native, surface } = hostOf({
+    ravenpassAutofill: { postMessage: (message) => messages.push(message) },
+  });
+  native.post(1, '{"op":"open"}');
   assert.equal(surface, "sheet");
-  assert.deepEqual(native.posted, [[1, { op: "open" }]]);
+  assert.deepEqual(
+    messages.map((message) => JSON.parse(message)),
+    [{ id: 1, request: '{"op":"open"}' }],
+  );
 });
 
 test("the macOS extension takes requests through its message handler and shows the page as its window", () => {

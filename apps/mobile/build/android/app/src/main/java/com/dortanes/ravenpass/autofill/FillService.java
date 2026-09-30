@@ -4,6 +4,8 @@ import android.app.assist.AssistStructure;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentSender;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.service.autofill.AutofillService;
@@ -36,10 +38,18 @@ public final class FillService extends AutofillService {
     private static final String TAG = "RavenpassAutofill";
 
     private ExecutorService worker;
+    private AppLanguage.Following language;
 
     @Override
     protected void attachBaseContext(Context base) {
+        language = new AppLanguage.Following(base);
         super.attachBaseContext(AppLanguage.apply(base));
+    }
+
+    /** The service outlives a change of language, which its answers follow. */
+    @Override
+    public Resources getResources() {
+        return language != null ? language.resources() : super.getResources();
     }
 
     @Override
@@ -80,7 +90,10 @@ public final class FillService extends AutofillService {
         cancellation.setOnCancelListener(() -> answering.cancel(true));
     }
 
-    /** With the vault locked, the sign-in waits in the core's memory until the save screen unlocks it. */
+    /**
+     * The sign-in waits in the core's memory, where the save screen asks for it by token; the system keeps the screen's
+     * intent, so the intent carries nothing but that token. With the vault locked, the save screen unlocks it first.
+     */
     @Override
     public void onSaveRequest(@NonNull SaveRequest request, @NonNull SaveCallback callback) {
         Bundle state = request.getClientState();
@@ -96,24 +109,32 @@ public final class FillService extends AutofillService {
                 BundleCompat.getParcelable(state, Responses.SAVE_USERNAME, AutofillId.class)));
         capture.put("password", Screen.text(contexts,
                 BundleCompat.getParcelable(state, Responses.SAVE_PASSWORD, AutofillId.class)));
+        // Android waits on the callback, so every path answers it, once.
         worker.execute(() -> {
-            JSONObject answer = Core.call(capture);
-            JSONObject offer = answer.optJSONObject("offer");
-            String waiting = answer.optString("capture");
-            Intent review = new Intent(this, SaveActivity.class);
-            if (Core.ok(answer) && offer != null) {
-                review.putExtra(SaveActivity.OFFER, offer.toString());
-            } else if (Core.LOCKED.equals(Core.status(answer)) && !waiting.isEmpty()) {
-                review.putExtra(SaveActivity.CAPTURE, waiting);
-            } else if (Core.NONE.equals(Core.status(answer))) {
-                callback.onSuccess();
-                return;
-            } else {
-                callback.onFailure(getString(R.string.autofill_save_failed));
-                return;
+            Runnable answered;
+            try {
+                answered = saveAnswer(Core.call(capture), callback);
+            } catch (RuntimeException e) {
+                Log.w(TAG, "The save request was not answered: " + e.getClass().getSimpleName());
+                answered = () -> callback.onFailure(getString(R.string.autofill_save_failed));
             }
-            callback.onSuccess(Responses.sender(this, review, false));
+            answered.run();
         });
+    }
+
+    /** How the callback is answered for the core's answer to a capture. */
+    private Runnable saveAnswer(JSONObject answer, SaveCallback callback) {
+        String waiting = answer.optString("capture");
+        if ((Core.ok(answer) || Core.LOCKED.equals(Core.status(answer))) && !waiting.isEmpty()) {
+            Intent review = new Intent(this, SaveActivity.class).putExtra(SaveActivity.CAPTURE, waiting);
+            IntentSender sender = Responses.sender(this, review, false);
+            return () -> callback.onSuccess(sender);
+        }
+        if (Core.NONE.equals(Core.status(answer))) {
+            return callback::onSuccess;
+        }
+        String failed = getString(R.string.autofill_save_failed);
+        return () -> callback.onFailure(failed);
     }
 
     /** null where the client state records no requester. */

@@ -2,6 +2,7 @@ package documents
 
 import (
 	"errors"
+	"io/fs"
 	"slices"
 	"testing"
 
@@ -94,7 +95,7 @@ func TestRemoveDeletesABackup(t *testing.T) {
 	if err := folders.Remove(saved); err != nil || len(provider.documents) != 0 || !slices.Equal(provider.deleted, []string{saved}) {
 		t.Fatalf("removing a backup: %v, documents %v, deleted %v", err, provider.documents, provider.deleted)
 	}
-	if err := folders.Remove(saved); !errors.Is(err, errGone) {
-		t.Fatalf("removing a backup that is gone: got %v, want the provider's error", err)
+	if err := folders.Remove(saved); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("removing a backup that is gone: got %v, want fs.ErrNotExist", err)
 	}
 }

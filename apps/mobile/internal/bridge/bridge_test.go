@@ -14,6 +14,17 @@ import (
 // incomplete is the JNI glue's status for a call that threw or never reached Bridge.
 const incomplete status = -1
 
+func TestAPromptWithoutATitleIsRefused(t *testing.T) {
+	for _, reason := range []string{"", " ", "\n\t"} {
+		if err := titled(reason); !errors.Is(err, ErrUntitledPrompt) {
+			t.Errorf("%q: got %v, want ErrUntitledPrompt", reason, err)
+		}
+	}
+	if err := titled("Unlock Ravenpass"); err != nil {
+		t.Fatalf("a titled prompt: %v", err)
+	}
+}
+
 func TestKeystoreStatusesBecomeTheErrorsTheBindingsExpect(t *testing.T) {
 	for _, test := range []struct {
 		status status

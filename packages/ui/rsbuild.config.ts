@@ -129,6 +129,8 @@ export default defineConfig({
             : "connect-src 'self'",
           "font-src 'self' data:",
           "object-src 'none'",
+          // Android's window.wails reaches every frame, so no page may hold one, a data: frame included.
+          "frame-src 'none'",
           "base-uri 'none'",
           "form-action 'none'",
         ].join("; "),

@@ -177,7 +177,7 @@ func (d *drive) Delete(address string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if _, found := d.documents[address]; !found {
-		return errGone
+		return storage.ErrNotFound
 	}
 	delete(d.documents, address)
 	d.deleted = append(d.deleted, address)
@@ -404,8 +404,8 @@ func TestRemoveDeletesTheDocument(t *testing.T) {
 	if err := opened.Remove(); err != nil || len(provider.deleted) != 1 {
 		t.Fatalf("removing a vault: %v, deleted %v", err, provider.deleted)
 	}
-	if err := opened.Remove(); !errors.Is(err, errGone) {
-		t.Fatalf("removing a document that is gone: got %v", err)
+	if err := opened.Remove(); err != nil {
+		t.Fatalf("removing a document that is gone: got %v, want none", err)
 	}
 }
 
