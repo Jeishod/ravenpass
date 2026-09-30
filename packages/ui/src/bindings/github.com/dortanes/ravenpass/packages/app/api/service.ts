@@ -400,6 +400,13 @@ export function DismissCodeSetup(token: string): $CancellablePromise<void> {
 }
 
 /**
+ * DuplicateItem saves a copy of an item of any kind, named after it, and returns the copy's id.
+ */
+export function DuplicateItem(id: string): $CancellablePromise<string> {
+    return $Call.ByID(2638681916, id);
+}
+
+/**
  * ExportEncryptedCopy saves an encrypted copy where the owner chooses and records it if the vault is unchanged.
  */
 export function ExportEncryptedCopy(): $CancellablePromise<void> {

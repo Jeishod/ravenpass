@@ -6,9 +6,11 @@ import (
 	"errors"
 	"net/url"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/dortanes/ravenpass/packages/app/appbundle"
 	"github.com/dortanes/ravenpass/packages/app/backups"
@@ -631,6 +633,36 @@ func (s *Service) DeleteItem(id string) error {
 		return fail(failureItemUnreadable)
 	}
 	return present(s.vault.DeleteItem(parsed))
+}
+
+// DuplicateItem saves a copy of an item of any kind, named after it, and returns the copy's id.
+func (s *Service) DuplicateItem(id string) (string, error) {
+	parsed, err := vault.ParseID(id)
+	if err != nil {
+		return "", fail(failureItemUnreadable)
+	}
+	entries, err := s.vault.List()
+	if err != nil {
+		return "", present(err)
+	}
+	at := slices.IndexFunc(entries, func(entry vault.Entry) bool { return entry.ID == parsed })
+	if at < 0 {
+		return "", fail(failureItemUnreadable)
+	}
+	copied, err := s.vault.Duplicate(parsed, copyLabel(s.preferences.Catalog().Text("workspace.duplicate.name"), entries[at].Label))
+	if err != nil {
+		return "", present(err)
+	}
+	return copied.String(), nil
+}
+
+// copyLabel names a copy by pattern, its name cut so the label stays within vault.MaxLabelLength.
+func copyLabel(pattern, name string) string {
+	room := vault.MaxLabelLength - utf8.RuneCountInString(strings.ReplaceAll(pattern, "{name}", ""))
+	if runes := []rune(name); len(runes) > room {
+		name = strings.TrimSpace(string(runes[:max(room, 0)]))
+	}
+	return strings.ReplaceAll(pattern, "{name}", name)
 }
 
 // ExportEncryptedCopy saves an encrypted copy where the owner chooses and records it if the vault is unchanged.

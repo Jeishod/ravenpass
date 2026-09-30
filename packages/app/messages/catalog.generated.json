@@ -354,5 +354,9 @@
   "settings.import.note.nickname": {
     "en": "Nickname",
     "ru": "Никнейм"
+  },
+  "workspace.duplicate.name": {
+    "en": "{name} (copy)",
+    "ru": "{name} (копия)"
   }
 }

@@ -87,5 +87,6 @@
   "settings.import.note.issuer": "settings.import.note.issuer",
   "settings.import.note.name": "settings.import.note.name",
   "settings.import.note.gender": "settings.import.note.gender",
-  "settings.import.note.nickname": "settings.import.note.nickname"
+  "settings.import.note.nickname": "settings.import.note.nickname",
+  "workspace.duplicate.name": "workspace.duplicate.name"
 }
