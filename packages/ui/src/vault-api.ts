@@ -1,4 +1,5 @@
 import type { SignInStyle } from "./extensions/sign-in-style.ts";
+import type { Appearance } from "./host/appearance.ts";
 
 export interface VaultState {
   phase: "storage" | "setup" | "locked" | "ready";
@@ -83,6 +84,11 @@ export interface AutoLock {
 export interface InterfaceSize {
   percent: number;
   offered: number[];
+}
+
+export interface AppearanceSetting {
+  appearance: Appearance;
+  offered: Appearance[];
 }
 
 export interface DockIcon {
@@ -776,6 +782,8 @@ export interface Capabilities {
   unlockOnShow: boolean;
   /** The owner sets the interface size in settings. */
   interfaceSize: boolean;
+  /** The host's windows follow the appearance chosen in settings. */
+  appearance: boolean;
   /** A photo picker apart from the file picker, which PDF scans still use. */
   photoPicker: boolean;
   /** The owner can let the system keep the vault's accounts for its own AutoFill. */
@@ -811,6 +819,9 @@ export interface VaultApi {
   interfaceSize(): Promise<InterfaceSize>;
   /** `percent` is one of `InterfaceSize.offered`; the interface applies it. */
   setInterfaceSize(percent: number): Promise<void>;
+  appearance(): Promise<AppearanceSetting>;
+  /** The host's windows and the interface apply it. */
+  setAppearance(appearance: Appearance): Promise<void>;
   siteIcons(): Promise<SiteIcons>;
   setSiteIcons(enabled: boolean): Promise<void>;
   /** The image is empty when the site has none or icons are off. */

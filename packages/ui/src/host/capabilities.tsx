@@ -2,6 +2,7 @@ import { queryOptions, skipToken, useQuery } from "@tanstack/react-query";
 import { createContext, type ReactNode, useContext } from "react";
 import { queryKeys } from "../query/keys.ts";
 import type { Capabilities, VaultApi } from "../vault-api.ts";
+import { showAppearance } from "./appearance.ts";
 import { showInterfaceSize } from "./interface-size.ts";
 
 const noCapabilities: Capabilities = {
@@ -12,6 +13,7 @@ const noCapabilities: Capabilities = {
   saveFiles: false,
   unlockOnShow: false,
   interfaceSize: false,
+  appearance: false,
   photoPicker: false,
   identityList: false,
   copyScans: false,
@@ -43,7 +45,26 @@ export function interfaceSizeQuery(
   });
 }
 
-/** CapabilitiesProvider shows its children once the host has said what it offers and the page has its interface size. */
+/** appearanceQuery reads the recorded appearance and shows the page in it. */
+export function appearanceQuery(
+  api: Pick<VaultApi, "appearance"> | undefined,
+  enabled: boolean,
+) {
+  return queryOptions({
+    queryKey: queryKeys.appearance,
+    queryFn:
+      api && enabled
+        ? async () => {
+            const setting = await api.appearance();
+            showAppearance(setting.appearance);
+            return setting;
+          }
+        : skipToken,
+    meta: { failure: "app.error.setting-read" },
+  });
+}
+
+/** CapabilitiesProvider shows its children once the host has said what it offers and the page has its interface size and appearance. */
 export function CapabilitiesProvider({
   api,
   children,
@@ -61,7 +82,17 @@ export function CapabilitiesProvider({
     interfaceSizeQuery(api, Boolean(offers?.interfaceSize)),
   );
 
-  if (!offers || (offers.interfaceSize && size.isPending)) return null;
+  const appearance = useQuery(
+    appearanceQuery(api, Boolean(offers?.appearance)),
+  );
+
+  if (
+    !offers ||
+    (offers.interfaceSize && size.isPending) ||
+    (offers.appearance && appearance.isPending)
+  ) {
+    return null;
+  }
   return (
     <HostCapabilities.Provider value={offers}>
       {children}

@@ -1,9 +1,15 @@
 import { cn } from "cn";
+import { type Appearance, isAppearance } from "../../host/appearance.ts";
 import { useCapabilities } from "../../host/capabilities.tsx";
 import { naturalInterfaceSize } from "../../host/interface-size.ts";
 import { formatPercent } from "../../i18n/language.ts";
+import type { MessageKey } from "../../i18n/messages.ts";
 import { useLanguageChoice, useTranslator } from "../../i18n/translator.tsx";
-import type { DockIcon, InterfaceSize } from "../../vault-api.ts";
+import type {
+  AppearanceSetting,
+  DockIcon,
+  InterfaceSize,
+} from "../../vault-api.ts";
 import { Block, BlockHeading, BlockRow, blockControl } from "../Block.tsx";
 import {
   Select,
@@ -15,15 +21,25 @@ import {
 } from "../ui/select.tsx";
 import { Switch } from "../ui/switch.tsx";
 
+const appearanceLabels: Record<Appearance, MessageKey> = {
+  system: "settings.appearance.system",
+  light: "settings.appearance.light",
+  dark: "settings.appearance.dark",
+};
+
 export function GeneralPanel({
   interfaceSize,
   onInterfaceSize,
+  appearance,
+  onAppearance,
   dockIcon,
   onDockIcon,
   busy,
 }: {
   interfaceSize: InterfaceSize | null;
   onInterfaceSize: (percent: number) => void;
+  appearance: AppearanceSetting | null;
+  onAppearance: (appearance: Appearance) => void;
   dockIcon: DockIcon | null;
   onDockIcon: (hideWithWindow: boolean) => void;
   busy: boolean;
@@ -57,6 +73,35 @@ export function GeneralPanel({
             </SelectContent>
           </Select>
         </BlockRow>
+        {offers.appearance && (
+          <BlockRow title={t("settings.appearance")} htmlFor="appearance">
+            <Select
+              value={appearance?.appearance}
+              disabled={busy || !appearance}
+              onValueChange={(next) => {
+                if (isAppearance(next)) onAppearance(next);
+              }}
+            >
+              <SelectTrigger
+                id="appearance"
+                size="sm"
+                className={cn(blockControl, "max-w-[170px]")}
+                aria-label={t("settings.appearance")}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {appearance?.offered.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {t(appearanceLabels[option])}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </BlockRow>
+        )}
         {offers.interfaceSize && (
           <BlockRow
             title={t("settings.interface-size")}

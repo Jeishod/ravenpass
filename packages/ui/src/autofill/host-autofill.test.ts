@@ -263,6 +263,17 @@ test("the interface size is the host's, or the natural one where it keeps none",
   assert.equal(await api.interfaceSize(), 100);
 });
 
+test("the appearance is the host's, or the system's where it keeps none", async () => {
+  const { api } = phone(
+    { status: "ok", appearance: "light" },
+    { status: "failed" },
+    { status: "ok", appearance: "sepia" },
+  );
+  assert.equal(await api.appearance(), "light");
+  assert.equal(await api.appearance(), "system");
+  assert.equal(await api.appearance(), "system");
+});
+
 test("an icon the phone cannot give reads as none", async () => {
   const { api } = phone({ status: "failed" }, { status: "ok", image: "iVBOR" });
   assert.deepEqual(await api.siteIcon("example.com"), { image: "", tint: "" });

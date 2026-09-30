@@ -125,6 +125,8 @@ export const workspace: typeof english = {
     "Не удалось сохранить настройку буфера обмена. Попробуйте снова.",
   "workspace.error.interface-size":
     "Не удалось сохранить размер интерфейса. Попробуйте снова.",
+  "workspace.error.appearance":
+    "Не удалось сохранить оформление. Попробуйте снова.",
   "workspace.error.dock-icon":
     "Не удалось сохранить настройку значка в Dock. Попробуйте снова.",
   "workspace.error.auto-lock":

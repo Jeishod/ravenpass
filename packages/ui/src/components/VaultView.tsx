@@ -9,7 +9,12 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CountWatcher } from "../count-watcher.ts";
 import { refusedBeforeWriting } from "../failures.ts";
-import { interfaceSizeQuery, useCapabilities } from "../host/capabilities.tsx";
+import type { Appearance } from "../host/appearance.ts";
+import {
+  appearanceQuery,
+  interfaceSizeQuery,
+  useCapabilities,
+} from "../host/capabilities.tsx";
 import { useCompactLayout } from "../host/compact.ts";
 import type { MessageKey } from "../i18n/messages.ts";
 import { useTranslator } from "../i18n/translator.tsx";
@@ -149,6 +154,8 @@ export function VaultView({
   const unlockMethods = useQuery(unlockMethodsQuery(api)).data ?? null;
   const interfaceSize =
     useQuery(interfaceSizeQuery(api, offers.interfaceSize)).data ?? null;
+  const appearance =
+    useQuery(appearanceQuery(api, offers.appearance)).data ?? null;
   const clipboardSetting = useHostSetting({
     key: queryKeys.clipboardClearing,
     read: () => api.clipboardClearing(),
@@ -202,6 +209,12 @@ export function VaultView({
     meta: { failure: "workspace.error.interface-size" },
     onSettled: () =>
       client.invalidateQueries({ queryKey: queryKeys.interfaceSize }),
+  });
+  const appearanceChange = useMutation({
+    mutationFn: (next: Appearance) => api.setAppearance(next),
+    meta: { failure: "workspace.error.appearance" },
+    onSettled: () =>
+      client.invalidateQueries({ queryKey: queryKeys.appearance }),
   });
   const unlockChange = useMutation({
     mutationFn: (change: {
@@ -262,7 +275,8 @@ export function VaultView({
     siteIconsSetting.changing ||
     bankDetailsSetting.changing ||
     shortcutSetting.changing ||
-    interfaceSizeChange.isPending;
+    interfaceSizeChange.isPending ||
+    appearanceChange.isPending;
   const unlockPending = unlockChange.isPending
     ? (unlockChange.variables?.pending ?? "other")
     : null;
@@ -800,6 +814,8 @@ export function VaultView({
                   onInterfaceSize={(percent) =>
                     interfaceSizeChange.mutate(percent)
                   }
+                  appearance={appearance}
+                  onAppearance={(next) => appearanceChange.mutate(next)}
                   dockIcon={dockIconSetting.value}
                   onDockIcon={dockIconSetting.change}
                   clipboard={clipboard}

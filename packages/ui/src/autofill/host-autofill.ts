@@ -1,3 +1,4 @@
+import { type Appearance, appearanceOf } from "../host/appearance.ts";
 import { naturalInterfaceSize } from "../host/interface-size.ts";
 import type { SaveChoice, SaveTarget } from "../saving/offer.ts";
 import type { LanguageSettings, SiteIcon } from "../vault-api.ts";
@@ -94,6 +95,11 @@ export class HostAutofill implements AutofillApi {
     return answer.status === "ok" && percent > 0
       ? percent
       : naturalInterfaceSize;
+  }
+
+  async appearance(): Promise<Appearance> {
+    const answer = await this.#channel.request("appearance");
+    return answer.status === "ok" ? appearanceOf(answer.appearance) : "system";
   }
 
   async siteIcon(site: string): Promise<SiteIcon> {

@@ -15,6 +15,7 @@ export const queryKeys = {
   opening: [...hostScope, "opening"],
   capabilities: [...hostScope, "capabilities"],
   interfaceSize: [...hostScope, "interface-size"],
+  appearance: [...hostScope, "appearance"],
   shortcuts: [...hostScope, "shortcuts"],
   clipboardClearing: [...hostScope, "clipboard-clearing"],
   autoLock: [...hostScope, "auto-lock"],

@@ -6,6 +6,7 @@ import { HostAutofill } from "./autofill/host-autofill.ts";
 import { AutofillSurfaceProvider } from "./components/autofill/AutofillSheet.tsx";
 import { AutofillView } from "./components/autofill/AutofillView.tsx";
 import { limitContextMenu } from "./context-menu.ts";
+import { showAppearance } from "./host/appearance.ts";
 import { showInterfaceSize } from "./host/interface-size.ts";
 import { LanguageFollower } from "./i18n/follower.ts";
 import { LanguageProvider } from "./i18n/translator.tsx";
@@ -25,12 +26,14 @@ limitContextMenu();
 const { channel, surface } = AutofillChannel.ofPage();
 document.documentElement.dataset.surface = surface;
 const api = new HostAutofill(channel);
-// Read before the first render, so no screen shows in another language or size first.
-const [language, size] = await Promise.all([
+// Read before the first render, so no screen shows in another language, size or appearance first.
+const [language, size, appearance] = await Promise.all([
   new LanguageFollower(api).current(),
   api.interfaceSize(),
+  api.appearance(),
 ]);
 showInterfaceSize(size);
+showAppearance(appearance);
 
 createRoot(root).render(
   <StrictMode>

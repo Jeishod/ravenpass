@@ -121,6 +121,8 @@ export const workspace = {
     "Ravenpass could not save the clipboard setting. Try again.",
   "workspace.error.interface-size":
     "Ravenpass could not save the interface size. Try again.",
+  "workspace.error.appearance":
+    "Ravenpass could not save the appearance. Try again.",
   "workspace.error.dock-icon":
     "Ravenpass could not save the Dock icon setting. Try again.",
   "workspace.error.auto-lock":

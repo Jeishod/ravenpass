@@ -135,6 +135,8 @@ export const failures = {
     "Ravenpass does not offer that language. Choose one from the list.",
   "failure.clear-delay-unsupported":
     "Ravenpass does not offer that delay. Choose one from the list.",
+  "failure.appearance-unsupported":
+    "Ravenpass does not offer that appearance. Choose one from the list.",
   "failure.sign-in-style-unsupported":
     "Ravenpass does not offer that way to sign in. Choose one from the list.",
   "failure.auto-lock-delay-unsupported":

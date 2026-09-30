@@ -3,6 +3,7 @@ import * as service from "./bindings/github.com/dortanes/ravenpass/packages/app/
 import { isCardNetwork } from "./cards/card.ts";
 import { CountWatcher } from "./count-watcher.ts";
 import { isSignInStyle, signInStyleOf } from "./extensions/sign-in-style.ts";
+import { appearanceOf, isAppearance } from "./host/appearance.ts";
 import { isDocumentType, isScanMediaType } from "./identities/identity.ts";
 import {
   isImportFormat,
@@ -596,6 +597,14 @@ export const hostApi: VaultApi = {
     return { ...size, offered: size.offered ?? [] };
   },
   setInterfaceSize: service.SetInterfaceSize,
+  async appearance() {
+    const setting = await service.GetAppearance();
+    return {
+      appearance: appearanceOf(setting.appearance),
+      offered: listed(setting.offered).filter(isAppearance),
+    };
+  },
+  setAppearance: service.SetAppearance,
   siteIcons: service.GetSiteIcons,
   setSiteIcons: service.SetSiteIcons,
   siteIcon: service.SiteIcon,

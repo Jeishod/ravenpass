@@ -1,3 +1,4 @@
+import type { Appearance } from "../host/appearance.ts";
 import type { SaveChoice, SaveDestinations } from "../saving/offer.ts";
 import type { LanguageSource, SiteIcon, UnlockMethods } from "../vault-api.ts";
 
@@ -126,6 +127,8 @@ export interface AutofillApi extends LanguageSource {
   watchWait(onWait: (wait: AutofillWait | null) => void): () => void;
   /** In percent; the natural size where the host keeps none. */
   interfaceSize(): Promise<number>;
+  /** `system` where the host keeps none. */
+  appearance(): Promise<Appearance>;
   siteIcon(site: string): Promise<SiteIcon>;
   /** An empty query lists what the screen opened on; any other searches the whole vault. */
   search(query: string): Promise<AutofillResults>;

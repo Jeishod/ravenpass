@@ -137,6 +137,8 @@ export const failures: typeof english = {
     "Этот язык не поддерживается. Выберите вариант из списка.",
   "failure.clear-delay-unsupported":
     "Такая задержка недоступна. Выберите вариант из списка.",
+  "failure.appearance-unsupported":
+    "Такое оформление недоступно. Выберите вариант из списка.",
   "failure.sign-in-style-unsupported":
     "Такой способ входа недоступен. Выберите вариант из списка.",
   "failure.auto-lock-delay-unsupported":

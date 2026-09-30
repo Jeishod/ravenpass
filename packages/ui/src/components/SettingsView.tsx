@@ -1,5 +1,6 @@
 import type { Hotkey } from "@tanstack/react-hotkeys";
 import { cn } from "cn";
+import type { Appearance } from "../host/appearance.ts";
 import { useCapabilities } from "../host/capabilities.tsx";
 import { useCompactLayout } from "../host/compact.ts";
 import { useTranslator } from "../i18n/translator.tsx";
@@ -7,6 +8,7 @@ import { CrossFade } from "../motion/CrossFade.tsx";
 import type { ShortcutAction, Shortcuts } from "../shortcuts/shortcuts.ts";
 import type {
   AboutApi,
+  AppearanceSetting,
   AutofillSettings,
   AutoLock,
   BackupSettings,
@@ -60,6 +62,8 @@ export function SettingsView({
   onAutoLock,
   interfaceSize,
   onInterfaceSize,
+  appearance,
+  onAppearance,
   dockIcon,
   onDockIcon,
   clipboard,
@@ -111,6 +115,8 @@ export function SettingsView({
   onAutoLock: (enabled: boolean, seconds: number) => void;
   interfaceSize: InterfaceSize | null;
   onInterfaceSize: (percent: number) => void;
+  appearance: AppearanceSetting | null;
+  onAppearance: (appearance: Appearance) => void;
   dockIcon: DockIcon | null;
   onDockIcon: (hideWithWindow: boolean) => void;
   clipboard: ClipboardClearing | null;
@@ -179,6 +185,8 @@ export function SettingsView({
           <GeneralPanel
             interfaceSize={interfaceSize}
             onInterfaceSize={onInterfaceSize}
+            appearance={appearance}
+            onAppearance={onAppearance}
             dockIcon={dockIcon}
             onDockIcon={onDockIcon}
             busy={busy}
@@ -246,7 +254,7 @@ export function SettingsView({
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="h-auto flex-none rounded-lg whitespace-normal border-0 px-[11px] py-[7px] text-xs font-normal data-[state=active]:bg-tile data-[state=active]:shadow-none dark:data-[state=active]:bg-tile"
+                    className="h-auto flex-none rounded-lg whitespace-normal border-0 px-[11px] py-[7px] text-xs font-normal data-[state=active]:bg-tile data-[state=active]:shadow-none"
                   >
                     <Icon aria-hidden="true" />
                     {t(tab.label)}
