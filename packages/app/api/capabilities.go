@@ -16,6 +16,8 @@ type Capabilities struct {
 	UnlockOnShow bool `json:"unlockOnShow"`
 	// InterfaceSize reports that the owner sets the interface size in settings.
 	InterfaceSize bool `json:"interfaceSize"`
+	// Appearance reports that the host's windows follow the light, dark or system appearance chosen in settings.
+	Appearance bool `json:"appearance"`
 	// PhotoPicker reports a photo picker apart from the file picker PDF scans still come from.
 	PhotoPicker bool `json:"photoPicker"`
 	// IdentityList reports that the system can keep the vault's accounts to suggest in its own autofill.

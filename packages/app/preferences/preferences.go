@@ -67,6 +67,8 @@ type record struct {
 	InterfaceSize      int  `json:"interfaceSize,omitempty"`
 	IdentityListOn     bool `json:"identityListOn,omitempty"`
 	ScreenshotsAllowed bool `json:"screenshotsAllowed,omitempty"`
+	// Appearance is empty for AppearanceSystem.
+	Appearance Appearance `json:"appearance,omitempty"`
 	// AutoBackupOn requires AutoBackupFolder.
 	AutoBackupOn bool `json:"autoBackupOn,omitempty"`
 	// AutoBackupInterval is empty for BackupDaily.
@@ -87,9 +89,10 @@ type Store struct {
 	current       record
 	loaded        bool
 
-	listenersMu       sync.Mutex
-	languageListeners []func()
-	languageChanges   changecount.Counter
+	listenersMu         sync.Mutex
+	languageListeners   []func()
+	appearanceListeners []func()
+	languageChanges     changecount.Counter
 }
 
 // New reads the record at path; without options the automatic lock counts from the device's last input.
@@ -128,20 +131,29 @@ func (s *Store) SetLanguage(language Language) error {
 		return err
 	}
 	s.languageChanges.Record()
-	s.listenersMu.Lock()
-	listeners := slices.Clone(s.languageListeners)
-	s.listenersMu.Unlock()
-	for _, listener := range listeners {
-		listener()
-	}
+	s.notify(&s.languageListeners)
 	return nil
 }
 
 // OnLanguageChange calls listener after each language the user records.
 func (s *Store) OnLanguageChange(listener func()) {
+	s.listen(&s.languageListeners, listener)
+}
+
+func (s *Store) listen(listeners *[]func(), listener func()) {
 	s.listenersMu.Lock()
 	defer s.listenersMu.Unlock()
-	s.languageListeners = append(s.languageListeners, listener)
+	*listeners = append(*listeners, listener)
+}
+
+// notify calls listeners outside the lock, so a listener may read the store.
+func (s *Store) notify(listeners *[]func()) {
+	s.listenersMu.Lock()
+	called := slices.Clone(*listeners)
+	s.listenersMu.Unlock()
+	for _, listener := range called {
+		listener()
+	}
 }
 
 // AwaitLanguageChange returns the count of recorded languages since start once it passes seen.

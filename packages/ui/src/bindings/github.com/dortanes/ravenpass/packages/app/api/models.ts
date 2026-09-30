@@ -26,6 +26,14 @@ export interface AddressLink {
 }
 
 /**
+ * Appearance reports whether the interface is light, dark or follows the system, and the appearances offered.
+ */
+export interface Appearance {
+    "appearance": string;
+    "offered": string[] | null;
+}
+
+/**
  * AutoBackup is the automatic backup setting of the open vault and the choices offered.
  */
 export interface AutoBackup {
@@ -133,6 +141,11 @@ export interface Capabilities {
      * InterfaceSize reports that the owner sets the interface size in settings.
      */
     "interfaceSize": boolean;
+
+    /**
+     * Appearance reports that the host's windows follow the light, dark or system appearance chosen in settings.
+     */
+    "appearance": boolean;
 
     /**
      * PhotoPicker reports a photo picker apart from the file picker PDF scans still come from.

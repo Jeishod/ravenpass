@@ -440,6 +440,13 @@ export function GenerateOneTimeCode(setup: string): $CancellablePromise<$models.
 }
 
 /**
+ * GetAppearance reports the appearance and the appearances offered.
+ */
+export function GetAppearance(): $CancellablePromise<$models.Appearance> {
+    return $Call.ByID(3928234356);
+}
+
+/**
  * GetAutoBackup reports the automatic backup setting and status.
  */
 export function GetAutoBackup(): $CancellablePromise<$models.AutoBackup> {
@@ -818,6 +825,13 @@ export function SeedWordlist(): $CancellablePromise<string[] | null> {
  */
 export function SelectStorageLocation(kind: string): $CancellablePromise<$models.StorageChange> {
     return $Call.ByID(3186418608, kind);
+}
+
+/**
+ * SetAppearance records an offered appearance; the host's windows and the interface apply it.
+ */
+export function SetAppearance(appearance: string): $CancellablePromise<void> {
+    return $Call.ByID(77884352, appearance);
 }
 
 /**

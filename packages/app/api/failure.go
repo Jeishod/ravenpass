@@ -87,6 +87,7 @@ const (
 	failureBackupChoiceUnsupported  failure = "backup-choice-unsupported"
 	failureBackupFolderMissing      failure = "backup-folder-missing"
 	failureSignInStyleUnsupported   failure = "sign-in-style-unsupported"
+	failureAppearanceUnsupported    failure = "appearance-unsupported"
 	failureShortcutInvalid          failure = "shortcut-invalid"
 	failureImportSourceUnknown      failure = "import-source-unknown"
 	failureImportUnrecognized       failure = "import-unrecognized"

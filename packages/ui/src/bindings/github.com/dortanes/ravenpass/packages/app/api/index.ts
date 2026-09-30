@@ -9,6 +9,7 @@ export {
 export type {
     Address,
     AddressLink,
+    Appearance,
     AutoBackup,
     AutoLock,
     BackupCode,
