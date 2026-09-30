@@ -44,6 +44,7 @@
   --color-control: var(--control);
   --color-field: var(--field);
   --color-field-hover: var(--field-hover);
+  --color-field-edge: var(--field-edge);
   --color-raised: var(--raised);
   --color-tile: var(--tile);
   --color-emblem-top: var(--emblem-top);
@@ -98,6 +99,8 @@
   --control: #efeeea;
   --field: #f4f3f0;
   --field-hover: #eeede9;
+  /* A field standing alone on the background: its fill is too close to the background's to part them. */
+  --field-edge: oklch(0 0 0 / 10%);
   --raised: #ffffff;
   --tile: #e8e7e3;
   --quiet: #dfded9;
@@ -144,6 +147,7 @@
     --control: #161616;
     --field: #181818;
     --field-hover: #1e1e1e;
+    --field-edge: transparent;
     --raised: #1c1c1c;
     --tile: #242424;
     --quiet: #2b2b2b;
