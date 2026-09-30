@@ -31,6 +31,7 @@ const (
 	opPasskeyCreate = "passkey-create"
 	opIcon          = "icon"
 	opLanguage      = "language"
+	opAppearance    = "appearance"
 )
 
 // The refusals an answer names.
@@ -120,6 +121,7 @@ type answer struct {
 	Languages         []string        `json:"languages,omitempty"`
 	Language          string          `json:"language,omitempty"`
 	Chosen            bool            `json:"chosen,omitempty"`
+	Appearance        string          `json:"appearance,omitempty"`
 }
 
 // suggestion is a listed credential; Matches is false until the owner adds the most specific service to it.

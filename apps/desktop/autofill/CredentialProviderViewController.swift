@@ -23,8 +23,6 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
 
     override func loadView() {
         view = NSView(frame: NSRect(origin: .zero, size: Self.size))
-        // The page has one dark theme.
-        view.appearance = NSAppearance(named: .darkAqua)
         preferredContentSize = Self.size
     }
 
@@ -170,6 +168,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
         case "sign-in": signIn(request)
         case "icon": readIcon(request)
         case "language": readLanguage(request)
+        case "appearance": readAppearance(request)
         default: page.answer(request, status: "failed")
         }
     }
@@ -261,6 +260,23 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
             } else {
                 self.answer(request, "failed")
             }
+        }
+    }
+
+    /// The sheet takes the appearance with its page; without an answer both follow the system.
+    private func readAppearance(_ request: PageRequest) {
+        let app = self.app
+        read({ try app.appearance() }) { [weak self] appearance in
+            guard let self else { return }
+            guard case .success(let appearance) = appearance else {
+                return self.answer(request, "failed")
+            }
+            switch appearance {
+            case "light": self.view.appearance = NSAppearance(named: .aqua)
+            case "dark": self.view.appearance = NSAppearance(named: .darkAqua)
+            default: self.view.appearance = nil
+            }
+            self.page?.answer(request, with: AppearanceAnswer(appearance: appearance))
         }
     }
 
@@ -517,6 +533,11 @@ private struct LanguageAnswer: Encodable {
     let languages: [String]
     let language: String
     let chosen: Bool
+}
+
+private struct AppearanceAnswer: Encodable {
+    let status = "ok"
+    let appearance: String
 }
 
 private struct SearchFields: Decodable {

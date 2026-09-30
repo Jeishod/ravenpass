@@ -133,10 +133,11 @@ func (v *fakeVault) requesters() []autofill.Requester {
 	return slices.Clone(v.asked)
 }
 
-// fakePage holds website icons by site and the interface language.
+// fakePage holds website icons by site, the interface language and the appearance.
 type fakePage struct {
-	icons    map[string]api.SiteIcon
-	language api.LanguageSettings
+	icons      map[string]api.SiteIcon
+	language   api.LanguageSettings
+	appearance api.Appearance
 }
 
 func (p fakePage) SiteIcon(site string) (api.SiteIcon, error) {
@@ -148,6 +149,10 @@ func (p fakePage) SiteIcon(site string) (api.SiteIcon, error) {
 
 func (p fakePage) GetLanguage() (api.LanguageSettings, error) {
 	return p.language, nil
+}
+
+func (p fakePage) GetAppearance() (api.Appearance, error) {
+	return p.appearance, nil
 }
 
 type fakeSystem struct {
@@ -629,6 +634,14 @@ func TestLanguageAnswersTheInterfaceLanguage(t *testing.T) {
 	want := answer{Languages: []string{"en", "ru"}, Language: "ru", Chosen: true}
 	if reply := ask(t, path, request{Op: opLanguage}); !reflect.DeepEqual(reply, want) {
 		t.Fatalf("language = %+v, want %+v", reply, want)
+	}
+}
+
+func TestAppearanceAnswersTheChosenAppearance(t *testing.T) {
+	page := fakePage{appearance: api.Appearance{Appearance: "dark", Offered: []string{"system", "light", "dark"}}}
+	path := servePage(t, &fakeVault{}, page, newQueue(t), &fakeVerifier{}, admitted)
+	if reply := ask(t, path, request{Op: opAppearance}); !reflect.DeepEqual(reply, answer{Appearance: "dark"}) {
+		t.Fatalf("appearance = %+v", reply)
 	}
 }
 

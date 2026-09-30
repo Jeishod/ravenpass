@@ -56,6 +56,7 @@ type Vault interface {
 type Page interface {
 	SiteIcon(site string) (api.SiteIcon, error)
 	GetLanguage() (api.LanguageSettings, error)
+	GetAppearance() (api.Appearance, error)
 }
 
 // Unlocks posts unlock requests to the confirmation queue and waits for them to end.
@@ -288,6 +289,12 @@ func (s *Server) answer(ctx context.Context, asked request) answer {
 			return refusal(err)
 		}
 		return answer{Languages: settings.Languages, Language: settings.Language, Chosen: settings.Chosen}
+	case opAppearance:
+		appearance, err := s.page.GetAppearance()
+		if err != nil {
+			return refusal(err)
+		}
+		return answer{Appearance: appearance.Appearance}
 	}
 	requesters, ok := requestersOf(asked.Services)
 	if !ok {

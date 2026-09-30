@@ -169,6 +169,11 @@ final class AppConnection: @unchecked Sendable {
         return LanguageSettings(languages: answer.languages, language: answer.language, chosen: answer.chosen)
     }
 
+    /// "system", "light" or "dark".
+    func appearance() throws -> String {
+        try ask(Request(op: "appearance")).appearance
+    }
+
     /// The app releases the value only once the credential matches one of the services.
     func release(_ wanted: Release) throws -> Secret {
         switch wanted.kind {
@@ -454,11 +459,12 @@ private struct Answer: Decodable {
     let languages: [String]
     let language: String
     let chosen: Bool
+    let appearance: String
 
     private enum CodingKeys: String, CodingKey {
         case wait, error, site, open, scope, suggestions, user, password, code, passkeys
         case credentialID, authenticatorData, signature, userHandle, attestationObject
-        case image, tint, languages, language, chosen
+        case image, tint, languages, language, chosen, appearance
     }
 
     init(from decoder: Decoder) throws {
@@ -483,5 +489,6 @@ private struct Answer: Decodable {
         languages = try values.decodeIfPresent([String].self, forKey: .languages) ?? []
         language = try values.decodeIfPresent(String.self, forKey: .language) ?? ""
         chosen = try values.decodeIfPresent(Bool.self, forKey: .chosen) ?? false
+        appearance = try values.decodeIfPresent(String.self, forKey: .appearance) ?? ""
     }
 }

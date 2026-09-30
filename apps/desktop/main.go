@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sync/atomic"
 
+	"github.com/dortanes/ravenpass/apps/desktop/internal/appearance"
 	"github.com/dortanes/ravenpass/apps/desktop/internal/autofillbridge"
 	"github.com/dortanes/ravenpass/apps/desktop/internal/autolock"
 	"github.com/dortanes/ravenpass/apps/desktop/internal/clouddrive"
@@ -98,7 +99,7 @@ func main() {
 		CurrentApp: currentApp,
 		Places:     clouddrive.Places{},
 		Printer:    printing.Mac{},
-		Offers:     api.Capabilities{Shortcuts: true, DockIcon: true, StorageLocations: true, SaveFiles: true, CopyScans: true},
+		Offers:     api.Capabilities{Shortcuts: true, DockIcon: true, StorageLocations: true, SaveFiles: true, CopyScans: true, Appearance: true},
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -124,6 +125,7 @@ func main() {
 			Handler: application.AssetFileServerFS(assets),
 		},
 	})
+	appearance.Follow(settings)
 	menu := application.DefaultApplicationMenu()
 	pagezoom.Bind(menu, app.Window.Current)
 	app.Menu.Set(menu)
