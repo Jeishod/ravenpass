@@ -35,7 +35,7 @@ interface Look {
 
 const windowLook: Look = {
   content: "flex w-full max-w-[440px] flex-col items-center text-center",
-  icon: "mb-4 flex size-12 items-center justify-center rounded-2xl border border-white/8 bg-linear-to-b from-[#2a2b31] to-[#141518] text-foreground",
+  icon: "mb-4 flex size-12 items-center justify-center rounded-2xl border border-foreground/8 bg-linear-to-b from-emblem-top to-emblem-bottom text-foreground",
   glyph: "size-[22px]",
   title: "text-[24px] leading-tight font-semibold tracking-[-0.02em]",
   description: "mt-1.5 max-w-[380px] text-[13px] leading-[1.5]",

@@ -86,7 +86,7 @@ export function SettingsNav({
                   )}
                 >
                   {active && (
-                    <SelectionIndicator className="rounded-[10px] bg-raised inset-ring inset-ring-white/10" />
+                    <SelectionIndicator className="rounded-[10px] bg-raised inset-ring inset-ring-foreground/10" />
                   )}
                   <Icon
                     className={cn(

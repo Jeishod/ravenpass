@@ -45,7 +45,7 @@ const row = "flex items-center gap-3.5 p-3.5 pr-4";
 const card = cn(row, "rounded-2xl bg-field");
 
 const tile =
-  "flex size-11 shrink-0 items-center justify-center rounded-xl border border-white/8 bg-linear-to-b from-[#2a2b31] to-[#141518]";
+  "flex size-11 shrink-0 items-center justify-center rounded-xl border border-foreground/8 bg-linear-to-b from-emblem-top to-emblem-bottom";
 
 /** StorageStep shows where the vault file will live; its forward action starts creation. */
 export function StorageStep({

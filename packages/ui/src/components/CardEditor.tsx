@@ -491,14 +491,14 @@ export function CardEditor({
                 side="left"
                 align="center"
                 sideOffset={12}
-                className="action-fill w-64 border-0 px-3 py-2.5 text-[12px] leading-[1.45] text-neutral-900 shadow-[0_12px_32px_-8px_rgb(0_0_0/0.7)]"
+                className="action-fill w-64 border-0 px-3 py-2.5 text-[12px] leading-[1.45] text-(--action-foreground) shadow-[0_12px_32px_-8px_rgb(0_0_0/0.3)] dark:shadow-[0_12px_32px_-8px_rgb(0_0_0/0.7)]"
                 onOpenAutoFocus={(event) => event.preventDefault()}
                 onEscapeKeyDown={dismissHint}
               >
                 <PopoverPrimitive.Arrow
                   width={14}
                   height={7}
-                  className="fill-[#e7e6e2]"
+                  className="fill-(--action-midtone)"
                 />
                 <p className="flex gap-2">
                   <Sparkles
@@ -510,7 +510,7 @@ export function CardEditor({
                 <div className="mt-2 flex justify-end">
                   <button
                     type="button"
-                    className="h-6 rounded-full bg-neutral-900 px-3 text-[11px] text-white outline-none hover:bg-neutral-800 focus-visible:ring-[3px] focus-visible:ring-neutral-900/30"
+                    className="h-6 rounded-full bg-(--action-foreground) px-3 text-[11px] text-(--action-midtone) outline-none hover:bg-(--action-foreground)/85 focus-visible:ring-[3px] focus-visible:ring-(--action-foreground)/30"
                     onClick={dismissHint}
                   >
                     {t("card.hint.dismiss")}
@@ -555,7 +555,7 @@ export function CardEditor({
                 <SelectTrigger
                   id="card-billing"
                   size="sm"
-                  className="h-7 w-full min-w-0 border-0 bg-transparent px-0 text-[13px] shadow-none focus-visible:ring-0 dark:bg-transparent dark:hover:bg-transparent"
+                  className="h-7 w-full min-w-0 border-0 bg-transparent px-0 text-[13px] shadow-none focus-visible:ring-0"
                 >
                   <SelectValue />
                 </SelectTrigger>

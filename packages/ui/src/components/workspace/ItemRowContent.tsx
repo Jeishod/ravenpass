@@ -32,7 +32,7 @@ const looks: Record<
   list: {
     row: "rounded-row border border-transparent bg-card px-[11px] py-2 focus-visible:border-ring max-sm:min-h-[46px]",
     selection:
-      "-inset-px rounded-row border border-white/12 bg-raised group-focus-visible:border-ring",
+      "-inset-px rounded-row border border-foreground/12 bg-raised group-focus-visible:border-ring",
     title: "text-[13px]",
     detail: "text-[11px]",
     line: "truncate",
@@ -40,7 +40,8 @@ const looks: Record<
   },
   menu: {
     row: "min-h-[46px] rounded-[10px] px-2 py-1.5",
-    selection: "rounded-[10px] bg-white/7.5 inset-ring inset-ring-white/4",
+    selection:
+      "rounded-[10px] bg-foreground/7.5 inset-ring inset-ring-foreground/4",
     title: "text-[13px] font-medium",
     detail: "mt-px text-[11.5px]",
     line: "truncate leading-4",

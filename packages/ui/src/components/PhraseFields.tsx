@@ -67,7 +67,7 @@ export function PhraseFields({
           <PhraseCell
             key={position}
             position={position}
-            className="items-center py-0 focus-within:inset-ring focus-within:inset-ring-white/14 has-aria-invalid:inset-ring has-aria-invalid:inset-ring-destructive/60"
+            className="items-center py-0 focus-within:inset-ring focus-within:inset-ring-foreground/14 has-aria-invalid:inset-ring has-aria-invalid:inset-ring-destructive/60"
           >
             <Input
               ref={(field) => {

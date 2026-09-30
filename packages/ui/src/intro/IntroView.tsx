@@ -205,7 +205,7 @@ export function IntroView({
             <div
               data-intro="spark"
               aria-hidden="true"
-              className="pointer-events-none absolute top-1/2 left-1/2 -mt-[3px] -ml-[3px] size-1.5 rounded-full bg-white opacity-0 shadow-[0_0_14px_4px_rgb(255_255_255/0.55)]"
+              className="pointer-events-none absolute top-1/2 left-1/2 -mt-[3px] -ml-[3px] size-1.5 rounded-full bg-foreground opacity-0 shadow-[0_0_14px_4px_color-mix(in_oklab,var(--color-foreground)_55%,transparent)]"
             />
             <Button
               data-intro="create"
@@ -214,7 +214,7 @@ export function IntroView({
               onClick={create}
               disabled={opening}
               className={cn(
-                "group relative size-full gap-2.5 rounded-full text-[15px] tracking-[-0.01em] shadow-[inset_0_1px_0_#fff,inset_0_-1px_0_rgb(0_0_0/0.12)] motion-safe:hover:scale-[1.025]",
+                "group relative size-full gap-2.5 rounded-full text-[15px] tracking-[-0.01em] shadow-[inset_0_1px_0_rgb(255_255_255/0.16),inset_0_-1px_0_rgb(0_0_0/0.3)] dark:shadow-[inset_0_1px_0_#fff,inset_0_-1px_0_rgb(0_0_0/0.12)] motion-safe:hover:scale-[1.025]",
                 staged && "opacity-0",
               )}
               style={staged ? buttonReveal : undefined}

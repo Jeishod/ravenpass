@@ -1,7 +1,17 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* A chosen appearance marks the root; without a mark the page follows the system, which the host already set to the choice. */
+@custom-variant dark {
+  &:where([data-appearance="dark"], [data-appearance="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:not([data-appearance="light"], [data-appearance="light"] *)) {
+      @slot;
+    }
+  }
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -36,6 +46,8 @@
   --color-field-hover: var(--field-hover);
   --color-raised: var(--raised);
   --color-tile: var(--tile);
+  --color-emblem-top: var(--emblem-top);
+  --color-emblem-bottom: var(--emblem-bottom);
   --color-quiet: var(--quiet);
   --color-faint: var(--faint);
   --radius-sm: calc(var(--radius) * 0.6);
@@ -47,51 +59,102 @@
 }
 
 /* Shape states the role: full radius an action, circle identity or time, rounded rectangle data. */
+/* Light raises panes to white and sinks fields and tiles into grey; dark lifts each layer lighter. */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
   font-family:
     -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
     sans-serif;
   font-synthesis: none;
   --radius: 0.75rem;
-  --background: #0a0a0a;
-  --foreground: #f2f1ef;
-  --card: #111111;
-  --card-foreground: #f2f1ef;
-  --popover: #181818;
-  --popover-foreground: #f2f1ef;
-  --primary: #f2f1ef;
-  --primary-foreground: #0a0a0a;
-  --secondary: #1c1c1c;
-  --secondary-foreground: #f2f1ef;
-  --muted: #161616;
-  --muted-foreground: #8e8c87;
-  --accent: #242424;
-  --accent-foreground: #f2f1ef;
-  /* The one hued token: light red for text and icons, deep red for the button that acts. */
-  --destructive: oklch(0.75 0.09 25);
-  --destructive-fill: #7e2f2b;
-  --destructive-foreground: #ffe4e1;
-  --destructive-surface: #231413;
-  --warning: oklch(0.79 0.08 75);
-  --border: oklch(1 0 0 / 5%);
-  --input: oklch(1 0 0 / 8%);
-  --ring: oklch(1 0 0 / 32%);
-  --sidebar: #0a0a0a;
-  --sidebar-foreground: #f2f1ef;
-  --sidebar-accent: #1c1c1c;
-  --sidebar-accent-foreground: #f2f1ef;
-  --sidebar-border: oklch(1 0 0 / 7%);
-  --control: #161616;
-  --field: #181818;
-  --field-hover: #1e1e1e;
-  --raised: #1c1c1c;
-  --tile: #242424;
-  --quiet: #2b2b2b;
-  --faint: #6e6c68;
-  --action-fill: linear-gradient(180deg, #ffffff, #cfcdc9);
-  --action-fill-hover: linear-gradient(180deg, #ffffff, #dedcd8);
-  --action-foreground: #0a0a0a;
+  --background: #f3f2ef;
+  --foreground: #171615;
+  --card: #ffffff;
+  --card-foreground: #171615;
+  --popover: #ffffff;
+  --popover-foreground: #171615;
+  --primary: #171615;
+  --primary-foreground: #f3f2ef;
+  --secondary: #ebeae6;
+  --secondary-foreground: #171615;
+  --muted: #efeeea;
+  --muted-foreground: #66645f;
+  --accent: #e8e7e3;
+  --accent-foreground: #171615;
+  /* The one hued token: red for text and icons, a deeper fill for the button that acts. */
+  --destructive: oklch(0.52 0.15 25);
+  --destructive-fill: #b8352d;
+  --destructive-foreground: #ffffff;
+  --destructive-surface: #f9e8e6;
+  --warning: oklch(0.53 0.11 70);
+  --border: oklch(0 0 0 / 8%);
+  --input: oklch(0 0 0 / 10%);
+  --ring: oklch(0 0 0 / 28%);
+  --sidebar: #f3f2ef;
+  --sidebar-foreground: #171615;
+  --sidebar-accent: #e8e7e3;
+  --sidebar-accent-foreground: #171615;
+  --sidebar-border: oklch(0 0 0 / 8%);
+  --control: #efeeea;
+  --field: #f4f3f0;
+  --field-hover: #eeede9;
+  --raised: #ffffff;
+  --tile: #e8e7e3;
+  --quiet: #dfded9;
+  --faint: #817f7a;
+  --emblem-top: #ffffff;
+  --emblem-bottom: #e9e8e4;
+  --action-fill: linear-gradient(180deg, #34332f, #121110);
+  --action-fill-hover: linear-gradient(180deg, #43423e, #1d1c1a);
+  --action-foreground: #f7f6f4;
+  /* The fill's colour halfway down, for what continues it, such as a popover's arrow. */
+  --action-midtone: #232220;
+}
+
+:root {
+  @variant dark {
+    color-scheme: dark;
+    --background: #0a0a0a;
+    --foreground: #f2f1ef;
+    --card: #111111;
+    --card-foreground: #f2f1ef;
+    --popover: #181818;
+    --popover-foreground: #f2f1ef;
+    --primary: #f2f1ef;
+    --primary-foreground: #0a0a0a;
+    --secondary: #1c1c1c;
+    --secondary-foreground: #f2f1ef;
+    --muted: #161616;
+    --muted-foreground: #8e8c87;
+    --accent: #242424;
+    --accent-foreground: #f2f1ef;
+    --destructive: oklch(0.75 0.09 25);
+    --destructive-fill: #7e2f2b;
+    --destructive-foreground: #ffe4e1;
+    --destructive-surface: #231413;
+    --warning: oklch(0.79 0.08 75);
+    --border: oklch(1 0 0 / 5%);
+    --input: oklch(1 0 0 / 8%);
+    --ring: oklch(1 0 0 / 32%);
+    --sidebar: #0a0a0a;
+    --sidebar-foreground: #f2f1ef;
+    --sidebar-accent: #1c1c1c;
+    --sidebar-accent-foreground: #f2f1ef;
+    --sidebar-border: oklch(1 0 0 / 7%);
+    --control: #161616;
+    --field: #181818;
+    --field-hover: #1e1e1e;
+    --raised: #1c1c1c;
+    --tile: #242424;
+    --quiet: #2b2b2b;
+    --faint: #6e6c68;
+    --emblem-top: #2a2b31;
+    --emblem-bottom: #141518;
+    --action-fill: linear-gradient(180deg, #ffffff, #cfcdc9);
+    --action-fill-hover: linear-gradient(180deg, #ffffff, #dedcd8);
+    --action-foreground: #0a0a0a;
+    --action-midtone: #e7e6e2;
+  }
 }
 
 @layer base {
@@ -148,7 +211,7 @@
     border: 2px solid transparent;
     border-radius: 9999px;
     background-clip: padding-box;
-    background-color: oklch(1 0 0 / 12%);
+    background-color: --alpha(var(--color-foreground) / 12%);
   }
 }
 

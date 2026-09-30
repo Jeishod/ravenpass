@@ -54,7 +54,7 @@ export function VaultArt({ className }: { className?: string }) {
       </div>
       <div
         data-vault="seam"
-        className={cn(opening, "border-[1.5px] border-foreground opacity-0")}
+        className={cn(opening, "border-[1.5px] border-[#f2f1ef] opacity-0")}
       />
       <div
         data-vault="handle"

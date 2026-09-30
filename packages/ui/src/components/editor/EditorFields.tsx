@@ -21,14 +21,14 @@ export const bareField =
 
 /** The first and last rows round their own corners, or the block's clip cuts the focus ring. */
 export const editorRow =
-  "flex min-h-[41px] items-center gap-2.5 border-b px-[13px] py-1.5 first:rounded-t-row last:rounded-b-row last:border-b-0 focus-within:bg-field-hover focus-within:shadow-[inset_0_0_0_1px_oklch(1_0_0/14%)]";
+  "flex min-h-[41px] items-center gap-2.5 border-b px-[13px] py-1.5 first:rounded-t-row last:rounded-b-row last:border-b-0 focus-within:bg-field-hover focus-within:inset-ring focus-within:inset-ring-foreground/14";
 
 export const labelColumn =
   "w-[88px] shrink-0 text-[11px] text-muted-foreground";
 
 /** A block holding one long field under its label, such as notes. */
 export const fieldSection =
-  "shrink-0 rounded-row bg-field px-[13px] py-[11px] focus-within:bg-field-hover focus-within:shadow-[inset_0_0_0_1px_oklch(1_0_0/14%)]";
+  "shrink-0 rounded-row bg-field px-[13px] py-[11px] focus-within:bg-field-hover focus-within:inset-ring focus-within:inset-ring-foreground/14";
 
 /** useRemaining returns the characters left once a field nears its limit, and nothing before. */
 export function useRemaining() {

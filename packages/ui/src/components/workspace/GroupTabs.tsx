@@ -135,10 +135,10 @@ function GroupTab({
   return (
     <ToggleGroupItem
       value={value}
-      className="relative h-[26px] gap-1.5 rounded-full px-3 text-xs font-normal text-muted-foreground transition-all hover:bg-accent hover:text-foreground focus:z-auto focus-visible:z-auto motion-safe:active:scale-[0.97] data-[state=on]:bg-transparent data-[state=on]:text-foreground dark:hover:bg-accent/50 max-sm:h-8"
+      className="relative h-[26px] gap-1.5 rounded-full px-3 text-xs font-normal text-muted-foreground transition-all hover:bg-accent hover:text-foreground focus:z-auto focus-visible:z-auto motion-safe:active:scale-[0.97] data-[state=on]:bg-transparent data-[state=on]:text-foreground max-sm:h-8"
     >
       {active && (
-        <SelectionIndicator className="rounded-full bg-raised inset-ring inset-ring-white/10" />
+        <SelectionIndicator className="rounded-full bg-raised inset-ring inset-ring-foreground/10" />
       )}
       <span className={`${aboveIndicator} max-w-[120px] truncate`}>
         {label}
