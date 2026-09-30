@@ -36,6 +36,7 @@ const messages: PlaceMessages = {
   errorSave: "card.error.save",
   errorSavedPartly: "card.error.saved-partly",
   errorDelete: "card.error.delete",
+  errorDuplicate: "card.error.duplicate",
   errorDeletedPartly: "card.error.deleted-partly",
 };
 

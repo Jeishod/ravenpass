@@ -51,11 +51,12 @@ export const workspace = {
 
   "workspace.loading": "Loading passwords…",
   "workspace.detail.loading": "Opening password…",
-  "workspace.detail.more": "More actions",
   "workspace.detail.edit": "Edit",
   "workspace.detail.pin": "Add to Favorites",
   "workspace.detail.unpin": "Remove from Favorites",
+  "workspace.detail.duplicate": "Duplicate",
   "workspace.detail.delete": "Delete",
+  "workspace.duplicate.name": "{name} (copy)",
   "workspace.delete.detail": "This cannot be undone.",
   "workspace.delete.cancel": "Cancel",
   "workspace.delete.confirm": "Delete",
@@ -142,6 +143,8 @@ export const workspace = {
   "workspace.error.saved-partly": "Password saved, but {detail}",
   "workspace.error.delete":
     "Ravenpass could not delete this password. Try again.",
+  "workspace.error.duplicate":
+    "Ravenpass could not duplicate this password. Try again.",
   "workspace.error.deleted-partly": "Password deleted, but {detail}",
   "workspace.error.refresh":
     "the list could not refresh. Reopen Ravenpass to check it.",

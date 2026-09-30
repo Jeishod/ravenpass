@@ -55,5 +55,6 @@ export const note = {
     "Ravenpass could not save this note. Check what you entered and try again.",
   "note.error.saved-partly": "Note saved, but {detail}",
   "note.error.delete": "Ravenpass could not delete this note. Try again.",
+  "note.error.duplicate": "Ravenpass could not duplicate this note. Try again.",
   "note.error.deleted-partly": "Note deleted, but {detail}",
 };

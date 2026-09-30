@@ -55,11 +55,12 @@ export const workspace: typeof english = {
 
   "workspace.loading": "Загрузка паролей…",
   "workspace.detail.loading": "Открываем пароль…",
-  "workspace.detail.more": "Другие действия",
   "workspace.detail.edit": "Изменить",
   "workspace.detail.pin": "В избранное",
   "workspace.detail.unpin": "Убрать из избранного",
+  "workspace.detail.duplicate": "Дублировать",
   "workspace.detail.delete": "Удалить",
+  "workspace.duplicate.name": "{name} (копия)",
   "workspace.delete.detail": "Это действие нельзя отменить.",
   "workspace.delete.cancel": "Отмена",
   "workspace.delete.confirm": "Удалить",
@@ -145,6 +146,8 @@ export const workspace: typeof english = {
     "Не удалось сохранить этот пароль. Проверьте хранилище и попробуйте снова.",
   "workspace.error.saved-partly": "Пароль сохранён, но {detail}",
   "workspace.error.delete": "Не удалось удалить этот пароль. Попробуйте снова.",
+  "workspace.error.duplicate":
+    "Не удалось создать копию этого пароля. Попробуйте снова.",
   "workspace.error.deleted-partly": "Пароль удалён, но {detail}",
   "workspace.error.refresh":
     "список не удалось обновить. Перезапустите Ravenpass и проверьте его.",

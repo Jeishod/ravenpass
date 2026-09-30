@@ -37,6 +37,7 @@ const messages: PlaceMessages = {
   errorSave: "workspace.error.save",
   errorSavedPartly: "workspace.error.saved-partly",
   errorDelete: "workspace.error.delete",
+  errorDuplicate: "workspace.error.duplicate",
   errorDeletedPartly: "workspace.error.deleted-partly",
 };
 

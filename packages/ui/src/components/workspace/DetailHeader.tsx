@@ -1,17 +1,11 @@
 import { cn } from "cn";
-import { MoreHorizontal, Pencil, Star } from "lucide-react";
+import { Copy, Pencil, Star, Trash2 } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 import { useTranslator } from "../../i18n/translator.tsx";
 import type { Group } from "../../vault-api.ts";
 import type { SiteIconState } from "../../workspace/site-icons.ts";
 import { ConfirmDialog } from "../ConfirmDialog.tsx";
 import { Button } from "../ui/button.tsx";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu.tsx";
 import { Avatar } from "./Avatar.tsx";
 import { GroupBadge } from "./GroupBadge.tsx";
 
@@ -25,6 +19,7 @@ export interface DetailControls {
   onAskDelete: () => void;
   onCancelDelete: () => void;
   onDelete: () => void;
+  onDuplicate: () => void;
   onEdit: () => void;
   onTogglePin: () => void;
 }
@@ -51,6 +46,7 @@ export function DetailHeader({
     onAskDelete,
     onCancelDelete,
     onDelete,
+    onDuplicate,
     onEdit,
     onTogglePin,
   },
@@ -113,26 +109,19 @@ export function DetailHeader({
             disabled={busy}
             onClick={onTogglePin}
           />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={t("workspace.detail.more")}
-                title={t("workspace.detail.more")}
-                disabled={busy}
-                className={paneActionClass}
-              >
-                <MoreHorizontal className="size-[15px]" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem variant="destructive" onSelect={onAskDelete}>
-                {t("workspace.detail.delete")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <PaneAction
+            label={t("workspace.detail.duplicate")}
+            icon={Copy}
+            disabled={busy}
+            onClick={onDuplicate}
+          />
+          <PaneAction
+            label={t("workspace.detail.delete")}
+            icon={Trash2}
+            disabled={busy}
+            destructive
+            onClick={onAskDelete}
+          />
         </span>
       </header>
 
@@ -159,11 +148,14 @@ export function PaneAction({
   label,
   icon: Icon,
   disabled,
+  destructive = false,
   onClick,
 }: {
   label: string;
   icon: ComponentType<{ className?: string }>;
   disabled: boolean;
+  /** Set for an action that removes something, which takes the destructive hue. */
+  destructive?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -175,7 +167,10 @@ export function PaneAction({
       title={label}
       disabled={disabled}
       onClick={onClick}
-      className={paneActionClass}
+      className={cn(
+        paneActionClass,
+        destructive && "text-destructive hover:text-destructive",
+      )}
     >
       <Icon className="size-[15px]" />
     </Button>

@@ -36,6 +36,7 @@ const messages: PlaceMessages = {
   errorSave: "seed.error.save",
   errorSavedPartly: "seed.error.saved-partly",
   errorDelete: "seed.error.delete",
+  errorDuplicate: "seed.error.duplicate",
   errorDeletedPartly: "seed.error.deleted-partly",
 };
 

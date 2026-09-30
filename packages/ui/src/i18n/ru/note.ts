@@ -60,5 +60,7 @@ export const note: typeof english = {
     "Не удалось сохранить эту заметку. Проверьте введённые данные и попробуйте снова.",
   "note.error.saved-partly": "Заметка сохранена, но {detail}",
   "note.error.delete": "Не удалось удалить эту заметку. Попробуйте снова.",
+  "note.error.duplicate":
+    "Не удалось создать копию этой заметки. Попробуйте снова.",
   "note.error.deleted-partly": "Заметка удалена, но {detail}",
 };

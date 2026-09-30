@@ -713,6 +713,7 @@ export const hostApi: VaultApi = {
   defaultGroup: service.DefaultGroup,
   setDefaultGroup: service.SetDefaultGroup,
   deleteItem: service.DeleteItem,
+  duplicateItem: service.DuplicateItem,
   setPinned: service.SetPinned,
   copyCredentialField: service.CopyCredentialField,
   copyIdentityField: service.CopyIdentityField,

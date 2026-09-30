@@ -111,6 +111,7 @@ export interface PlaceMessages {
   errorSavedPartly: MessageKey;
   errorDelete: MessageKey;
   errorDeletedPartly: MessageKey;
+  errorDuplicate: MessageKey;
 }
 
 /** How a place reads and writes the one kind of item it holds. */
@@ -411,6 +412,36 @@ export function ItemPlace<
     }
   }
 
+  // The copy opens once saved, as a new item does.
+  async function duplicate() {
+    if (!selected) return;
+    setBusy(true);
+    setSyncState("writing");
+    let copied: string | null = null;
+    try {
+      copied = await api.duplicateItem(selected.id);
+      setSyncState("synced");
+      await refresh();
+      await refreshExportState();
+      await open(copied);
+    } catch (cause) {
+      if (copied !== null) {
+        setSyncState("synced");
+        leaveDetail("empty");
+        toast.error(
+          t(messages.errorSavedPartly, {
+            detail: failure(cause, "workspace.error.refresh"),
+          }),
+        );
+      } else {
+        settleSync(cause);
+        report(cause, messages.errorDuplicate);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function remove() {
     if (!selected) return;
     setBusy(true);
@@ -544,6 +575,7 @@ export function ItemPlace<
               onAskDelete: () => setConfirmDelete(true),
               onCancelDelete: () => setConfirmDelete(false),
               onDelete: remove,
+              onDuplicate: () => void duplicate(),
               onEdit: () => setPane("edit"),
               onTogglePin: () => togglePin(selected.id, !pinned),
             },

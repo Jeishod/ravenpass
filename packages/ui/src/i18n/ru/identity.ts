@@ -146,6 +146,8 @@ export const identity: typeof english = {
     "Не удалось сохранить этот профиль. Проверьте введённые данные и попробуйте снова.",
   "identity.error.saved-partly": "Профиль сохранён, но {detail}",
   "identity.error.delete": "Не удалось удалить этот профиль. Попробуйте снова.",
+  "identity.error.duplicate":
+    "Не удалось создать копию этого профиля. Попробуйте снова.",
   "identity.error.deleted-partly": "Профиль удалён, но {detail}",
   "identity.error.scan-attach":
     "Не удалось прикрепить этот файл. Выберите изображение JPEG, PNG или WebP либо файл PDF.",

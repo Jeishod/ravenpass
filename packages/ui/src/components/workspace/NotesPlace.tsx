@@ -36,6 +36,7 @@ const messages: PlaceMessages = {
   errorSave: "note.error.save",
   errorSavedPartly: "note.error.saved-partly",
   errorDelete: "note.error.delete",
+  errorDuplicate: "note.error.duplicate",
   errorDeletedPartly: "note.error.deleted-partly",
 };
 

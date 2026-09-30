@@ -98,6 +98,7 @@ export const card = {
     "Ravenpass could not save this card. Check what you entered and try again.",
   "card.error.saved-partly": "Card saved, but {detail}",
   "card.error.delete": "Ravenpass could not delete this card. Try again.",
+  "card.error.duplicate": "Ravenpass could not duplicate this card. Try again.",
   "card.error.deleted-partly": "Card deleted, but {detail}",
   "card.error.lookup":
     "Ravenpass could not get details from the bank's website. Enter the bank's name manually.",

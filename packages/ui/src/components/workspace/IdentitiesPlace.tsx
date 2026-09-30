@@ -44,6 +44,7 @@ const messages: PlaceMessages = {
   errorSave: "identity.error.save",
   errorSavedPartly: "identity.error.saved-partly",
   errorDelete: "identity.error.delete",
+  errorDuplicate: "identity.error.duplicate",
   errorDeletedPartly: "identity.error.deleted-partly",
 };
 

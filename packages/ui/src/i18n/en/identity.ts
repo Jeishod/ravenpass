@@ -143,6 +143,8 @@ export const identity = {
   "identity.error.saved-partly": "Identity saved, but {detail}",
   "identity.error.delete":
     "Ravenpass could not delete this identity. Try again.",
+  "identity.error.duplicate":
+    "Ravenpass could not duplicate this identity. Try again.",
   "identity.error.deleted-partly": "Identity deleted, but {detail}",
   "identity.error.scan-attach":
     "Ravenpass could not attach that file. Choose a JPEG, PNG or WebP picture, or a PDF.",

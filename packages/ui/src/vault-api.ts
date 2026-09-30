@@ -984,6 +984,11 @@ export interface VaultApi {
   setDefaultGroup(id: string): Promise<void>;
   /** Acts on an item of any kind. */
   deleteItem(id: string): Promise<void>;
+  /**
+   * Saves a copy of an item of any kind, named after it, and resolves with the copy's id. A password's passkeys stay
+   * with the original; an identity's scans are copied.
+   */
+  duplicateItem(id: string): Promise<string>;
   /** Acts on an item of any kind. */
   setPinned(id: string, pinned: boolean): Promise<void>;
   copyCredentialField(id: string, field: CredentialField): Promise<void>;

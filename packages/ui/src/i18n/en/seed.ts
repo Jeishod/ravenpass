@@ -143,6 +143,7 @@ export const seed = {
     "Ravenpass could not save this seed. Check what you entered and try again.",
   "seed.error.saved-partly": "Seed saved, but {detail}",
   "seed.error.delete": "Ravenpass could not delete this seed. Try again.",
+  "seed.error.duplicate": "Ravenpass could not duplicate this seed. Try again.",
   "seed.error.deleted-partly": "Seed deleted, but {detail}",
   "seed.error.use-code":
     "Ravenpass could not mark that code as used. Open the seed and try again.",
