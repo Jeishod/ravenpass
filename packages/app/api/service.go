@@ -284,7 +284,7 @@ func New(vault *vaultservice.Service, settings *preferences.Store, icons *siteic
 		about = host.About
 	}
 	offers.LockWhenHidden = settings.LocksWhenHidden()
-	return &Service{
+	s := &Service{
 		vault: vault, preferences: settings, icons: icons, brands: siteicons.NewFetcher(), currentApp: host.CurrentApp,
 		pasteboard: clipboard, files: heldFiles{VaultFiles: files, hold: hold}, places: places, openURL: openURL, hold: hold, dialog: dialog,
 		photoPicker: heldPhotos{PhotoPicker: photoPicker, hold: hold}, saver: saver, printer: printer, links: links, identities: identities, offers: offers,
@@ -292,7 +292,9 @@ func New(vault *vaultservice.Service, settings *preferences.Store, icons *siteic
 		confirmations: confirmations.Queue, panel: panel,
 		showMain: confirmations.ShowMain, reloadMain: confirmations.ReloadMain, owner: confirmations.Owner,
 		backups: host.Backups, folders: folders, about: about,
-	}, nil
+	}
+	s.confirmations.UnlockOnDevice(s.unlockOnDevice)
+	return s, nil
 }
 
 // GetState reports the vault's phase, abandoning an unfinished creation or recovery.

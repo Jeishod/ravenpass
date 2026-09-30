@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dortanes/ravenpass/packages/app/confirmation"
+	"github.com/dortanes/ravenpass/packages/app/ownerauth"
 	"github.com/dortanes/ravenpass/packages/app/unlock"
 	"github.com/dortanes/ravenpass/packages/app/vaultservice"
 	"github.com/dortanes/ravenpass/packages/app/verification"
@@ -200,22 +201,86 @@ func TestThePageLearnsWhenItsRequestLeaves(t *testing.T) {
 	}
 }
 
-// lockedWithPIN is a locked service with device authentication and a PIN, and an unlock request waiting.
-func lockedWithPIN(t *testing.T) (*Service, Confirmation) {
+// lockedOnDevice is a locked service with device authentication and a PIN.
+func lockedOnDevice(t *testing.T) (*Service, *stubDevice) {
 	t.Helper()
-	service := newReadyService(t)
+	service, device := newReadyServiceOnDevice(t)
 	if err := service.SetPIN(context.Background(), confirmationPIN, ""); err != nil {
 		t.Fatal(err)
 	}
 	if err := service.Lock(); err != nil {
 		t.Fatal(err)
 	}
+	return service, device
+}
+
+// lockedWithPIN is a locked service with device authentication and a PIN, and an unlock request the panel shows once
+// the owner canceled the device's prompt; the device allows later prompts.
+func lockedWithPIN(t *testing.T) (*Service, Confirmation) {
+	t.Helper()
+	service, device := lockedOnDevice(t)
+	device.platform.Answer(ownerauth.ErrCanceled)
 	service.confirmations.PostUnlock(confirmation.RequesterAutofill)
 	request := awaitConfirmation(t, service)
 	if request != (Confirmation{ID: request.ID, Kind: "unlock", Requester: "autofill"}) || request.ID == "" {
 		t.Fatalf("unlock confirmation = %+v", request)
 	}
+	if prompts := device.platform.Prompts(); len(prompts) != 1 {
+		t.Fatalf("the device prompted %d times before the card showed, want once", len(prompts))
+	}
+	device.platform.Answer(nil)
 	return service, request
+}
+
+func TestAnUnlockRequestTriesDeviceAuthenticationFirst(t *testing.T) {
+	service, device := lockedOnDevice(t)
+	unlocking := service.confirmations.PostUnlock(confirmation.RequesterExtension)
+	ctx, cancel := context.WithTimeout(context.Background(), hangLimit)
+	defer cancel()
+	if err := service.confirmations.AwaitEnd(ctx, unlocking); err != nil {
+		t.Fatalf("the unlock request outlived the device's prompt: %v", err)
+	}
+	assertReady(t, service)
+	assertNoConfirmation(t, service)
+	if want := []string{service.preferences.Dialogs().UnlockVault}; !slices.Equal(device.platform.Prompts(), want) {
+		t.Fatalf("the device prompted %q, want %q", device.platform.Prompts(), want)
+	}
+	// The main window reloads after the request ends, on the goroutine that prompted.
+	windows := windowsOf(service)
+	deadline := time.Now().Add(hangLimit)
+	for {
+		windows.mu.Lock()
+		reloaded, shown := windows.reloaded, windows.shown
+		windows.mu.Unlock()
+		if reloaded == 1 && shown == 0 {
+			return
+		}
+		if reloaded > 1 || shown != 0 || time.Now().After(deadline) {
+			t.Fatalf("the main window was reloaded %d and shown %d times, want reloaded once", reloaded, shown)
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
+func TestWithoutDeviceAuthenticationTheUnlockCardShowsAtOnce(t *testing.T) {
+	service, device := newReadyServiceOnDevice(t)
+	if err := service.SetPIN(context.Background(), confirmationPIN, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.SetBiometryUnlock(context.Background(), false, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.Lock(); err != nil {
+		t.Fatal(err)
+	}
+	prompted := len(device.platform.Prompts())
+	unlocking := service.confirmations.PostUnlock(confirmation.RequesterExtension)
+	if request := awaitConfirmation(t, service); request.ID != unlocking || request.Kind != "unlock" {
+		t.Fatalf("unlock confirmation = %+v", request)
+	}
+	if len(device.platform.Prompts()) != prompted {
+		t.Fatal("a vault without device authentication prompted the device")
+	}
 }
 
 func assertReady(t *testing.T, service *Service) {

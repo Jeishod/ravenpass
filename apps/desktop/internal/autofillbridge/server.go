@@ -58,11 +58,10 @@ type Page interface {
 	GetLanguage() (api.LanguageSettings, error)
 }
 
-// Unlocks posts unlock requests to the confirmation queue and reports their fate.
+// Unlocks posts unlock requests to the confirmation queue and waits for them to end.
 type Unlocks interface {
 	PostUnlock(requester confirmation.Requester) string
-	Waiting(id string) (confirmation.Request, error)
-	Watch(watcher func(waiting bool))
+	AwaitEnd(ctx context.Context, id string) error
 }
 
 // Verifier asks the owner to verify a passkey's creation or use.
@@ -90,7 +89,6 @@ type Server struct {
 	verifier Verifier
 	system   System
 	slots    chan struct{}
-	queue    queueChanges
 
 	mu        sync.Mutex
 	listening *listening
@@ -103,37 +101,15 @@ type listening struct {
 	served   sync.WaitGroup
 }
 
-// queueChanges is closed and replaced whenever a confirmation request starts or stops waiting.
-type queueChanges struct {
-	mu      sync.Mutex
-	changed chan struct{}
-}
-
-func (q *queueChanges) current() <-chan struct{} {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-	return q.changed
-}
-
-func (q *queueChanges) signal(bool) {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-	close(q.changed)
-	q.changed = make(chan struct{})
-}
-
-// New fails when any dependency is nil; the Server watches unlocks from then on.
+// New fails when any dependency is nil.
 func New(vault Vault, page Page, unlocks Unlocks, verifier Verifier, system System) (*Server, error) {
 	if vault == nil || page == nil || unlocks == nil || verifier == nil || system == nil {
 		return nil, errors.New("autofill service, page reads, unlock requests, owner verification and the system are required")
 	}
-	s := &Server{
+	return &Server{
 		vault: vault, page: page, unlocks: unlocks, verifier: verifier, system: system,
 		slots: make(chan struct{}, maxConnections),
-		queue: queueChanges{changed: make(chan struct{})},
-	}
-	unlocks.Watch(s.queue.signal)
-	return s, nil
+	}, nil
 }
 
 // Start listens in the App Group container, replacing a socket nobody answers at; ErrUnsigned touches nothing.
@@ -385,22 +361,12 @@ func (s *Server) unlock(ctx context.Context) bool {
 		return true
 	}
 	id := s.unlocks.PostUnlock(confirmation.RequesterAutofill)
-	deadline := time.NewTimer(unlockWait)
-	defer deadline.Stop()
-	for {
-		// Taken before the check, so a change between the two still wakes the wait.
-		changed := s.queue.current()
-		if _, err := s.unlocks.Waiting(id); err != nil {
-			return s.vault.Open()
-		}
-		select {
-		case <-changed:
-		case <-deadline.C:
-			return s.vault.Open()
-		case <-ctx.Done():
-			return false
-		}
+	waiting, cancel := context.WithTimeout(ctx, unlockWait)
+	defer cancel()
+	if err := s.unlocks.AwaitEnd(waiting, id); err != nil && ctx.Err() != nil {
+		return false
 	}
+	return s.vault.Open()
 }
 
 // requestersOf are the web origins the services name, in order and each once.

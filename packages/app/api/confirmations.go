@@ -73,6 +73,16 @@ func (s *Service) UnlockFromConfirmation(id string) error {
 	return s.unlockedFromPanel(s.Unlock())
 }
 
+// unlockOnDevice opens the vault with device authentication for an unlock request before the panel shows it, and
+// reports whether it did; false at once unless the vault opens with device authentication that is available.
+func (s *Service) unlockOnDevice() bool {
+	methods, err := s.vault.UnlockMethods()
+	if err != nil || !methods.BiometryEnabled || !methods.BiometryAvailable {
+		return false
+	}
+	return s.unlockedFromPanel(s.Unlock()) == nil
+}
+
 // unlockedFromPanel reloads an open main window when err reports the vault open, and returns err.
 func (s *Service) unlockedFromPanel(err error) error {
 	if err == nil {

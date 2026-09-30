@@ -667,6 +667,27 @@ func TestUnlockWaitsUntilTheOwnerOpensTheVault(t *testing.T) {
 	}
 }
 
+func TestUnlockAnswersOnceTheDeviceOpensTheVaultUnseen(t *testing.T) {
+	queue := newQueue(t)
+	vault := &fakeVault{}
+	queue.UnlockOnDevice(func() bool {
+		vault.setOpen(true)
+		queue.VaultOpened()
+		return true
+	})
+	path := serve(t, vault, queue, admitted)
+	answered := make(chan answer, 1)
+	go func() { answered <- ask(t, path, request{Op: opUnlock}) }()
+	select {
+	case reply := <-answered:
+		if !reply.Open {
+			t.Fatalf("unlock = %+v, want open", reply)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the unlock kept waiting after the device opened the vault")
+	}
+}
+
 func TestUnlockReportsARequestTheOwnerDeclined(t *testing.T) {
 	queue := newQueue(t)
 	path := serve(t, &fakeVault{}, queue, admitted)

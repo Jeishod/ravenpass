@@ -60,6 +60,8 @@ type Queue struct {
 	// changed is closed and replaced whenever a request joins or leaves the queue.
 	changed chan struct{}
 	counter uint64
+	// onDevice is what a new unlock request tries before it shows; nil shows it at once.
+	onDevice func() bool
 
 	// watchMu keeps watchers hearing one change at a time, in order.
 	watchMu   sync.Mutex
@@ -71,6 +73,8 @@ type Queue struct {
 type request struct {
 	Request
 	answer chan error
+	// held keeps an unlock request from Next and the watchers while onDevice runs.
+	held bool
 }
 
 // New composes a Queue whose verify requests are answered with pins.
@@ -97,6 +101,14 @@ func (q *Queue) Ask(ctx context.Context, reason Reason) error {
 	}
 }
 
+// UnlockOnDevice makes each new unlock request try first, held from view, and show only once try returns false; a try
+// that opens the vault ends the request through VaultOpened.
+func (q *Queue) UnlockOnDevice(try func() bool) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	q.onDevice = try
+}
+
 // PostUnlock queues an unlock request for requester, or joins the one already waiting with its requester, and returns its ID.
 func (q *Queue) PostUnlock(requester Requester) string {
 	q.mu.Lock()
@@ -106,9 +118,31 @@ func (q *Queue) PostUnlock(requester Requester) string {
 		return id
 	}
 	posted := q.enqueue(Request{Kind: KindUnlock, Requester: requester})
+	try := q.onDevice
+	posted.held = try != nil
 	q.mu.Unlock()
+	if try != nil {
+		go q.showUnless(posted, try)
+	}
 	q.announce()
 	return posted.ID
+}
+
+// showUnless shows held once try fails, unless it ended meanwhile.
+func (q *Queue) showUnless(held *request, try func() bool) {
+	if try() {
+		return
+	}
+	q.mu.Lock()
+	waits := slices.Contains(q.waiting, held)
+	if waits {
+		held.held = false
+		q.signal()
+	}
+	q.mu.Unlock()
+	if waits {
+		q.announce()
+	}
 }
 
 // enqueue adds asked to the queue under a new ID. The caller holds q.mu.
@@ -127,13 +161,13 @@ func (q *Queue) signal() {
 	q.changed = make(chan struct{})
 }
 
-// Next returns the oldest waiting request once its ID differs from shown; an empty ID means none waits.
+// Next returns the oldest shown request once its ID differs from shown; an empty ID means none is shown.
 func (q *Queue) Next(ctx context.Context, shown string) (Request, error) {
 	for {
 		q.mu.Lock()
 		var oldest Request
-		if len(q.waiting) > 0 {
-			oldest = q.waiting[0].Request
+		if index := slices.IndexFunc(q.waiting, isShown); index >= 0 {
+			oldest = q.waiting[index].Request
 		}
 		changed := q.changed
 		q.mu.Unlock()
@@ -144,6 +178,24 @@ func (q *Queue) Next(ctx context.Context, shown string) (Request, error) {
 		case <-changed:
 		case <-ctx.Done():
 			return Request{}, ctx.Err()
+		}
+	}
+}
+
+// AwaitEnd returns once the request id no longer waits, or with ctx's error once ctx ends.
+func (q *Queue) AwaitEnd(ctx context.Context, id string) error {
+	for {
+		q.mu.Lock()
+		waits := slices.ContainsFunc(q.waiting, func(waiting *request) bool { return waiting.ID == id })
+		changed := q.changed
+		q.mu.Unlock()
+		if !waits {
+			return nil
+		}
+		select {
+		case <-changed:
+		case <-ctx.Done():
+			return ctx.Err()
 		}
 	}
 }
@@ -228,7 +280,7 @@ func (q *Queue) EndAll(cause error) {
 	q.announce()
 }
 
-// Watch calls watcher with whether a request waits, at once and after each change, never under q.mu.
+// Watch calls watcher with whether a request is shown, at once and after each change, never under q.mu.
 func (q *Queue) Watch(watcher func(waiting bool)) {
 	q.watchMu.Lock()
 	defer q.watchMu.Unlock()
@@ -236,12 +288,12 @@ func (q *Queue) Watch(watcher func(waiting bool)) {
 	watcher(q.announced)
 }
 
-// announce tells the watchers whether a request waits, when that changed since they last heard.
+// announce tells the watchers whether a request is shown, when that changed since they last heard.
 func (q *Queue) announce() {
 	q.watchMu.Lock()
 	defer q.watchMu.Unlock()
 	q.mu.Lock()
-	waiting := len(q.waiting) > 0
+	waiting := slices.ContainsFunc(q.waiting, isShown)
 	q.mu.Unlock()
 	if waiting == q.announced {
 		return
@@ -251,6 +303,9 @@ func (q *Queue) announce() {
 		watcher(waiting)
 	}
 }
+
+// isShown reports whether waiting is shown. The caller holds q.mu.
+func isShown(waiting *request) bool { return !waiting.held }
 
 func (q *Queue) find(id string) (*request, error) {
 	q.mu.Lock()

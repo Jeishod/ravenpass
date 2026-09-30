@@ -401,6 +401,143 @@ func TestWatchersHearEachChangeOfWaiting(t *testing.T) {
 	})
 }
 
+// deviceTries holds each unlock the queue tries on the device until the test answers it.
+type deviceTries struct {
+	started chan struct{}
+	answers chan bool
+}
+
+func tryOnDevice(queue *Queue) *deviceTries {
+	tries := &deviceTries{started: make(chan struct{}, 4), answers: make(chan bool)}
+	queue.UnlockOnDevice(func() bool {
+		tries.started <- struct{}{}
+		return <-tries.answers
+	})
+	return tries
+}
+
+func TestAnUnlockRequestShowsOnlyOnceTheDeviceFails(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		queue, _ := newQueue(t)
+		tries := tryOnDevice(queue)
+		heard := &watcher{}
+		queue.Watch(heard.follow)
+		unlocking := queue.PostUnlock(RequesterExtension)
+		<-tries.started
+		if joined := queue.PostUnlock(RequesterAutofill); joined != unlocking {
+			t.Fatalf("a second unlock request got %q, want the held %q", joined, unlocking)
+		}
+		synctest.Wait()
+		if len(tries.started) != 0 {
+			t.Fatal("a second unlock request tried the device again")
+		}
+		if _, err := queue.Waiting(unlocking); err != nil {
+			t.Fatalf("the held request does not wait: %v", err)
+		}
+		assertEmpty(t, queue)
+		tries.answers <- false
+		if shown := next(t, queue); shown.ID != unlocking || shown.Kind != KindUnlock {
+			t.Fatalf("after the device failed the panel shows %+v", shown)
+		}
+		synctest.Wait()
+		if states := heard.states(); !slices.Equal(states, []bool{false, true}) {
+			t.Fatalf("the watcher heard %v", states)
+		}
+	})
+}
+
+func TestAHeldRequestKeepsItsPlaceOnceShown(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		queue, _ := newQueue(t)
+		tries := tryOnDevice(queue)
+		unlocking := queue.PostUnlock(RequesterExtension)
+		<-tries.started
+		outcome := ask(context.Background(), queue, passport)
+		synctest.Wait()
+		if shown := next(t, queue); shown.Kind != KindVerify {
+			t.Fatalf("while the unlock request is held the panel shows %+v", shown)
+		}
+		tries.answers <- false
+		synctest.Wait()
+		if shown := next(t, queue); shown.ID != unlocking {
+			t.Fatalf("once shown the older unlock request is not first: %+v", shown)
+		}
+		queue.EndAll(ErrDeclined)
+		if err := ended(t, outcome); !errors.Is(err, ErrDeclined) {
+			t.Fatalf("the verify request: %v", err)
+		}
+	})
+}
+
+func TestADeviceUnlockEndsTheRequestUnseen(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		queue, _ := newQueue(t)
+		queue.UnlockOnDevice(func() bool {
+			queue.VaultOpened()
+			return true
+		})
+		heard := &watcher{}
+		queue.Watch(heard.follow)
+		unlocking := queue.PostUnlock(RequesterExtension)
+		ctx, cancel := context.WithTimeout(context.Background(), testWait)
+		defer cancel()
+		if err := queue.AwaitEnd(ctx, unlocking); err != nil {
+			t.Fatalf("the unlock request outlived the device unlock: %v", err)
+		}
+		synctest.Wait()
+		if states := heard.states(); !slices.Equal(states, []bool{false}) {
+			t.Fatalf("the watcher heard %v, want the panel never shown", states)
+		}
+	})
+}
+
+func TestAHeldRequestThatEndedIsNotShown(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		queue, _ := newQueue(t)
+		tries := tryOnDevice(queue)
+		unlocking := queue.PostUnlock(RequesterExtension)
+		<-tries.started
+		queue.EndAll(errors.New("the vault locked"))
+		tries.answers <- false
+		synctest.Wait()
+		if _, err := queue.Waiting(unlocking); !errors.Is(err, ErrEnded) {
+			t.Fatalf("an ended request came back: %v", err)
+		}
+		assertEmpty(t, queue)
+	})
+}
+
+func TestAwaitEndFollowsOneRequest(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		queue, _ := newQueue(t)
+		unlocking := queue.PostUnlock(RequesterExtension)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		if err := queue.AwaitEnd(ctx, unlocking); !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("a waiting request: got %v, want DeadlineExceeded", err)
+		}
+		awaited := make(chan error, 1)
+		go func() { awaited <- queue.AwaitEnd(context.Background(), unlocking) }()
+		outcome := ask(context.Background(), queue, passport)
+		synctest.Wait()
+		select {
+		case err := <-awaited:
+			t.Fatalf("another request's arrival ended the wait: %v", err)
+		default:
+		}
+		if err := queue.Decline(unlocking); err != nil {
+			t.Fatal(err)
+		}
+		if err := ended(t, awaited); err != nil {
+			t.Fatalf("a declined request: %v", err)
+		}
+		queue.EndAll(ErrDeclined)
+		if err := ended(t, outcome); !errors.Is(err, ErrDeclined) {
+			t.Fatalf("the verify request: %v", err)
+		}
+	})
+}
+
 func TestEachReasonIsWordedForItsKind(t *testing.T) {
 	for reason, want := range map[Reason]string{
 		passport:                         "share passport.pdf from Alex with example.com",
