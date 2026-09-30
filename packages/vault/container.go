@@ -358,6 +358,22 @@ func (s *Session) CheckDeviceEnvelope(envelope []byte) error {
 	return err
 }
 
+// KeyIdentity names the vault key the session uses; a committed rekey changes it.
+func (s *Session) KeyIdentity() ([32]byte, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.locked {
+		return [32]byte{}, ErrLocked
+	}
+	return keyIdentity(s.recovery), nil
+}
+
+// EnvelopeKeyIdentity names the vault key a device envelope for vaultID holds, as Session.KeyIdentity names a session's.
+func EnvelopeKeyIdentity(envelope []byte, vaultID ID) ([32]byte, error) {
+	held, _, err := decodeDeviceEnvelope(envelope, vaultID)
+	return held, err
+}
+
 // currentEnvelopeBox decodes a device envelope, failing with ErrKeyReplaced unless it holds the key current names.
 func currentEnvelopeBox(envelope []byte, vaultID ID, current [32]byte) (sealedBox, error) {
 	held, box, err := decodeDeviceEnvelope(envelope, vaultID)

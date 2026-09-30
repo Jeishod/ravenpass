@@ -215,6 +215,47 @@ func TestFollowingARekeyedFileNeedsTheNewPhrase(t *testing.T) {
 	}
 }
 
+func TestTheKeyIdentityChangesWithACommittedRekeyOnly(t *testing.T) {
+	created, _ := vaultWith(t, CredentialInput{Label: "GitHub"})
+	session := created.Session
+	before, err := session.KeyIdentity()
+	if err != nil {
+		t.Fatal(err)
+	}
+	container, _, err := session.CurrentContainer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	copied, err := OpenWithRecovery(container, created.RecoveryPhrase)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer copied.Lock()
+	if same, err := copied.KeyIdentity(); err != nil || same != before {
+		t.Fatalf("another copy under the same key: %x, %v", same, err)
+	}
+	head, err := session.Head()
+	if err != nil {
+		t.Fatal(err)
+	}
+	envelope := wrapFor(t, session, bytes.Repeat([]byte{0x21}, 32))
+	if held, err := EnvelopeKeyIdentity(envelope, head.VaultID); err != nil || held != before {
+		t.Fatalf("an envelope for the key before: %x, %v", held, err)
+	}
+	if _, err := EnvelopeKeyIdentity(envelope, ID{0x01}); err == nil {
+		t.Fatal("an envelope was read for another vault")
+	}
+	_, _, _, rekey := rekeyed(t, session)
+	after, err := session.KeyIdentity()
+	if err != nil || after == before || after != rekey.KeyIdentity() {
+		t.Fatalf("after a rekey: %x, %v; the rekey named %x", after, err, rekey.KeyIdentity())
+	}
+	session.Lock()
+	if _, err := session.KeyIdentity(); !errors.Is(err, ErrLocked) {
+		t.Fatalf("a locked session: got %v, want ErrLocked", err)
+	}
+}
+
 func TestAnAbortedRekeyKeepsTheVaultKey(t *testing.T) {
 	deviceKey := bytes.Repeat([]byte{0x31}, 32)
 	created, _ := vaultWith(t, CredentialInput{Label: "GitHub"})

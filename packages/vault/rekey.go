@@ -174,6 +174,13 @@ func (r *Rekey) WrapDeviceKey(deviceKey []byte) ([]byte, error) {
 	return sealDeviceEnvelope(deviceKey, r.vaultID, &r.key.data, r.key.recovery)
 }
 
+// KeyIdentity names the new vault key as Session.KeyIdentity names it once the rekey commits.
+func (r *Rekey) KeyIdentity() [32]byte {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return keyIdentity(r.key.recovery)
+}
+
 // Discard clears the new vault key; a discarded rekey neither wraps nor prepares.
 func (r *Rekey) Discard() {
 	r.mu.Lock()
