@@ -122,6 +122,17 @@ func (m *Manager) withoutEmpty(list known) known {
 	return kept
 }
 
+// DiscardEmpty deletes the placeholder at target, such as the document a picker created for a move that failed, while
+// it holds no vault and is not a known location.
+func (m *Manager) DiscardEmpty(target Target) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if target.Same(m.list.current) || slices.ContainsFunc(m.list.vaults, target.Same) {
+		return
+	}
+	m.discardEmpty(target)
+}
+
 // discardEmpty reports whether target holds no vault file, discarding its placeholder.
 func (m *Manager) discardEmpty(target Target) bool {
 	opened, err := m.open(target)

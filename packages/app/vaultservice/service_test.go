@@ -30,20 +30,29 @@ type memoryFiles struct {
 	vaults        []storage.Target
 	others        map[string][]byte
 	relocateError error
+	// discarded lists the targets DiscardEmpty was asked to clear.
+	discarded []storage.Target
+	// reading runs within each read of the current vault, after its content is taken, as a slow provider delivers
+	// what the file held when the read began.
+	reading func()
 	// unreadable fails every read of the current vault while set.
 	unreadable error
 }
 
 func (m *memoryFiles) LoadCiphertext() ([]byte, error) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.unreadable != nil {
-		return nil, m.unreadable
+	data, unreadable, reading := bytes.Clone(m.data), m.unreadable, m.reading
+	m.mu.Unlock()
+	if reading != nil {
+		reading()
 	}
-	if m.data == nil {
+	if unreadable != nil {
+		return nil, unreadable
+	}
+	if data == nil {
 		return nil, storage.ErrNotFound
 	}
-	return bytes.Clone(m.data), nil
+	return data, nil
 }
 
 func (m *memoryFiles) CommitCiphertext(expected *[32]byte, candidate []byte, finalize func() error) error {
@@ -184,11 +193,24 @@ func (m *memoryFiles) Relocate(target storage.Target, write func(storage.Ciphert
 	return storage.Relocation{Target: target, Previous: previous, PreviousRemoved: true}, nil
 }
 
+func (m *memoryFiles) DiscardEmpty(target storage.Target) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.discarded = append(m.discarded, target)
+}
+
+// openingOf names the open session of service, or no session while it is locked.
+func openingOf(service *Service) Opening {
+	opening, _ := service.CurrentOpening()
+	return opening
+}
+
 type memoryKeys struct {
 	witness     map[string][]byte
 	usage       map[string][]byte
 	export      map[string][]byte
 	policy      map[string][]byte
+	keys        map[string][]byte
 	usageLoads  int
 	exportLoads int
 	policyLoads int
@@ -202,7 +224,26 @@ func newMemoryKeys() *memoryKeys {
 		usage:   make(map[string][]byte),
 		export:  make(map[string][]byte),
 		policy:  make(map[string][]byte),
+		keys:    make(map[string][]byte),
 	}
+}
+
+func (m *memoryKeys) SaveKeyRecord(id string, keys []byte) error {
+	m.keys[id] = bytes.Clone(keys)
+	return nil
+}
+
+func (m *memoryKeys) LoadKeyRecord(id string) ([]byte, error) {
+	value, exists := m.keys[id]
+	if !exists {
+		return nil, devicerecords.ErrNotFound
+	}
+	return bytes.Clone(value), nil
+}
+
+func (m *memoryKeys) DeleteKeyRecord(id string) error {
+	delete(m.keys, id)
+	return nil
 }
 
 func (m *memoryKeys) SaveUnlockPolicy(id string, policy []byte) error {

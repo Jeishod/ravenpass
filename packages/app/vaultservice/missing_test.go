@@ -63,6 +63,73 @@ func TestASaveAfterTheFileWentReportsItMissing(t *testing.T) {
 	}
 }
 
+func TestOpeningAVaultWhoseFileWentReportsItMissing(t *testing.T) {
+	file := newSharedFile(t)
+	service := newTestService(t, file.open(t), newMemoryKeys())
+	phrase, _ := createTestVaultWith(t, service, MethodChoice{Biometry: true, PIN: testPIN})
+	service.Lock()
+	file.remove(t)
+	if _, err := service.Unlock(testReason); !errors.Is(err, storage.ErrVaultMissing) {
+		t.Fatalf("device authentication: got %v, want ErrVaultMissing", err)
+	}
+	if _, err := service.UnlockWithPIN(testPIN); !errors.Is(err, storage.ErrVaultMissing) {
+		t.Fatalf("the PIN: got %v, want ErrVaultMissing", err)
+	}
+	if _, err := service.BeginRecovery(phrase); !errors.Is(err, storage.ErrVaultMissing) {
+		t.Fatalf("recovery: got %v, want ErrVaultMissing", err)
+	}
+}
+
+func TestAnEmptyFileWhereTheVaultWasOpenedReportsItMissingAndIsNotReplaced(t *testing.T) {
+	file := newSharedFile(t)
+	service := newTestService(t, file.open(t), newMemoryKeys())
+	createTestVault(t, service)
+	service.Lock()
+	if err := os.WriteFile(file.path, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Unlock(testReason); !errors.Is(err, storage.ErrVaultMissing) {
+		t.Fatalf("an empty file: got %v, want ErrVaultMissing", err)
+	}
+	if _, err := service.BeginCreation(); !errors.Is(err, ErrAlreadyInitialized) {
+		t.Fatalf("creating over an empty file where a vault was opened: got %v, want ErrAlreadyInitialized", err)
+	}
+}
+
+func TestAnOpenVaultWaitsWhileItsFileIsEmpty(t *testing.T) {
+	file := newSharedFile(t)
+	service := newTestService(t, file.open(t), newMemoryKeys())
+	createTestVault(t, service)
+	written, err := os.ReadFile(file.path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(file.path, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if change := service.Follow(); change != FileUnchanged || !service.Unlocked() {
+		t.Fatalf("a file rewritten in place: %v", change)
+	}
+	if err := os.WriteFile(file.path, written, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if change := service.Follow(); change != FileUnchanged || !service.Unlocked() {
+		t.Fatalf("the file back whole: %v", change)
+	}
+}
+
+func TestANewVaultReplacesAnEmptyFile(t *testing.T) {
+	file := newSharedFile(t)
+	if err := os.WriteFile(file.path, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	service := newTestService(t, file.open(t), newMemoryKeys())
+	if state, err := service.State(); err != nil || state.VaultExists || state.VaultMissing {
+		t.Fatalf("an empty file reads as %+v, error = %v", state, err)
+	}
+	createTestVault(t, service)
+}
+
 func TestAChangedFileIsNotReportedMissing(t *testing.T) {
 	path := filepath.Join(t.TempDir(), localfile.DefaultVaultName)
 	keys := newMemoryKeys()
@@ -138,9 +205,13 @@ func TestALockedVaultWhoseFileWentIsReportedAfterARestart(t *testing.T) {
 		t.Fatalf("missing after a restart = %t, error = %v", missing, err)
 	}
 
+	// Creation stays refused there, so the owner is offered the vault's file or forgetting the location.
 	delete(keys.policy, head.VaultID.String())
-	if missing, err := restarted.VaultMissing(); err != nil || missing {
+	if missing, err := restarted.VaultMissing(); err != nil || !missing {
 		t.Fatalf("missing without an unlock record = %t, error = %v", missing, err)
+	}
+	if _, err := restarted.BeginCreation(); !errors.Is(err, ErrAlreadyInitialized) {
+		t.Fatalf("creating where the vault was opened: got %v, want ErrAlreadyInitialized", err)
 	}
 }
 

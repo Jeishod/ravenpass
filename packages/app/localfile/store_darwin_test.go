@@ -53,6 +53,12 @@ func TestStoreRoundTripAndPermissions(t *testing.T) {
 	if _, err := store.LoadCiphertext(); !errors.Is(err, storage.ErrNotFound) {
 		t.Fatalf("empty vault: got %v, want ErrNotFound", err)
 	}
+	if err := os.WriteFile(path, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.LoadCiphertext(); !errors.Is(err, storage.ErrNotFound) {
+		t.Fatalf("a zero-byte file: got %v, want ErrNotFound", err)
+	}
 
 	ciphertext := []byte{0x00, 0xff, 0x42, 0x00, 0x81}
 	head := commit(t, store, nil, ciphertext)

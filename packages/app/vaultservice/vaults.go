@@ -220,6 +220,7 @@ func (s *Service) DeleteVault(target storage.Target) (Deletion, error) {
 		s.keys.DeleteUsageRecord,
 		s.keys.DeleteExportRecord,
 		s.keys.DeleteUnlockPolicy,
+		s.keys.DeleteKeyRecord,
 	} {
 		if remove(name) != nil {
 			removed = false

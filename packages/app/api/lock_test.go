@@ -1,7 +1,9 @@
 package api
 
 import (
+	"os"
 	"testing"
+	"testing/synctest"
 	"time"
 )
 
@@ -29,6 +31,30 @@ func TestLockingClearsTheCopy(t *testing.T) {
 	if clipboard.text != "" {
 		t.Fatal("locking left the copied password on the clipboard")
 	}
+}
+
+func TestALockTheVaultRaisesOnItsOwnClearsWhatItLeftBehind(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		service, clipboard, _ := copiedPassword(t)
+		if _, err := service.stagePhoto(photoFixture(t, "upright.webp")); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Remove(service.vault.Storage().Current.Path); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := service.CreateCredential(CredentialInput{Label: "Bank", Password: "other"}, nil); err == nil {
+			t.Fatal("a save to a vault file that went succeeded")
+		}
+		synctest.Wait()
+		if service.vault.Unlocked() {
+			t.Fatal("the failed save left the vault open")
+		}
+		if clipboard.text != "" {
+			t.Fatal("the lock left the copied password on the clipboard")
+		}
+		_, err := service.CropIdentityPhoto(0, 0, 32)
+		assertFailure(t, err, failureFileNotSelected)
+	})
 }
 
 func TestLockingAwayLeavesTheCopyToItsClearingDelay(t *testing.T) {

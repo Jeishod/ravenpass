@@ -50,7 +50,7 @@ func TestPhraseActionsFollowTheStagedNewPhrase(t *testing.T) {
 		called = true
 		return nil
 	}
-	phrase, err := service.BeginRekey("")
+	phrase, err := service.BeginRekey(openingOf(service), "")
 	if err != nil {
 		t.Fatal(err)
 	}

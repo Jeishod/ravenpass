@@ -411,6 +411,26 @@ func TestManagerDiscardsAnEmptyDocumentItLeaves(t *testing.T) {
 	}
 }
 
+func TestManagerDiscardsTheEmptyDocumentOfAFailedMoveOnly(t *testing.T) {
+	home := t.TempDir()
+	defaultPath := filepath.Join(home, "Ravenpass", "vault.rpv")
+	provider := &documents{files: map[string][]byte{"content://drive/4": nil, "content://drive/5": {0x01}}}
+	manager := newManager(t, filepath.Join(home, "storage.json"), defaultPath, provider)
+	if err := manager.Open(); err != nil {
+		t.Fatal(err)
+	}
+	write(t, manager, []byte{0x02})
+	manager.DiscardEmpty(storage.Target{Kind: storage.Document, Path: "content://drive/5"})
+	manager.DiscardEmpty(local(defaultPath))
+	manager.DiscardEmpty(storage.Target{Kind: storage.Document, Path: "content://drive/4"})
+	if !slices.Equal(provider.discarded, []string{"content://drive/4"}) {
+		t.Fatalf("discarded %v, want the empty document alone", provider.discarded)
+	}
+	if _, kept := provider.files["content://drive/5"]; !kept {
+		t.Fatal("a document holding a file was discarded")
+	}
+}
+
 func TestManagerNeverDiscardsADocumentAVaultWasOpenedAt(t *testing.T) {
 	home := t.TempDir()
 	defaultPath := filepath.Join(home, "Ravenpass", "vault.rpv")

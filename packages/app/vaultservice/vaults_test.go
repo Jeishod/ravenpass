@@ -193,7 +193,7 @@ func TestDeleteVaultErasesTheFileAndEveryDeviceRecord(t *testing.T) {
 	if _, err := service.CreateCredential(vault.CredentialInput{Label: "Mail", Password: "secret"}, nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	if err := service.SwitchVault(work); err != nil {

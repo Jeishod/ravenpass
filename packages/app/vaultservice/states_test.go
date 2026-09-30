@@ -48,6 +48,7 @@ func TestTheVaultStateMovesForEverySaveOpeningLockAndSwitch(t *testing.T) {
 		}},
 		{"a lock", func() error { service.Lock(); return nil }},
 		{"an unlock", func() error { _, err := service.Unlock(testReason); return err }},
+		{"a move", func() error { _, err := service.MoveStorage(target("/vaults/moved.rpv")); return err }},
 		{"a switch", func() error { return service.SwitchVault(work) }},
 		{"binding a location", func() error { return service.BindStorage(personal) }},
 	}

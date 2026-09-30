@@ -70,6 +70,11 @@ func (s *stubKeys) LoadUnlockPolicy(vaultID string) ([]byte, error) {
 	return s.load("policy", vaultID)
 }
 func (s *stubKeys) DeleteUnlockPolicy(vaultID string) error { return s.remove("policy", vaultID) }
+func (s *stubKeys) SaveKeyRecord(vaultID string, keys []byte) error {
+	return s.save("keys", vaultID, keys)
+}
+func (s *stubKeys) LoadKeyRecord(vaultID string) ([]byte, error) { return s.load("keys", vaultID) }
+func (s *stubKeys) DeleteKeyRecord(vaultID string) error         { return s.remove("keys", vaultID) }
 
 // stubDevice is the hardware and the owner a test vault opens with.
 type stubDevice struct {
@@ -347,10 +352,9 @@ func TestCopyCredentialFieldCopiesOneFieldAtATime(t *testing.T) {
 	if err := service.copyCredentialField(id, "password", schedule); err != nil {
 		t.Fatal(err)
 	}
-	for _, field := range []string{"label", "websites", "website", "website:", "website:-1", "website:+1", "website:01", "website:x", ""} {
+	for _, field := range []string{"label", "websites", "website", "website:", "website:-1", "website:+1", "website:01", "website:x", "website:2", ""} {
 		assertFailure(t, service.copyCredentialField(id, field, schedule), failureFieldNotCopyable)
 	}
-	assertFailure(t, service.copyCredentialField(id, "website:2", schedule), failureFieldEmpty)
 	if clipboard.text != "secret" {
 		t.Fatalf("a rejected field changed the clipboard to %q", clipboard.text)
 	}

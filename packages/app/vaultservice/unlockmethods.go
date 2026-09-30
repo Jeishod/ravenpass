@@ -11,6 +11,9 @@ import (
 	"github.com/dortanes/ravenpass/packages/vault"
 )
 
+// errKeyChangedMeanwhile refuses a way in bound while the vault key changed; binding it again succeeds.
+var errKeyChangedMeanwhile = errors.New("the vault key changed while the way in was bound")
+
 // Methods reports how the bound vault may be opened on the device.
 type Methods struct {
 	BiometryAvailable bool
@@ -58,7 +61,7 @@ func (s *Service) UnlockWithPIN(pin string) (vault.Head, error) {
 	if !vault.ValidPIN(pin) {
 		return vault.Head{}, vault.ErrInvalidPIN
 	}
-	container, err := s.files.LoadCiphertext()
+	container, err := s.loadBound()
 	if err != nil {
 		return vault.Head{}, err
 	}
@@ -183,9 +186,10 @@ func (s *Service) wrongPIN(id vault.ID, charged unlock.Policy) error {
 	return unlock.ErrWrongPIN
 }
 
-// SetPIN binds a new PIN to a new hardware key; the digits derive the wrapping key and are never stored.
-func (s *Service) SetPIN(pin string) error {
-	return s.changePolicy(func(id vault.ID, policy *unlock.Policy) error {
+// SetPIN binds a new PIN to a new hardware key for the vault opening names; the digits derive the wrapping key and are
+// never stored.
+func (s *Service) SetPIN(opening Opening, pin string) error {
+	return s.changePolicy(opening, func(id vault.ID, policy *unlock.Policy) error {
 		setup, err := s.pins.Set(pin, id, s.session.WrapDeviceKey)
 		if err != nil {
 			return err
@@ -197,8 +201,8 @@ func (s *Service) SetPIN(pin string) error {
 }
 
 // RemovePIN drops the PIN's copy of the vault key unless the PIN is the device's only way in.
-func (s *Service) RemovePIN() error {
-	return s.changePolicy(func(_ vault.ID, policy *unlock.Policy) error {
+func (s *Service) RemovePIN(opening Opening) error {
+	return s.changePolicy(opening, func(_ vault.ID, policy *unlock.Policy) error {
 		if !policy.HasPIN() {
 			return unlock.ErrNoPIN
 		}
@@ -210,58 +214,67 @@ func (s *Service) RemovePIN() error {
 	})
 }
 
-// SetBiometryUnlock turns device authentication on or off; off deletes the wrapped vault key, not just the option.
-func (s *Service) SetBiometryUnlock(enabled bool) error {
+// SetBiometryUnlock turns device authentication on or off for the vault opening names; off deletes the wrapped vault
+// key, not just the option.
+func (s *Service) SetBiometryUnlock(opening Opening, enabled bool) error {
+	id, opened, err := s.biometryToSet(opening, enabled)
+	if err != nil || opened == nil {
+		return err
+	}
+	// A StrongBox key takes about 16 s to create on a Pixel 9 Pro XL; the vault stays lockable meanwhile.
+	platform, err := s.platforms.Set(id, opened.WrapDeviceKey)
+	if err != nil {
+		return err
+	}
+	return s.changePolicy(opening, func(_ vault.ID, policy *unlock.Policy) error {
+		if policy.HasPlatform() {
+			return nil
+		}
+		// A key change committed while the hardware key was made leaves the envelope holding the replaced key.
+		if s.session.CheckDeviceEnvelope(platform.Envelope) != nil {
+			return errKeyChangedMeanwhile
+		}
+		policy.Platform = platform
+		return nil
+	})
+}
+
+// biometryToSet turns device authentication off at once and returns the session to bind it for when turning it on;
+// a nil session means nothing is left to do.
+func (s *Service) biometryToSet(opening Opening, enabled bool) (vault.ID, *vault.Session, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if err := s.openedAs(opening); err != nil {
+		return vault.ID{}, nil, err
+	}
 	if s.rekeying != nil {
-		return ErrSetupInProgress
+		return vault.ID{}, nil, ErrSetupInProgress
 	}
 	id, policy, err := s.openVaultPolicy()
 	if err != nil {
-		return err
-	}
-	if policy.HasPlatform() == enabled {
-		return nil
-	}
-	if !enabled {
-		if !policy.HasPIN() {
-			return unlock.ErrNoMethodLeft
-		}
-		policy.Platform = nil
-		return s.savePolicy(id, policy)
-	}
-	if !s.owner.DeviceOwnerAvailable() {
-		return unlock.ErrNotAvailable
-	}
-	opened := s.session
-	// A StrongBox key takes about 16 s to create on a Pixel 9 Pro XL; the vault stays lockable meanwhile.
-	s.mu.Unlock()
-	platform, err := s.platforms.Set(id, opened.WrapDeviceKey)
-	s.mu.Lock()
-	if err != nil {
-		return err
+		return vault.ID{}, nil, err
 	}
 	switch {
-	case s.session != opened:
-		return ErrNotReady
-	case s.rekeying != nil:
-		return ErrSetupInProgress
+	case policy.HasPlatform() == enabled:
+		return id, nil, nil
+	case !enabled && !policy.HasPIN():
+		return id, nil, unlock.ErrNoMethodLeft
+	case !enabled:
+		policy.Platform = nil
+		return id, nil, s.savePolicy(id, policy)
+	case !s.owner.DeviceOwnerAvailable():
+		return id, nil, unlock.ErrNotAvailable
 	}
-	if _, policy, err = s.openVaultPolicy(); err != nil {
-		return err
-	}
-	if policy.HasPlatform() {
-		return nil
-	}
-	policy.Platform = platform
-	return s.savePolicy(id, policy)
+	return id, s.session, nil
 }
 
-// changePolicy applies one change to the open vault's record and stores the result.
-func (s *Service) changePolicy(apply func(id vault.ID, policy *unlock.Policy) error) error {
+// changePolicy applies one change to the record of the vault opening names and stores the result.
+func (s *Service) changePolicy(opening Opening, apply func(id vault.ID, policy *unlock.Policy) error) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if err := s.openedAs(opening); err != nil {
+		return err
+	}
 	if s.rekeying != nil {
 		return ErrSetupInProgress
 	}

@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"slices"
+	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/dortanes/ravenpass/packages/app/ownerauth"
@@ -52,11 +54,11 @@ func storedPIN(t *testing.T, service *Service, keys *memoryKeys) *unlock.PIN {
 func TestEverySetPINBindsANewHardwareKey(t *testing.T) {
 	service, keys, device := readyVaultOnDevice(t)
 	binding := device.pin
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	first := storedPIN(t, service, keys)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	second := storedPIN(t, service, keys)
@@ -77,7 +79,7 @@ func TestEverySetPINBindsANewHardwareKey(t *testing.T) {
 
 func TestAPINTheHardwareRejectsIsNotSet(t *testing.T) {
 	service, _, device := readyVaultOnDevice(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	service.Lock()
@@ -95,7 +97,7 @@ func TestAPINTheHardwareRejectsIsNotSet(t *testing.T) {
 	if _, err := service.Unlock(testReason); err != nil {
 		t.Fatalf("device authentication did not open the vault: %v", err)
 	}
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	service.Lock()
@@ -106,7 +108,7 @@ func TestAPINTheHardwareRejectsIsNotSet(t *testing.T) {
 
 func TestAPINRejectedAfterItWasReadIsNotSet(t *testing.T) {
 	service, _, device := readyVaultOnDevice(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	service.Lock()
@@ -128,7 +130,7 @@ func TestAHardwareFailureSetsNoPIN(t *testing.T) {
 	before := storedPolicy(t, service, keys)
 	failure := errors.New("the Secure Enclave refused")
 	device.pin.FailCreate(failure)
-	if err := service.SetPIN(testPIN); !errors.Is(err, failure) {
+	if err := service.SetPIN(openingOf(service), testPIN); !errors.Is(err, failure) {
 		t.Fatalf("a failed binding: got %v, want the failure", err)
 	}
 	if after := storedPolicy(t, service, keys); after.HasPIN() || !bytes.Equal(after.Platform.Envelope, before.Platform.Envelope) {
@@ -201,7 +203,7 @@ func TestAVaultWithoutARecordOpensOnlyWithItsRecoveryKey(t *testing.T) {
 
 func TestAnOwnerWhoIsNotVerifiedLeavesTheVaultLockedAndCountsNothing(t *testing.T) {
 	service, keys, device := readyVaultOnDevice(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	service.Lock()
@@ -296,7 +298,7 @@ func TestANewLocationOffersNoWayInYet(t *testing.T) {
 
 func TestAPINOpensTheVaultAndClearsItsWrongAttempts(t *testing.T) {
 	service, _ := readyVault(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	methods, err := service.UnlockMethods()
@@ -332,7 +334,7 @@ func TestAPINOpensTheVaultAndClearsItsWrongAttempts(t *testing.T) {
 
 func TestTenWrongPINsRemoveThePIN(t *testing.T) {
 	service, _ := readyVault(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	service.Lock()
@@ -365,7 +367,7 @@ func TestVerifyPINCountsAttemptsAsUnlockingDoes(t *testing.T) {
 	if err := service.VerifyPIN(testPIN); !errors.Is(err, unlock.ErrNoPIN) {
 		t.Fatalf("a vault without a PIN: got %v, want ErrNoPIN", err)
 	}
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	if err := service.VerifyPIN("12345"); !errors.Is(err, vault.ErrInvalidPIN) {
@@ -392,7 +394,7 @@ func TestVerifyPINCountsAttemptsAsUnlockingDoes(t *testing.T) {
 
 func TestVerifyPINRemovesThePINAndLocksAfterTooManyWrongOnes(t *testing.T) {
 	service, _ := readyVault(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	now := time.Unix(0, 0)
@@ -427,7 +429,7 @@ func TestVerifyPINRemovesThePINAndLocksAfterTooManyWrongOnes(t *testing.T) {
 
 func TestVerifyPINNeedsAnOpenVault(t *testing.T) {
 	service, _ := readyVault(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	service.Lock()
@@ -440,7 +442,7 @@ func TestOnlyAPINWithinTheRuleIsAccepted(t *testing.T) {
 	service, keys := readyVault(t)
 	before := bytes.Clone(keys.policy[service.device.policyVault])
 	for _, pin := range []string{"", "12345", "1234567890123", "12345a"} {
-		if err := service.SetPIN(pin); !errors.Is(err, vault.ErrInvalidPIN) {
+		if err := service.SetPIN(openingOf(service), pin); !errors.Is(err, vault.ErrInvalidPIN) {
 			t.Errorf("PIN %q: got %v, want ErrInvalidPIN", pin, err)
 		}
 	}
@@ -452,13 +454,13 @@ func TestOnlyAPINWithinTheRuleIsAccepted(t *testing.T) {
 func TestTurningOffTheMacAuthenticationNeedsAPINAndRemovesItsKeys(t *testing.T) {
 	service, keys, device := readyVaultOnDevice(t)
 	first := storedPolicy(t, service, keys).Platform
-	if err := service.SetBiometryUnlock(false); !errors.Is(err, unlock.ErrNoMethodLeft) {
+	if err := service.SetBiometryUnlock(openingOf(service), false); !errors.Is(err, unlock.ErrNoMethodLeft) {
 		t.Fatalf("turning off the only way in: got %v, want ErrNoMethodLeft", err)
 	}
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
-	if err := service.SetBiometryUnlock(false); err != nil {
+	if err := service.SetBiometryUnlock(openingOf(service), false); err != nil {
 		t.Fatal(err)
 	}
 	if storedPolicy(t, service, keys).HasPlatform() {
@@ -471,10 +473,10 @@ func TestTurningOffTheMacAuthenticationNeedsAPINAndRemovesItsKeys(t *testing.T) 
 	if _, err := service.UnlockWithPIN(testPIN); err != nil {
 		t.Fatalf("the PIN did not open the vault: %v", err)
 	}
-	if err := service.RemovePIN(); !errors.Is(err, unlock.ErrNoMethodLeft) {
+	if err := service.RemovePIN(openingOf(service)); !errors.Is(err, unlock.ErrNoMethodLeft) {
 		t.Fatalf("removing the only way in: got %v, want ErrNoMethodLeft", err)
 	}
-	if err := service.SetBiometryUnlock(true); err != nil {
+	if err := service.SetBiometryUnlock(openingOf(service), true); err != nil {
 		t.Fatal(err)
 	}
 	second := storedPolicy(t, service, keys).Platform
@@ -484,7 +486,7 @@ func TestTurningOffTheMacAuthenticationNeedsAPINAndRemovesItsKeys(t *testing.T) 
 	if len(device.platform.Prompts()) != 0 {
 		t.Fatal("turning the method on asked the owner")
 	}
-	if err := service.RemovePIN(); err != nil {
+	if err := service.RemovePIN(openingOf(service)); err != nil {
 		t.Fatal(err)
 	}
 	service.Lock()
@@ -514,7 +516,7 @@ func TestAMacThatCannotAuthenticateIsNotOffered(t *testing.T) {
 	if methods.BiometryAvailable {
 		t.Fatal("a Mac that cannot authenticate its owner offered the method")
 	}
-	if err := service.SetBiometryUnlock(true); !errors.Is(err, unlock.ErrNotAvailable) {
+	if err := service.SetBiometryUnlock(openingOf(service), true); !errors.Is(err, unlock.ErrNotAvailable) {
 		t.Fatalf("turning on an unavailable method: got %v, want ErrNotAvailable", err)
 	}
 }
@@ -522,13 +524,13 @@ func TestAMacThatCannotAuthenticateIsNotOffered(t *testing.T) {
 func TestUnlockChangesNeedAnOpenVault(t *testing.T) {
 	service, _ := readyVault(t)
 	service.Lock()
-	if err := service.SetPIN(testPIN); !errors.Is(err, ErrNotReady) {
+	if err := service.SetPIN(openingOf(service), testPIN); !errors.Is(err, ErrNotReady) {
 		t.Errorf("setting a PIN while locked: got %v, want ErrNotReady", err)
 	}
-	if err := service.RemovePIN(); !errors.Is(err, ErrNotReady) {
+	if err := service.RemovePIN(openingOf(service)); !errors.Is(err, ErrNotReady) {
 		t.Errorf("removing a PIN while locked: got %v, want ErrNotReady", err)
 	}
-	if err := service.SetBiometryUnlock(false); !errors.Is(err, ErrNotReady) {
+	if err := service.SetBiometryUnlock(openingOf(service), false); !errors.Is(err, ErrNotReady) {
 		t.Errorf("changing the method while locked: got %v, want ErrNotReady", err)
 	}
 }
@@ -536,7 +538,7 @@ func TestUnlockChangesNeedAnOpenVault(t *testing.T) {
 // A PIN unlock and the screens around it read the unlock record once, not once per question.
 func TestTheUnlockRecordIsReadOncePerLockedVault(t *testing.T) {
 	service, keys := readyVault(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	service.Lock()
@@ -562,7 +564,7 @@ func TestTheUnlockRecordIsReadOncePerLockedVault(t *testing.T) {
 // Using the device authentication key prompts the owner, so a PIN unlock must never touch it.
 func TestAPINUnlockNeverAsksTheOwner(t *testing.T) {
 	service, _, device := readyVaultOnDevice(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	service.Lock()
@@ -590,7 +592,7 @@ func TestSwitchingVaultsDoesNotServeTheOtherVaultsRecord(t *testing.T) {
 	keys := newMemoryKeys()
 	service := newTestService(t, &memoryFiles{target: personal}, keys)
 	createTestVault(t, service)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	if err := service.SwitchVault(work); err != nil {
@@ -638,10 +640,10 @@ func (p slowPresence) Create(salt []byte) ([]byte, []byte, [unlock.SecretSize]by
 
 func TestTheVaultLocksWhileDeviceAuthenticationIsBeingBound(t *testing.T) {
 	service, _ := readyVault(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
-	if err := service.SetBiometryUnlock(false); err != nil {
+	if err := service.SetBiometryUnlock(openingOf(service), false); err != nil {
 		t.Fatal(err)
 	}
 	slow := slowPresence{unlocktest.NewPresenceBinding(), make(chan struct{}), make(chan struct{})}
@@ -651,7 +653,7 @@ func TestTheVaultLocksWhileDeviceAuthenticationIsBeingBound(t *testing.T) {
 	}
 	service.platforms = platforms
 	ended := make(chan error, 1)
-	go func() { ended <- service.SetBiometryUnlock(true) }()
+	go func() { ended <- service.SetBiometryUnlock(openingOf(service), true) }()
 	<-slow.started
 	locked := make(chan struct{})
 	go func() {
@@ -671,4 +673,53 @@ func TestTheVaultLocksWhileDeviceAuthenticationIsBeingBound(t *testing.T) {
 	if err != nil || methods.BiometryEnabled {
 		t.Fatalf("a vault locked during binding kept the new way in: %+v, error = %v", methods, err)
 	}
+}
+
+func TestAChangeBoundToASessionThatClosedChangesNothing(t *testing.T) {
+	service, _ := readyVault(t)
+	opening := openingOf(service)
+	reopenTestVault(t, service)
+	if err := service.SetPIN(opening, testPIN); !errors.Is(err, ErrNotReady) {
+		t.Fatalf("a PIN for a closed session: got %v, want ErrNotReady", err)
+	}
+	if err := service.SetBiometryUnlock(opening, false); !errors.Is(err, ErrNotReady) {
+		t.Fatalf("device authentication for a closed session: got %v, want ErrNotReady", err)
+	}
+	if _, err := service.BeginRekey(opening, ""); !errors.Is(err, ErrNotReady) {
+		t.Fatalf("a new phrase for a closed session: got %v, want ErrNotReady", err)
+	}
+	if methods, err := service.UnlockMethods(); err != nil || methods.PINSet {
+		t.Fatalf("after a stale change: %+v, error = %v", methods, err)
+	}
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
+		t.Fatalf("a PIN for the open session: %v", err)
+	}
+}
+
+func TestOnlyALockTheServiceRaisesTellsItsObserver(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		service, _ := readyVault(t)
+		var locks atomic.Int32
+		service.OnLock(func() { locks.Add(1) })
+		service.Lock()
+		synctest.Wait()
+		if locks.Load() != 0 {
+			t.Fatal("a lock the caller asked for told the observer")
+		}
+		if _, err := service.Unlock(testReason); err != nil {
+			t.Fatal(err)
+		}
+		if err := service.SetPIN(openingOf(service), testPIN); err != nil {
+			t.Fatal(err)
+		}
+		for range unlock.MaxPINFailures {
+			if err := service.VerifyPIN("999999"); errors.Is(err, unlock.ErrPINRemoved) {
+				break
+			}
+		}
+		synctest.Wait()
+		if service.Unlocked() || locks.Load() != 1 {
+			t.Fatalf("the PIN removed by wrong attempts: open = %t, observer told %d times", service.Unlocked(), locks.Load())
+		}
+	})
 }

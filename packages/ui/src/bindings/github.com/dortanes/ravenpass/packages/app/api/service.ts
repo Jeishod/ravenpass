@@ -88,8 +88,8 @@ export function BeginRecovery(phrase: string): $CancellablePromise<$models.Recov
  * BeginRecoveryPhraseChange returns a new recovery phrase for the open vault once verifyOwner accepts the owner; nothing
  * is written until ConfirmRecoveryPhraseChange. Where the vault has a PIN on this device, pin is that PIN whichever way
  * the owner is verified, since the PIN's copy of the new key is wrapped from it; elsewhere pin is empty. Where the
- * device has no way in, current must be the vault's current recovery phrase, which opened it, so whoever finds the vault
- * open cannot take it over.
+ * device has no way in it can use, current must be the vault's current recovery phrase, which opened it, so whoever
+ * finds the vault open cannot take it over.
  */
 export function BeginRecoveryPhraseChange(pin: string, current: string): $CancellablePromise<string> {
     return $Call.ByID(392258921, pin, current);
@@ -201,15 +201,17 @@ export function ConfirmExtensionFills(): $CancellablePromise<boolean> {
 }
 
 /**
- * ConfirmRecovery opens the staged vault; a non-empty choice replaces this device's ways in.
+ * ConfirmRecovery opens the staged vault once accepted confirms every warning its preview gave; a non-empty choice
+ * replaces this device's ways in.
  */
-export function ConfirmRecovery(acceptPossibleDataLoss: boolean, choice: $models.UnlockChoice): $CancellablePromise<void> {
-    return $Call.ByID(3156691533, acceptPossibleDataLoss, choice);
+export function ConfirmRecovery(accepted: boolean, choice: $models.UnlockChoice): $CancellablePromise<void> {
+    return $Call.ByID(3156691533, accepted, choice);
 }
 
 /**
- * ConfirmRecoveryPhraseChange seals the open vault for the new recovery phrase once phrase matches it. Other devices
- * then open the vault with the new phrase; copies saved before keep opening with the old one.
+ * ConfirmRecoveryPhraseChange seals the open vault for the new recovery phrase once phrase matches it; automatic backups
+ * then back it up under the new key at once. Other devices then open the vault with the new phrase; copies saved before
+ * keep opening with the old one.
  */
 export function ConfirmRecoveryPhraseChange(phrase: string): $CancellablePromise<void> {
     return $Call.ByID(2043228024, phrase);
@@ -920,7 +922,8 @@ export function SetLanguage(language: string): $CancellablePromise<void> {
 }
 
 /**
- * SetPIN sets or replaces the open vault's PIN once verifyOwner accepts the owner; current is the PIN it may check.
+ * SetPIN sets or replaces the open vault's PIN once verifyOwner accepts the owner; current is the PIN or recovery key
+ * it may check.
  */
 export function SetPIN(pin: string, current: string): $CancellablePromise<void> {
     return $Call.ByID(709540865, pin, current);

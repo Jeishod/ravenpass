@@ -29,7 +29,9 @@ var (
 
 // Failures every store reports with these values, whatever its kind.
 var (
-	ErrNotFound            = errors.New("vault file not found")
+	ErrNotFound = errors.New("vault file not found")
+	// ErrEmptyFile wraps ErrNotFound for a file that exists and holds nothing, as one rewritten in place can for a moment.
+	ErrEmptyFile           = fmt.Errorf("%w: the file is empty", ErrNotFound)
 	ErrEmptyCiphertext     = errors.New("ciphertext is empty")
 	ErrTooLarge            = errors.New("vault file exceeds size limit")
 	ErrInvalidPath         = errors.New("vault location is invalid")

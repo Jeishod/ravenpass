@@ -1,8 +1,22 @@
 package vaultservice
 
 import (
+	"crypto/sha256"
+	"errors"
+	"log/slog"
+
+	"github.com/dortanes/ravenpass/packages/app/storage"
 	"github.com/dortanes/ravenpass/packages/app/unlock"
 	"github.com/dortanes/ravenpass/packages/vault"
+)
+
+// Failures of a key change that did not finish.
+var (
+	// ErrKeyChangeUnfinished reports a new file that is written while the save around it failed: the new recovery key
+	// opens the vault, and the ways in follow it where this device could record them.
+	ErrKeyChangeUnfinished = errors.New("the vault key changed but this device did not finish recording it")
+	// ErrKeyChangeUncertain reports a failed save whose file cannot be read back: either recovery key may open the vault.
+	ErrKeyChangeUncertain = errors.New("whether the vault key changed is not known")
 )
 
 // stagedRekey is a new vault key and recovery phrase awaiting confirmation of the phrase.
@@ -12,13 +26,16 @@ type stagedRekey struct {
 	pinEnvelope []byte
 }
 
-// BeginRekey stages a new vault key and recovery phrase for the open vault and returns the phrase; nothing is written.
-// Where the vault has a PIN on this device, pin must be it, counted and locking as VerifyPIN does, so the PIN keeps
-// opening the vault; elsewhere pin is empty.
-func (s *Service) BeginRekey(pin string) (string, error) {
+// BeginRekey stages a new vault key and recovery phrase for the vault opening names and returns the phrase; nothing
+// is written. Where the vault has a PIN on this device, pin must be it, counted and locking as VerifyPIN does, so the
+// PIN keeps opening the vault; elsewhere pin is empty.
+func (s *Service) BeginRekey(opening Opening, pin string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.discardRekey()
+	if err := s.openedAs(opening); err != nil {
+		return "", err
+	}
 	id, policy, err := s.openVaultPolicy()
 	if err != nil {
 		return "", err
@@ -65,33 +82,101 @@ func (s *Service) VerifyRecoveryPhrase(phrase string) error {
 
 // ConfirmRekey seals the open vault under the staged key once phrase matches the staged recovery phrase, and moves this
 // device's ways in to the new key. The new file replaces the old one whole; other devices then need the new phrase.
+// A failure that leaves the vault open keeps the staged phrase; one after the file is written fails with
+// ErrKeyChangeUnfinished, and one whose file cannot be read back with ErrKeyChangeUncertain.
 func (s *Service) ConfirmRekey(phrase string) (vault.Head, error) {
+	stage, id, platform, err := s.rekeyToConfirm(phrase)
+	if err != nil {
+		return vault.Head{}, err
+	}
+	// Device authentication is bound to a new hardware key, which takes seconds on some devices; the vault stays
+	// lockable meanwhile.
+	var rebound *unlock.PlatformCredential
+	if platform {
+		if rebound, err = s.platforms.Set(id, stage.rekey.WrapDeviceKey); err != nil {
+			return vault.Head{}, err
+		}
+	}
+	return s.commitRekey(stage, rebound)
+}
+
+// rekeyToConfirm checks phrase against the staged rekey and reports whether device authentication must be bound again.
+func (s *Service) rekeyToConfirm(phrase string) (*stagedRekey, vault.ID, bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	stage := s.rekeying
 	if stage == nil {
-		return vault.Head{}, ErrNoPendingSetup
+		return nil, vault.ID{}, false, ErrNoPendingSetup
 	}
 	if err := stage.rekey.VerifyPhrase(phrase); err != nil {
-		return vault.Head{}, err
+		return nil, vault.ID{}, false, err
 	}
-	defer s.discardRekey()
+	id, policy, err := s.openVaultPolicy()
+	if err != nil {
+		return nil, vault.ID{}, false, err
+	}
+	return stage, id, policy.HasPlatform(), nil
+}
+
+// commitRekey writes the vault sealed under the staged key, rebound holding device authentication's copy of it, and
+// then moves this device's ways in and key record to the new key, as a save records its witness. Where the file holds
+// the new key although the save failed, they move to it all the same.
+func (s *Service) commitRekey(stage *stagedRekey, rebound *unlock.PlatformCredential) (vault.Head, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.rekeying != stage {
+		return vault.Head{}, ErrNoPendingSetup
+	}
 	id, policy, err := s.openVaultPolicy()
 	if err != nil {
 		return vault.Head{}, err
 	}
-	next, err := s.rewrappedPolicy(id, policy, stage)
+	if policy.HasPlatform() != (rebound != nil) {
+		return vault.Head{}, ErrSetupInProgress
+	}
+	history, err := s.loadKeyHistory(id)
 	if err != nil {
 		return vault.Head{}, err
 	}
+	previous, err := s.session.Head()
+	if err != nil {
+		return vault.Head{}, err
+	}
+	_, replaced, err := sessionKey(s.session)
+	if err != nil {
+		return vault.Head{}, err
+	}
+	// A device whose record never started still learns which key it replaced.
+	moved := history.movedTo(replaced).movedTo(stage.rekey.KeyIdentity())
+	next := rewrapped(policy, stage, rebound)
+	record := func() error { return errors.Join(s.savePolicy(id, next), s.saveKeyHistory(id, moved)) }
 	pending, err := s.session.PrepareRekey(stage.rekey)
 	if err != nil {
 		return vault.Head{}, err
 	}
-	if err := s.commitThen(pending, func() error { return s.savePolicy(id, next) }); err != nil {
+	written := pending.Head()
+	err = s.commitThen(pending, record)
+	switch {
+	case err == nil:
+		s.discardRekey()
+		return written, nil
+	case s.fileHolds(written):
+		if repairErr := record(); repairErr != nil {
+			slog.Warn("move the ways in to a new vault key the file holds", "err", repairErr)
+		}
+		return vault.Head{}, errors.Join(ErrKeyChangeUnfinished, err)
+	case errors.Is(err, storage.ErrTooLarge), errors.Is(err, storage.ErrStaleHead), s.fileHolds(previous):
 		return vault.Head{}, err
+	default:
+		return vault.Head{}, errors.Join(ErrKeyChangeUncertain, err)
 	}
-	return s.session.Head()
+}
+
+// fileHolds reports whether the bound location holds the version head names. The caller holds s.mu.
+func (s *Service) fileHolds(head vault.Head) bool {
+	container, err := s.files.LoadCiphertext()
+	defer clear(container)
+	return err == nil && sha256.Sum256(container) == head.Hash
 }
 
 // DiscardRekey drops the staged vault key and recovery phrase, if any.
@@ -108,21 +193,15 @@ func (s *Service) discardRekey() {
 	}
 }
 
-// rewrappedPolicy is policy with each way in holding the staged key: the PIN's envelope rewrapped when it was begun,
-// device authentication bound to a new hardware key without asking the owner.
-func (s *Service) rewrappedPolicy(id vault.ID, policy unlock.Policy, stage *stagedRekey) (unlock.Policy, error) {
+// rewrapped is policy with each way in holding the staged key: the PIN's envelope wrapped when the rekey began, device
+// authentication rebound.
+func rewrapped(policy unlock.Policy, stage *stagedRekey, rebound *unlock.PlatformCredential) unlock.Policy {
 	var next unlock.Policy
 	if policy.HasPIN() && stage.pinEnvelope != nil {
 		pin := *policy.PIN
 		pin.Envelope = stage.pinEnvelope
 		next.PIN = &pin
 	}
-	if policy.HasPlatform() {
-		platform, err := s.platforms.Set(id, stage.rekey.WrapDeviceKey)
-		if err != nil {
-			return unlock.Policy{}, err
-		}
-		next.Platform = platform
-	}
-	return next, nil
+	next.Platform = rebound
+	return next
 }

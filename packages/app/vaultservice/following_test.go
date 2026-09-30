@@ -3,6 +3,7 @@ package vaultservice
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"testing"
 	"time"
@@ -144,6 +145,98 @@ func TestFollowingLeavesTheVaultOpenWhileTheFileIsOutOfReach(t *testing.T) {
 	devices.mac.Lock()
 	if change := devices.mac.Follow(); change != FileUnchanged {
 		t.Fatalf("a locked vault: %v", change)
+	}
+}
+
+func TestAFileStillBeingWrittenWaitsWithTheVaultOpen(t *testing.T) {
+	devices := newSyncedDevices(t)
+	saveItems(t, devices.phone, "one", "two")
+	whole := bytes.Clone(devices.phoneFiles.data)
+	for name, written := range map[string][]byte{
+		"half written":   whole[:len(whole)/2],
+		"bytes replaced": append(bytes.Clone(whole[:len(whole)-8]), make([]byte, 8)...),
+	} {
+		devices.macFiles.data = written
+		if change := devices.mac.Follow(); change != FileUnchanged || !devices.mac.Unlocked() {
+			t.Fatalf("a file %s: %v", name, change)
+		}
+	}
+	devices.macFiles.data = whole
+	if change := devices.mac.Follow(); change != FileAdopted {
+		t.Fatalf("the whole file: %v", change)
+	}
+}
+
+func TestTheVaultStaysUsableWhileItsFileReadsSlowly(t *testing.T) {
+	devices := newSyncedDevices(t)
+	saveItems(t, devices.phone, "saved on the phone")
+	deliver(devices.phoneFiles, devices.macFiles)
+	started, release := make(chan struct{}), make(chan struct{})
+	devices.macFiles.reading = func() {
+		close(started)
+		<-release
+	}
+	followed := make(chan FileChange, 1)
+	go func() { followed <- devices.mac.Follow() }()
+	<-started
+	devices.macFiles.reading = nil
+	listed := make(chan error, 1)
+	go func() {
+		_, err := devices.mac.List()
+		listed <- err
+	}()
+	select {
+	case err := <-listed:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Minute):
+		t.Fatal("listing waited for the file read")
+	}
+	close(release)
+	if change := <-followed; change != FileAdopted {
+		t.Fatalf("the slow read: %v", change)
+	}
+}
+
+func TestAReadASaveOvertookWaitsForTheNextCheck(t *testing.T) {
+	devices := newSyncedDevices(t)
+	saveItems(t, devices.phone, "saved on the phone")
+	deliver(devices.phoneFiles, devices.macFiles)
+	devices.macFiles.reading = func() {
+		devices.macFiles.reading = nil
+		if change := devices.mac.Follow(); change != FileAdopted {
+			t.Errorf("following the phone's file: %v", change)
+		}
+		saveItems(t, devices.mac, "saved on the Mac")
+	}
+	if change := devices.mac.Follow(); change != FileUnchanged || !devices.mac.Unlocked() {
+		t.Fatalf("a read the Mac's own save overtook: %v", change)
+	}
+	if labels := labelsOf(t, devices.mac); len(labels) != 2 {
+		t.Fatalf("the Mac shows %v", labels)
+	}
+}
+
+func TestASnapshotAdoptsASuccessorAndNeverLocks(t *testing.T) {
+	devices := newSyncedDevices(t)
+	saveItems(t, devices.phone, "saved on the phone")
+	deliver(devices.phoneFiles, devices.macFiles)
+	data, head, err := devices.mac.Snapshot()
+	if err != nil {
+		t.Fatalf("a snapshot over a successor: %v", err)
+	}
+	if head != headOf(t, devices.phone) || sha256.Sum256(data) != head.Hash {
+		t.Fatal("the snapshot is not of the successor the file holds")
+	}
+	saveItems(t, devices.mac, "saved on the Mac")
+	saveItems(t, devices.phone, "saved on the phone again")
+	deliver(devices.phoneFiles, devices.macFiles)
+	if _, _, err := devices.mac.Snapshot(); !errors.Is(err, ErrStaleExport) {
+		t.Fatalf("a snapshot over a diverged file: got %v, want ErrStaleExport", err)
+	}
+	if !devices.mac.Unlocked() {
+		t.Fatal("a snapshot locked the vault")
 	}
 }
 

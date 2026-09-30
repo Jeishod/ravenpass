@@ -15,15 +15,10 @@ func ControlsOf(service *Service) HostControls {
 	return HostControls{service: service}
 }
 
-// FollowVaultFile brings the open vault up to its file, reporting true when it locked instead; that lock keeps the unlock prompt.
+// FollowVaultFile brings the open vault up to its file, reporting true when it locked instead; that lock keeps the unlock
+// prompt, and lockedInside clears what the vault left behind.
 func (h HostControls) FollowVaultFile() bool {
-	s := h.service
-	if s.vault.Follow() != vaultservice.FileRefused {
-		return false
-	}
-	s.lock()
-	s.clearClipboard()
-	return true
+	return h.service.vault.Follow() == vaultservice.FileRefused
 }
 
 // LockAway closes the vault after the app left view, leaving a copy on the clipboard until its delay.

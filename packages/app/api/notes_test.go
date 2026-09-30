@@ -107,6 +107,15 @@ func TestCopyNoteCopiesTheBody(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertFailure(t, service.copyNote(empty, schedule), failureFieldEmpty)
+	notes, err := service.ListNotes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, note := range notes {
+		if note.ID == empty && note.LastUsedAt != 0 {
+			t.Fatal("copying an empty note recorded a use")
+		}
+	}
 	card, err := service.CreateCard(testCardInput(), nil)
 	if err != nil {
 		t.Fatal(err)

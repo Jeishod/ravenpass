@@ -71,11 +71,9 @@ func (s *Service) Suggestions(requester Requester, purpose Purpose) ([]Suggestio
 			continue
 		}
 		if requester.checksScheme() {
+			// A credential that cannot be read is left out rather than emptying every suggestion.
 			credential, err := s.session.ReadCredential(entry.ID)
-			if err != nil {
-				return nil, err
-			}
-			if !requester.admits(credential.CredentialInput) {
+			if err != nil || !requester.admits(credential.CredentialInput) {
 				continue
 			}
 		}

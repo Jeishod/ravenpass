@@ -1,4 +1,4 @@
-// Package devicerecords keeps the per-vault witness, usage, export and unlock records this device holds.
+// Package devicerecords keeps the per-vault witness, usage, export, unlock and vault key records this device holds.
 package devicerecords
 
 import (
@@ -34,10 +34,11 @@ type vaultRecord struct {
 	Usage   []byte `json:"usage,omitempty"`
 	Export  []byte `json:"export,omitempty"`
 	Unlock  []byte `json:"unlock,omitempty"`
+	Keys    []byte `json:"keys,omitempty"`
 }
 
 func (r vaultRecord) empty() bool {
-	return len(r.Witness) == 0 && len(r.Usage) == 0 && len(r.Export) == 0 && len(r.Unlock) == 0
+	return len(r.Witness) == 0 && len(r.Usage) == 0 && len(r.Export) == 0 && len(r.Unlock) == 0 && len(r.Keys) == 0
 }
 
 type file struct {
@@ -125,6 +126,21 @@ func (s *Store) DeleteUnlockPolicy(vaultID string) error {
 	return s.remove(vaultID, kindUnlock)
 }
 
+// SaveKeyRecord records the vault key record for vaultID.
+func (s *Store) SaveKeyRecord(vaultID string, keys []byte) error {
+	return s.save(vaultID, kindKeys, keys)
+}
+
+// LoadKeyRecord returns a copy the caller may wipe; ErrNotFound means vaultID has no vault key record.
+func (s *Store) LoadKeyRecord(vaultID string) ([]byte, error) {
+	return s.load(vaultID, kindKeys)
+}
+
+// DeleteKeyRecord removes the vault key record for vaultID.
+func (s *Store) DeleteKeyRecord(vaultID string) error {
+	return s.remove(vaultID, kindKeys)
+}
+
 type kind int
 
 const (
@@ -132,6 +148,7 @@ const (
 	kindUsage
 	kindExport
 	kindUnlock
+	kindKeys
 )
 
 func (k kind) of(record *vaultRecord) *[]byte {
@@ -142,6 +159,8 @@ func (k kind) of(record *vaultRecord) *[]byte {
 		return &record.Usage
 	case kindExport:
 		return &record.Export
+	case kindKeys:
+		return &record.Keys
 	default:
 		return &record.Unlock
 	}

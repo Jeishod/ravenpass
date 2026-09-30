@@ -14,21 +14,21 @@ import (
 func TestANewRecoveryPhraseKeepsThisDevicesWaysIn(t *testing.T) {
 	devices := newSyncedDevices(t)
 	mac := devices.mac
-	if err := mac.SetPIN(testPIN); err != nil {
+	if err := mac.SetPIN(openingOf(mac), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	saveItems(t, mac, "GitHub")
 	before := bytes.Clone(devices.macFiles.data)
-	if _, err := mac.BeginRekey(""); !errors.Is(err, vault.ErrInvalidPIN) {
+	if _, err := mac.BeginRekey(openingOf(mac), ""); !errors.Is(err, vault.ErrInvalidPIN) {
 		t.Fatalf("a new phrase without the PIN: got %v, want ErrInvalidPIN", err)
 	}
-	if _, err := mac.BeginRekey("999999"); !errors.Is(err, unlock.ErrWrongPIN) {
+	if _, err := mac.BeginRekey(openingOf(mac), "999999"); !errors.Is(err, unlock.ErrWrongPIN) {
 		t.Fatalf("a new phrase with a wrong PIN: got %v, want ErrWrongPIN", err)
 	}
 	if methods, err := mac.UnlockMethods(); err != nil || methods.PINAttemptsLeft != unlock.MaxPINFailures-1 {
 		t.Fatalf("the wrong PIN was not counted: %+v, error = %v", methods, err)
 	}
-	phrase, err := mac.BeginRekey(testPIN)
+	phrase, err := mac.BeginRekey(openingOf(mac), testPIN)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,34 +73,34 @@ func TestANewRecoveryPhraseKeepsThisDevicesWaysIn(t *testing.T) {
 
 func TestTheWrongPINThatRemovesThePINForANewPhraseLocksTheVault(t *testing.T) {
 	service, _ := readyVault(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	now := time.Unix(0, 0)
 	service.pinThrottle = unlock.NewThrottle(func() time.Time { return now })
 	for attempt := 1; attempt < unlock.MaxPINFailures; attempt++ {
-		if _, err := service.BeginRekey("999999"); !errors.Is(err, unlock.ErrWrongPIN) {
+		if _, err := service.BeginRekey(openingOf(service), "999999"); !errors.Is(err, unlock.ErrWrongPIN) {
 			t.Fatalf("attempt %d: got %v, want ErrWrongPIN", attempt, err)
 		}
 		now = now.Add(unlock.AttemptDelay(attempt))
 	}
-	if _, err := service.BeginRekey("999999"); !errors.Is(err, unlock.ErrPINRemoved) {
+	if _, err := service.BeginRekey(openingOf(service), "999999"); !errors.Is(err, unlock.ErrPINRemoved) {
 		t.Fatalf("the last attempt: got %v, want ErrPINRemoved", err)
 	}
 	if service.Unlocked() {
 		t.Fatal("the vault stayed open after its PIN was removed")
 	}
-	if _, err := service.BeginRekey(""); !errors.Is(err, ErrNotReady) {
+	if _, err := service.BeginRekey(openingOf(service), ""); !errors.Is(err, ErrNotReady) {
 		t.Fatalf("a new phrase after the PIN was removed: got %v, want ErrNotReady", err)
 	}
 }
 
 func TestAnotherDeviceNeedsTheNewRecoveryPhrase(t *testing.T) {
 	devices := newSyncedDevices(t)
-	if err := devices.phone.SetPIN(testPIN); err != nil {
+	if err := devices.phone.SetPIN(openingOf(devices.phone), testPIN); err != nil {
 		t.Fatal(err)
 	}
-	phrase, err := devices.mac.BeginRekey("")
+	phrase, err := devices.mac.BeginRekey(openingOf(devices.mac), "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +156,7 @@ func TestAPINOnlyDeviceChoosesAWayInAfterANewPhrase(t *testing.T) {
 		t.Fatal(err)
 	}
 	phone.Lock()
-	phrase, err := mac.BeginRekey("")
+	phrase, err := mac.BeginRekey(openingOf(mac), "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,36 +183,104 @@ func TestAPINOnlyDeviceChoosesAWayInAfterANewPhrase(t *testing.T) {
 	}
 }
 
-func TestANewPhraseInterruptedAfterTheFileIsReplacedNeedsThatPhrase(t *testing.T) {
+func TestANewPhraseInterruptedAfterTheFileIsReplacedKeepsTheWaysIn(t *testing.T) {
 	files := &memoryFiles{}
 	keys := newMemoryKeys()
 	service := newTestService(t, files, keys)
 	createTestVaultWith(t, service, MethodChoice{PIN: testPIN})
-	phrase, err := service.BeginRekey(testPIN)
+	phrase, err := service.BeginRekey(openingOf(service), testPIN)
 	if err != nil {
 		t.Fatal(err)
 	}
 	files.failAfterReplace = true
-	if _, err := service.ConfirmRekey(phrase); !errors.Is(err, storage.ErrDurabilityUncertain) {
-		t.Fatalf("an interrupted save: got %v, want ErrDurabilityUncertain", err)
+	_, err = service.ConfirmRekey(phrase)
+	if !errors.Is(err, ErrKeyChangeUnfinished) || !errors.Is(err, storage.ErrDurabilityUncertain) {
+		t.Fatalf("an interrupted save: got %v, want ErrKeyChangeUnfinished", err)
 	}
 	if service.Unlocked() {
 		t.Fatal("the vault stayed open after an interrupted save")
 	}
-	if _, err := service.UnlockWithPIN(testPIN); !errors.Is(err, vault.ErrKeyReplaced) {
-		t.Fatalf("the PIN whose record was not moved: got %v, want ErrKeyReplaced", err)
+	if _, err := service.UnlockWithPIN(testPIN); err != nil {
+		t.Fatalf("the PIN after the file was replaced: %v", err)
 	}
-	if _, err := service.BeginRecovery(phrase); err != nil {
-		t.Fatalf("the new phrase does not open the replaced file: %v", err)
+}
+
+func TestANewPhraseWhoseRecordFailsAfterTheWriteStillMovesTheWaysIn(t *testing.T) {
+	files := &memoryFiles{}
+	keys := newMemoryKeys()
+	service := newTestService(t, files, keys)
+	createTestVaultWith(t, service, MethodChoice{PIN: testPIN})
+	phrase, err := service.BeginRekey(openingOf(service), testPIN)
+	if err != nil {
+		t.Fatal(err)
+	}
+	keys.policySaveFailures = []error{errors.New("the records file is busy")}
+	if _, err := service.ConfirmRekey(phrase); !errors.Is(err, ErrKeyChangeUnfinished) {
+		t.Fatalf("a record that failed after the write: got %v, want ErrKeyChangeUnfinished", err)
+	}
+	if _, err := service.UnlockWithPIN(testPIN); err != nil {
+		t.Fatalf("the PIN after the ways in were moved again: %v", err)
+	}
+}
+
+func TestANewPhraseWhoseFileCannotBeReadBackIsUncertain(t *testing.T) {
+	files := &memoryFiles{}
+	keys := newMemoryKeys()
+	service := newTestService(t, files, keys)
+	_, head := createTestVaultWith(t, service, MethodChoice{PIN: testPIN})
+	policy := bytes.Clone(keys.policy[head.VaultID.String()])
+	phrase, err := service.BeginRekey(openingOf(service), testPIN)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files.failAfterReplace = true
+	files.unreadable = errors.New("the folder is out of reach")
+	if _, err := service.ConfirmRekey(phrase); !errors.Is(err, ErrKeyChangeUncertain) {
+		t.Fatalf("a save that cannot be read back: got %v, want ErrKeyChangeUncertain", err)
+	}
+	if !bytes.Equal(keys.policy[head.VaultID.String()], policy) {
+		t.Fatal("an uncertain key change moved the ways in")
+	}
+}
+
+func TestANewPhraseWhoseFileIsNotWrittenKeepsTheOldKeyAndThePhrase(t *testing.T) {
+	files := &memoryFiles{}
+	keys := newMemoryKeys()
+	service := newTestService(t, files, keys)
+	createTestVaultWith(t, service, MethodChoice{PIN: testPIN})
+	head, err := service.session.Head()
+	if err != nil {
+		t.Fatal(err)
+	}
+	policy := bytes.Clone(keys.policy[head.VaultID.String()])
+	history := bytes.Clone(keys.keys[head.VaultID.String()])
+	phrase, err := service.BeginRekey(openingOf(service), testPIN)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files.maxBytes = 1
+	if _, err := service.ConfirmRekey(phrase); !errors.Is(err, storage.ErrTooLarge) {
+		t.Fatalf("a refused save: got %v, want ErrTooLarge", err)
+	}
+	if len(history) == 0 || !bytes.Equal(keys.policy[head.VaultID.String()], policy) || !bytes.Equal(keys.keys[head.VaultID.String()], history) {
+		t.Fatal("the ways in or the key record moved to a key that was never written")
+	}
+	files.maxBytes = 0
+	if _, err := service.ConfirmRekey(phrase); err != nil {
+		t.Fatalf("the staged phrase after a refused save: %v", err)
+	}
+	service.Lock()
+	if _, err := service.UnlockWithPIN(testPIN); err != nil {
+		t.Fatalf("the PIN after the key change: %v", err)
 	}
 }
 
 func TestANewPhraseForAFileThatChangedLeavesTheVaultAsItWas(t *testing.T) {
 	devices := newSyncedDevices(t)
-	if err := devices.mac.SetPIN(testPIN); err != nil {
+	if err := devices.mac.SetPIN(openingOf(devices.mac), testPIN); err != nil {
 		t.Fatal(err)
 	}
-	phrase, err := devices.mac.BeginRekey(testPIN)
+	phrase, err := devices.mac.BeginRekey(openingOf(devices.mac), testPIN)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -263,23 +331,23 @@ func TestAnUnreadableEnvelopeIsAWayInTheDeviceNoLongerHas(t *testing.T) {
 
 func TestUnlockChangesWaitWhileANewPhraseIsStaged(t *testing.T) {
 	service, _ := readyVault(t)
-	if _, err := service.BeginRekey(testPIN); !errors.Is(err, unlock.ErrNoPIN) {
+	if _, err := service.BeginRekey(openingOf(service), testPIN); !errors.Is(err, unlock.ErrNoPIN) {
 		t.Fatalf("a PIN for a vault without one: got %v, want ErrNoPIN", err)
 	}
-	if _, err := service.BeginRekey(""); err != nil {
+	if _, err := service.BeginRekey(openingOf(service), ""); err != nil {
 		t.Fatal(err)
 	}
-	if err := service.SetPIN(testPIN); !errors.Is(err, ErrSetupInProgress) {
+	if err := service.SetPIN(openingOf(service), testPIN); !errors.Is(err, ErrSetupInProgress) {
 		t.Fatalf("setting a PIN during a new phrase: got %v, want ErrSetupInProgress", err)
 	}
-	if err := service.SetBiometryUnlock(false); !errors.Is(err, ErrSetupInProgress) {
+	if err := service.SetBiometryUnlock(openingOf(service), false); !errors.Is(err, ErrSetupInProgress) {
 		t.Fatalf("changing device authentication during a new phrase: got %v, want ErrSetupInProgress", err)
 	}
 	service.DiscardRekey()
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
-	phrase, err := service.BeginRekey(testPIN)
+	phrase, err := service.BeginRekey(openingOf(service), testPIN)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/dortanes/ravenpass/packages/app/confirmation"
 	"github.com/dortanes/ravenpass/packages/app/ownerauth"
+	"github.com/dortanes/ravenpass/packages/app/vaultservice"
 	"github.com/dortanes/ravenpass/packages/app/verification"
 	"github.com/dortanes/ravenpass/packages/vault"
 )
@@ -50,23 +51,31 @@ func (s *Service) UnlockWithPIN(pin string) error {
 	return s.opened(err)
 }
 
-// SetPIN sets or replaces the open vault's PIN once verifyOwner accepts the owner; current is the PIN it may check.
+// SetPIN sets or replaces the open vault's PIN once verifyOwner accepts the owner; current is the PIN or recovery key
+// it may check.
 func (s *Service) SetPIN(ctx context.Context, pin, current string) error {
 	if !vault.ValidPIN(pin) {
 		return present(vault.ErrInvalidPIN)
 	}
-	if err := s.verifyOwner(ctx, current, s.vault.VerifyPIN, nil); err != nil {
+	opening, err := s.verifyOwner(ctx, current, s.verifyPIN)
+	if err != nil {
 		return err
 	}
-	return present(s.vault.SetPIN(pin))
+	return present(s.vault.SetPIN(opening, pin))
+}
+
+// verifyPIN checks pin against the open vault as verifyOwner's PIN check; the change it authorizes checks the session.
+func (s *Service) verifyPIN(_ vaultservice.Opening, pin string) error {
+	return s.vault.VerifyPIN(pin)
 }
 
 // RemovePIN removes the open vault's PIN once verifyOwner accepts the owner, as SetPIN does.
 func (s *Service) RemovePIN(ctx context.Context, current string) error {
-	if err := s.verifyOwner(ctx, current, s.vault.VerifyPIN, nil); err != nil {
+	opening, err := s.verifyOwner(ctx, current, s.verifyPIN)
+	if err != nil {
 		return err
 	}
-	return present(s.vault.RemovePIN())
+	return present(s.vault.RemovePIN(opening))
 }
 
 // SetBiometryUnlock turns device authentication on or off once verifyOwner accepts the owner, as SetPIN does; asking
@@ -76,35 +85,48 @@ func (s *Service) SetBiometryUnlock(ctx context.Context, enabled bool, current s
 	if err != nil {
 		return present(err)
 	}
-	if methods.BiometryEnabled != enabled {
-		if err := s.verifyOwner(ctx, current, s.vault.VerifyPIN, nil); err != nil {
-			return err
-		}
+	if methods.BiometryEnabled == enabled {
+		return nil
 	}
-	return present(s.vault.SetBiometryUnlock(enabled))
+	opening, err := s.verifyOwner(ctx, current, s.verifyPIN)
+	if err != nil {
+		return err
+	}
+	return present(s.vault.SetBiometryUnlock(opening, enabled))
 }
 
-// verifyOwner asks device authentication where the vault opens with it, else checks current by checkPIN, which counts a
-// wrong PIN as the locked screen does. A vault with neither, which only the recovery phrase opened, is checked by
-// checkNoWayIn, or changes unasked where that is nil.
-func (s *Service) verifyOwner(ctx context.Context, current string, checkPIN func(pin string) error, checkNoWayIn func() error) error {
+// verifyOwner names the open vault session, then asks device authentication where the vault opens with it, else checks
+// current by checkPIN, which counts a wrong PIN as the locked screen does, else checks current as the vault's recovery
+// key. The change it authorizes is bound to the session named, so one that closed meanwhile changes nothing.
+func (s *Service) verifyOwner(ctx context.Context, current string, checkPIN func(opening vaultservice.Opening, pin string) error) (vaultservice.Opening, error) {
+	opening, err := s.vault.CurrentOpening()
+	if err != nil {
+		return 0, present(err)
+	}
 	methods, err := s.vault.UnlockMethods()
 	if err != nil {
-		return present(err)
+		return 0, present(err)
 	}
 	switch {
 	case methods.BiometryEnabled && methods.BiometryAvailable:
-		err := s.owner.VerifyDevice(ctx, confirmation.ChangingUnlock())
+		verified := s.owner.VerifyDevice(ctx, confirmation.ChangingUnlock())
 		// The device reports its authentication unavailable only once the prompt is asked for.
-		if errors.Is(err, verification.ErrUnverifiable) || errors.Is(err, ownerauth.ErrFailed) {
-			return fail(failureOwnerUnverified)
+		if errors.Is(verified, verification.ErrUnverifiable) || errors.Is(verified, ownerauth.ErrFailed) {
+			return 0, fail(failureOwnerUnverified)
 		}
-		return present(err)
+		err = present(verified)
 	case methods.PINSet:
-		return present(checkPIN(current))
-	case checkNoWayIn != nil:
-		return present(checkNoWayIn())
+		err = present(checkPIN(opening, current))
 	default:
-		return nil
+		err = presentOwnerKey(s.vault.VerifyRecoveryPhrase(current))
 	}
+	return opening, err
+}
+
+// presentOwnerKey words a recovery key that did not open the open vault as a key that does not match.
+func presentOwnerKey(err error) error {
+	if errors.Is(err, vault.ErrAuthentication) {
+		return fail(failureRecoveryKeyMismatch)
+	}
+	return present(err)
 }

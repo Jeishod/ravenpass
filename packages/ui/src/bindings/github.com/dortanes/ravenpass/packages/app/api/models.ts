@@ -937,6 +937,11 @@ export interface RecoveryPreview {
     "mayLoseNewerCredentials": boolean;
 
     /**
+     * KeyReplaced is true when the file is sealed under a recovery key this device saw replaced.
+     */
+    "keyReplaced": boolean;
+
+    /**
      * NeedsWayIn is true when this device holds no way in that still opens the vault.
      */
     "needsWayIn": boolean;

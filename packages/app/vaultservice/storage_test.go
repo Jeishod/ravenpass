@@ -93,6 +93,9 @@ func TestMoveStorageKeepsTheVaultWhenTheDestinationRefuses(t *testing.T) {
 	if _, err := service.List(); err != nil {
 		t.Fatalf("a refused move closed the vault: %v", err)
 	}
+	if len(files.discarded) != 1 || files.discarded[0].Path != "/vaults/second.rpv" {
+		t.Fatalf("a failed move left its destination: discarded %+v", files.discarded)
+	}
 }
 
 func TestBindStorageOnlyBeforeAVaultIsOpen(t *testing.T) {

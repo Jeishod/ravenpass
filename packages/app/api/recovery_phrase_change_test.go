@@ -137,7 +137,7 @@ func TestANewPhraseForAVaultWithNeitherWayInTakesTheCurrentPhrase(t *testing.T) 
 		assertFailure(t, err, failureRecoveryPhraseInvalid)
 	}
 	_, err = service.BeginRecoveryPhraseChange(context.Background(), "", unrelatedPhrase)
-	assertFailure(t, err, failureAuthenticationInvalid)
+	assertFailure(t, err, failureRecoveryKeyMismatch)
 	phrase, err := service.BeginRecoveryPhraseChange(context.Background(), "", current)
 	if err != nil {
 		t.Fatalf("the current phrase: %v", err)

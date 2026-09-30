@@ -112,7 +112,7 @@ func New(path string, maxBytes int64) (*Store, error) {
 // Restricted reports whether the file system keeps the vault file readable by its owner alone.
 func (store *Store) Restricted() bool { return store.restricted }
 
-// LoadCiphertext reads the vault file; storage.ErrNotFound when there is none.
+// LoadCiphertext reads the vault file; storage.ErrNotFound when there is none, storage.ErrEmptyFile when it is empty.
 func (store *Store) LoadCiphertext() ([]byte, error) {
 	directoryFD, err := store.openDirectory()
 	if err != nil {
@@ -145,8 +145,9 @@ func (store *Store) loadCiphertext(directoryFD int) ([]byte, error) {
 			return nil, err
 		}
 	}
+	// An empty file holds no vault, as an empty document does: a new vault may replace it, and one opened there is lost.
 	if before.Size <= 0 {
-		return nil, storage.ErrEmptyCiphertext
+		return nil, storage.ErrEmptyFile
 	}
 	if before.Size > store.maxBytes {
 		return nil, storage.ErrTooLarge

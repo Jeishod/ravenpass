@@ -11,7 +11,7 @@ import (
 
 func TestAPINAttemptWhoseCountCannotBeStoredIsRefused(t *testing.T) {
 	service, keys := readyVault(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	name := service.device.policyVault
@@ -45,7 +45,7 @@ func TestAPINAttemptWhoseCountCannotBeStoredIsRefused(t *testing.T) {
 
 func TestAPINAttemptIsStoredAsWrongBeforeItIsTried(t *testing.T) {
 	service, keys := readyVault(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	service.Lock()
@@ -65,7 +65,7 @@ func TestAPINAttemptIsStoredAsWrongBeforeItIsTried(t *testing.T) {
 
 func TestTheLastPINAttemptRemovesThePINBeforeItIsTried(t *testing.T) {
 	service, keys := readyVault(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	service.Lock()
@@ -89,7 +89,7 @@ func TestTheLastPINAttemptRemovesThePINBeforeItIsTried(t *testing.T) {
 
 func TestAPINTheDeviceCannotUseIsDroppedFromTheRecord(t *testing.T) {
 	service, keys, device := readyVaultOnDevice(t)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	name := service.device.policyVault
@@ -113,7 +113,7 @@ func TestTheDelayEarnedByWrongPINsOutlivesARestart(t *testing.T) {
 	device := newTestDevice()
 	service := newTestServiceOn(t, files, keys, device)
 	createTestVault(t, service)
-	if err := service.SetPIN(testPIN); err != nil {
+	if err := service.SetPIN(openingOf(service), testPIN); err != nil {
 		t.Fatal(err)
 	}
 	service.Lock()

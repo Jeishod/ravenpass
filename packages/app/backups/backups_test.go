@@ -57,7 +57,7 @@ func (f *fakeVault) State() (vaultservice.State, error) {
 	return vaultservice.State{Phase: vaultservice.PhaseReady, VaultExists: true, Head: f.head}, nil
 }
 
-func (f *fakeVault) Export() ([]byte, vault.Head, error) {
+func (f *fakeVault) Snapshot() ([]byte, vault.Head, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.exports++
@@ -292,6 +292,27 @@ func TestABackupWaitsForTheIntervalAndAChange(t *testing.T) {
 	h.advance(24 * time.Hour)
 	h.keeper.Check()
 	h.assertExports(3)
+}
+
+func TestAKeyChangeBacksUpAtOnceWhateverTheInterval(t *testing.T) {
+	h := newHarness(t)
+	h.keeper.Check()
+	h.vault.change()
+	h.advance(time.Minute)
+	h.keeper.check(false)
+	h.assertExports(1)
+
+	h.keeper.KeyChanged(vault.ID{0xb2})
+	h.keeper.check(false)
+	h.assertExports(1)
+
+	h.keeper.KeyChanged(h.vault.head.VaultID)
+	h.keeper.check(false)
+	h.assertExports(2)
+	h.vault.change()
+	h.advance(time.Minute)
+	h.keeper.check(false)
+	h.assertExports(2)
 }
 
 func TestRetentionRemovesTheOldestJournaledBackupsOnly(t *testing.T) {

@@ -283,12 +283,25 @@ func TestDeviceAuthenticationVerifiesWhateverPINIsGiven(t *testing.T) {
 	assertNoConfirmation(t, service)
 }
 
-func TestAVaultWithNeitherMethodChangesWithoutAsking(t *testing.T) {
+func TestAVaultWithNoWayInTheDeviceCanUseChangesOnlyWithItsRecoveryKey(t *testing.T) {
 	service, device := newReadyServiceOnDevice(t)
+	answerOwner(t, service, nil)
+	current, err := service.BeginRecoveryPhraseChange(context.Background(), "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := service.ConfirmRecoveryPhraseChange(current); err != nil {
+		t.Fatal(err)
+	}
 	device.noDeviceOwner = true
 	owner := answerOwner(t, service, ownerauth.ErrCanceled)
-	if err := service.SetPIN(context.Background(), "135790", ""); err != nil {
-		t.Fatalf("a vault opened with its recovery phrase refused a PIN: %v", err)
+	assertFailure(t, service.SetPIN(context.Background(), "135790", ""), failureRecoveryPhraseInvalid)
+	assertFailure(t, service.SetPIN(context.Background(), "135790", unrelatedPhrase), failureRecoveryKeyMismatch)
+	if unlockMethodsOf(t, service).PINSet {
+		t.Fatal("a PIN was set without the recovery key")
+	}
+	if err := service.SetPIN(context.Background(), "135790", current); err != nil {
+		t.Fatalf("the current recovery key: %v", err)
 	}
 	if owner.times() != 0 || !unlockMethodsOf(t, service).PINSet {
 		t.Fatalf("setting the first PIN asked the owner %d times", owner.times())

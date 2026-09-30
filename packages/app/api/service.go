@@ -43,6 +43,8 @@ type State struct {
 // RecoveryPreview is what confirming a staged recovery would do.
 type RecoveryPreview struct {
 	MayLoseNewerCredentials bool `json:"mayLoseNewerCredentials"`
+	// KeyReplaced is true when the file is sealed under a recovery key this device saw replaced.
+	KeyReplaced bool `json:"keyReplaced"`
 	// NeedsWayIn is true when this device holds no way in that still opens the vault.
 	NeedsWayIn bool `json:"needsWayIn"`
 }
@@ -294,6 +296,7 @@ func New(vault *vaultservice.Service, settings *preferences.Store, icons *siteic
 		backups: host.Backups, folders: folders, about: about,
 	}
 	s.confirmations.UnlockOnDevice(s.unlockOnDevice)
+	vault.OnLock(s.lockedInside)
 	return s, nil
 }
 
@@ -371,13 +374,15 @@ func (s *Service) BeginRecovery(phrase string) (RecoveryPreview, error) {
 	}
 	return RecoveryPreview{
 		MayLoseNewerCredentials: preview.MayLoseNewerCredentials,
+		KeyReplaced:             preview.KeyReplaced,
 		NeedsWayIn:              preview.NeedsWayIn,
 	}, nil
 }
 
-// ConfirmRecovery opens the staged vault; a non-empty choice replaces this device's ways in.
-func (s *Service) ConfirmRecovery(acceptPossibleDataLoss bool, choice UnlockChoice) error {
-	_, err := s.vault.ConfirmRecovery(acceptPossibleDataLoss, choice.methods())
+// ConfirmRecovery opens the staged vault once accepted confirms every warning its preview gave; a non-empty choice
+// replaces this device's ways in.
+func (s *Service) ConfirmRecovery(accepted bool, choice UnlockChoice) error {
+	_, err := s.vault.ConfirmRecovery(accepted, choice.methods())
 	return s.opened(err)
 }
 
@@ -487,7 +492,8 @@ var copyableFields = map[string]func(vault.CredentialInput) (string, error){
 	},
 }
 
-// credentialField resolves a copyableFields name or "website:<index>" to its reader; a missing website reads as empty.
+// credentialField resolves a copyableFields name or "website:<index>" to its reader; a website the credential lacks is
+// not copyable, as another item's missing entry is not.
 func credentialField(reference string) (func(vault.CredentialInput) (string, error), bool) {
 	if read, known := copyableFields[reference]; known {
 		return read, true
@@ -501,7 +507,10 @@ func credentialField(reference string) (func(vault.CredentialInput) (string, err
 		return nil, false
 	}
 	return func(input vault.CredentialInput) (string, error) {
-		website, _ := at(input.Websites, index)
+		website, found := at(input.Websites, index)
+		if !found {
+			return "", fail(failureFieldNotCopyable)
+		}
 		return website, nil
 	}, true
 }
@@ -530,7 +539,8 @@ func (s *Service) copyCredentialField(id string, field string, schedule func(tim
 	})
 }
 
-// copyItemValue copies one value of an item and records the use; read returns interface-ready failures.
+// copyItemValue copies one value of an item and records the use; read returns interface-ready failures. An empty value
+// copies nothing and records no use.
 func (s *Service) copyItemValue(id string, schedule func(time.Duration, func()), read func(vault.ID) (string, error)) error {
 	parsed, err := vault.ParseID(id)
 	if err != nil {
@@ -541,11 +551,11 @@ func (s *Service) copyItemValue(id string, schedule func(time.Duration, func()),
 	if err != nil {
 		return err
 	}
-	if err := s.vault.MarkUsed(parsed); err != nil {
-		return present(err)
-	}
 	if value == "" {
 		return fail(failureFieldEmpty)
+	}
+	if err := s.vault.MarkUsed(parsed); err != nil {
+		return present(err)
 	}
 	if !s.copyToClipboard(value, schedule) {
 		return fail(failureCopyFailed)
@@ -722,6 +732,19 @@ func (s *Service) Lock() error {
 func (s *Service) lock() {
 	s.icons.Release()
 	s.vault.Lock()
+	s.dropOpenVault()
+}
+
+// lockedInside clears what the open vault left behind, its clipboard copy included, after the vault service locked it
+// on its own; the icon cache it can no longer seal is dropped.
+func (s *Service) lockedInside() {
+	s.icons.Release()
+	s.dropOpenVault()
+	s.clearClipboard()
+}
+
+// dropOpenVault ends pending confirmations and drops the staged photo, scans and import and any link share.
+func (s *Service) dropOpenVault() {
 	s.confirmations.EndAll(vaultservice.ErrNotReady)
 	s.photo.clear()
 	s.scans.clear()
@@ -762,8 +785,14 @@ func present(err error) error {
 		return fail(failureUnlockUnavailable)
 	case errors.Is(err, unlock.ErrUnbound):
 		return fail(failureUnlockKeyMissing)
+	case errors.Is(err, vaultservice.ErrKeyChangeUnfinished):
+		return fail(failureKeyChangeUnfinished)
+	case errors.Is(err, vaultservice.ErrKeyChangeUncertain):
+		return fail(failureKeyChangeUncertain)
 	case errors.Is(err, vaultservice.ErrConfirmationNeeded):
 		return fail(failureRecoveryNeedsConfirm)
+	case errors.Is(err, vaultservice.ErrReplacedKeyNeedsConfirmation):
+		return fail(failureRecoveryReplacedKey)
 	case errors.Is(err, vaultservice.ErrRecoveryChanged):
 		return fail(failureRecoveryChanged)
 	case errors.Is(err, vault.ErrInvalidPhrase):

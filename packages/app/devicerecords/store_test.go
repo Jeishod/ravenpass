@@ -91,6 +91,7 @@ func TestEveryRecordSurvivesAReopen(t *testing.T) {
 		"usage":   []byte("last used"),
 		"export":  []byte("export note"),
 		"policy":  []byte(`{"version":2}`),
+		"keys":    []byte(`{"version":1}`),
 	}
 	if err := store.SaveHeadWitness(testVaultID, written["witness"]); err != nil {
 		t.Fatal(err)
@@ -104,12 +105,16 @@ func TestEveryRecordSurvivesAReopen(t *testing.T) {
 	if err := store.SaveUnlockPolicy(testVaultID, written["policy"]); err != nil {
 		t.Fatal(err)
 	}
+	if err := store.SaveKeyRecord(testVaultID, written["keys"]); err != nil {
+		t.Fatal(err)
+	}
 	reopened := reopen(t, path)
 	for name, read := range map[string]func(string) ([]byte, error){
 		"witness": reopened.LoadHeadWitness,
 		"usage":   reopened.LoadUsageRecord,
 		"export":  reopened.LoadExportRecord,
 		"policy":  reopened.LoadUnlockPolicy,
+		"keys":    reopened.LoadKeyRecord,
 	} {
 		value, err := read(testVaultID)
 		if err != nil {

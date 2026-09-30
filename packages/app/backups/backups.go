@@ -31,7 +31,8 @@ const (
 type Vault interface {
 	Unlocked() bool
 	State() (vaultservice.State, error)
-	Export() ([]byte, vault.Head, error)
+	// Snapshot never locks the vault.
+	Snapshot() ([]byte, vault.Head, error)
 	RecordExport(head vault.Head, fileDigest [32]byte) error
 	Storage() storage.Status
 }
@@ -64,6 +65,10 @@ type Keeper struct {
 	journal *journal
 	// failedAt holds each vault's last failed attempt until one succeeds.
 	failedAt map[string]time.Time
+
+	rekeyedMu sync.Mutex
+	// rekeyed holds each vault whose key changed since its last backup, which is due whatever the interval.
+	rekeyed map[string]bool
 }
 
 // New makes a keeper that journals the backups it writes in the private file at journalPath.
@@ -74,6 +79,7 @@ func New(journalPath string, open Vault, settings func() preferences.AutoBackup,
 	return &Keeper{
 		vault: open, settings: settings, destination: destination, now: time.Now,
 		poke: make(chan struct{}, 1), journal: openJournal(journalPath), failedAt: map[string]time.Time{},
+		rekeyed: map[string]bool{},
 	}, nil
 }
 
@@ -102,6 +108,29 @@ func (k *Keeper) Poke() {
 
 // Check checks now and returns after any backup, ignoring the wait after a failure.
 func (k *Keeper) Check() { k.check(true) }
+
+// KeyChanged makes the next backup of vaultID due at once, since the backups before it open with the replaced key, and
+// asks Run for a check.
+func (k *Keeper) KeyChanged(vaultID vault.ID) {
+	k.rekeyedMu.Lock()
+	k.rekeyed[vaultID.String()] = true
+	k.rekeyedMu.Unlock()
+	k.Poke()
+}
+
+// rekeyedSinceBackup reports whether vaultID's key changed since its last backup.
+func (k *Keeper) rekeyedSinceBackup(vaultID string) bool {
+	k.rekeyedMu.Lock()
+	defer k.rekeyedMu.Unlock()
+	return k.rekeyed[vaultID]
+}
+
+// backedUpAfterRekey records a backup under vaultID's current key.
+func (k *Keeper) backedUpAfterRekey(vaultID string) {
+	k.rekeyedMu.Lock()
+	defer k.rekeyedMu.Unlock()
+	delete(k.rekeyed, vaultID)
+}
 
 // Status reports how the open vault's backups stand; zero while no vault is open.
 func (k *Keeper) Status() Status {
@@ -148,7 +177,8 @@ func (k *Keeper) check(asked bool) {
 	id := head.VaultID.String()
 	at := k.now()
 	if latest, found := k.journal.latest(id, settings.Folder.Address); found {
-		if latest.Hash == hex.EncodeToString(head.Hash[:]) || at.Before(time.Unix(latest.At, 0).Add(settings.Interval.Every())) {
+		waiting := !k.rekeyedSinceBackup(id) && at.Before(time.Unix(latest.At, 0).Add(settings.Interval.Every()))
+		if latest.Hash == hex.EncodeToString(head.Hash[:]) || waiting {
 			return
 		}
 	}
@@ -160,12 +190,13 @@ func (k *Keeper) check(asked bool) {
 		k.failedAt[id] = at
 		return
 	}
+	k.backedUpAfterRekey(id)
 	delete(k.failedAt, id)
 }
 
 // backUp writes, journals and records a backup of the open vault, then prunes beyond the chosen count.
 func (k *Keeper) backUp(vaultID string, settings preferences.AutoBackup, at time.Time) error {
-	data, head, err := k.vault.Export()
+	data, head, err := k.vault.Snapshot()
 	if err != nil {
 		return err
 	}

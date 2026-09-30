@@ -29,12 +29,14 @@ var (
 	ErrRecoveryChanged    = errors.New("vault changed during recovery")
 	ErrStaleExport        = errors.New("vault changed; unlock again before exporting")
 	ErrConfirmationNeeded = errors.New("recovery may lose newer changes and requires explicit confirmation")
-	ErrWitnessCorrupt     = errors.New("vault witness is invalid")
-	ErrMoveVerification   = errors.New("vault at the new location could not be verified")
-	ErrSecondCopy         = errors.New("another known vault holds the same vault identity")
-	ErrOlderCopy          = errors.New("this file is older than the vault this device used")
-	ErrDiverged           = errors.New("this vault was changed on another device at the same time")
-	ErrNoOtherVault       = errors.New("no other vault to return to")
+	// ErrReplacedKeyNeedsConfirmation refuses, until confirmed, a recovery onto a vault key this device saw replaced.
+	ErrReplacedKeyNeedsConfirmation = errors.New("recovery onto a replaced vault key requires explicit confirmation")
+	ErrWitnessCorrupt               = errors.New("vault witness is invalid")
+	ErrMoveVerification             = errors.New("vault at the new location could not be verified")
+	ErrSecondCopy                   = errors.New("another known vault holds the same vault identity")
+	ErrOlderCopy                    = errors.New("this file is older than the vault this device used")
+	ErrDiverged                     = errors.New("this vault was changed on another device at the same time")
+	ErrNoOtherVault                 = errors.New("no other vault to return to")
 )
 
 // CiphertextStore is one bound storage location.
@@ -49,6 +51,8 @@ type Storage interface {
 	// Identify records which vault the bound location holds.
 	Identify(vault string) error
 	Relocate(target storage.Target, write func(storage.Ciphertext) error) (storage.Relocation, error)
+	// DiscardEmpty deletes a placeholder no vault was written to, such as a failed move's destination.
+	DiscardEmpty(target storage.Target)
 	Forget(target storage.Target) error
 	Erase(target storage.Target) error
 	LoadFrom(target storage.Target) ([]byte, error)
@@ -68,6 +72,9 @@ type KeyStore interface {
 	SaveUnlockPolicy(vaultID string, policy []byte) error
 	LoadUnlockPolicy(vaultID string) ([]byte, error)
 	DeleteUnlockPolicy(vaultID string) error
+	SaveKeyRecord(vaultID string, keys []byte) error
+	LoadKeyRecord(vaultID string) ([]byte, error)
+	DeleteKeyRecord(vaultID string) error
 }
 
 // Owner reports, without prompting, whether this device can authenticate its owner.
@@ -110,6 +117,9 @@ type State struct {
 type RecoveryPreview struct {
 	Head                    vault.Head
 	MayLoseNewerCredentials bool
+	// KeyReplaced reports a file sealed under a vault key this device saw replaced, which an old recovery key could
+	// have written.
+	KeyReplaced bool
 	// NeedsWayIn reports that the device holds no usable way into the vault, so confirming needs a choice.
 	NeedsWayIn bool
 }
@@ -123,17 +133,23 @@ type stagedRecovery struct {
 	session       *vault.Session
 	head          vault.Head
 	potentialLoss bool
+	keyReplaced   bool
 }
+
+// Opening names one open vault session; a change bound to it is refused once that session has closed.
+type Opening uint64
 
 // Service owns the open vault session and serializes every operation on it through mu.
 type Service struct {
-	mu         sync.Mutex
-	files      Storage
-	keys       KeyStore
-	owner      Owner
-	pins       *unlock.PINs
-	platforms  *unlock.PlatformCredentials
-	session    *vault.Session
+	mu        sync.Mutex
+	files     Storage
+	keys      KeyStore
+	owner     Owner
+	pins      *unlock.PINs
+	platforms *unlock.PlatformCredentials
+	session   *vault.Session
+	// opening counts the sessions opened; the open one is named by the count when it opened.
+	opening    Opening
 	creating   *stagedCreation
 	recovering *stagedRecovery
 	diverged   *stagedDivergence
@@ -142,6 +158,8 @@ type Service struct {
 	returnTo    storage.Target
 	device      deviceState
 	pinThrottle *unlock.Throttle
+	// locked is OnLock's observer, nil for none.
+	locked func()
 	// changes counts extension and autofill saves plus adopted versions from other devices.
 	changes changecount.Counter
 	// states counts every save, every open or lock, and every change of current location.
@@ -186,11 +204,7 @@ func (s *Service) State() (State, error) {
 	}
 	_, err := s.files.LoadCiphertext()
 	if errors.Is(err, storage.ErrNotFound) {
-		missing, err := s.lostVault()
-		if err != nil {
-			return State{}, err
-		}
-		return State{Phase: PhaseLocked, VaultMissing: missing}, nil
+		return State{Phase: PhaseLocked, VaultMissing: s.lostVault()}, nil
 	}
 	if err != nil {
 		return State{}, err
@@ -198,8 +212,7 @@ func (s *Service) State() (State, error) {
 	return State{Phase: PhaseLocked, VaultExists: true}, nil
 }
 
-// VaultMissing reports whether the bound location no longer holds the vault this device opened there and keeps an
-// unlock record for.
+// VaultMissing reports whether the bound location no longer holds the vault this device opened there.
 func (s *Service) VaultMissing() (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -211,29 +224,25 @@ func (s *Service) VaultMissing() (bool, error) {
 	if !errors.Is(err, storage.ErrNotFound) {
 		return false, nil
 	}
-	return s.lostVault()
+	return s.lostVault(), nil
 }
 
-// lostVault reports whether this device keeps an unlock record for the vault last opened at the bound location,
-// which the caller found empty. The caller holds s.mu.
-func (s *Service) lostVault() (bool, error) {
-	recorded := s.files.Status().Current.Vault
-	if recorded == "" {
-		return false, nil
+// lostVault reports whether the selection records a vault opened at the bound location, which the caller found empty.
+// Creation there is refused, so the owner opens the vault's file elsewhere or forgets the location. The caller holds
+// s.mu.
+func (s *Service) lostVault() bool {
+	_, err := vault.ParseID(s.files.Status().Current.Vault)
+	return err == nil
+}
+
+// loadBound reads the bound location's file; one gone from where this device opened its vault fails with
+// storage.ErrVaultMissing as well as storage.ErrNotFound. The caller holds s.mu.
+func (s *Service) loadBound() ([]byte, error) {
+	container, err := s.files.LoadCiphertext()
+	if errors.Is(err, storage.ErrNotFound) && s.lostVault() {
+		return nil, fmt.Errorf("%w: %w", storage.ErrVaultMissing, err)
 	}
-	id, err := vault.ParseID(recorded)
-	if err != nil {
-		return false, nil
-	}
-	record, err := s.keys.LoadUnlockPolicy(id.String())
-	clear(record)
-	switch {
-	case errors.Is(err, devicerecords.ErrNotFound):
-		return false, nil
-	case err != nil:
-		return false, err
-	}
-	return true, nil
+	return container, err
 }
 
 // openedHere reports whether the selection records a vault opened at the bound location; its file can read as absent
@@ -313,32 +322,65 @@ func (s *Service) bindChoice(id vault.ID, choice MethodChoice, wrap func(key []b
 
 // ConfirmCreation commits the staged vault, bound to choice, once phrase matches its recovery key.
 func (s *Service) ConfirmCreation(phrase string, choice MethodChoice) (vault.Head, error) {
+	stage, head, err := s.creationToConfirm(phrase, choice)
+	if err != nil {
+		return vault.Head{}, err
+	}
+	// Hardware keys take seconds to create on some devices; the service stays usable meanwhile.
+	policy, err := s.bindChoice(head.VaultID, choice, stage.session.WrapDeviceKey)
+	if err != nil {
+		s.dropStage(func() bool { return s.creating == stage })
+		return vault.Head{}, err
+	}
+	return s.commitCreation(stage, head, policy)
+}
+
+// creationToConfirm checks phrase and choice against the staged vault and returns it with its head.
+func (s *Service) creationToConfirm(phrase string, choice MethodChoice) (*stagedCreation, vault.Head, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	stage := s.creating
 	if stage == nil {
-		return vault.Head{}, ErrNoPendingSetup
+		return nil, vault.Head{}, ErrNoPendingSetup
 	}
 	if err := s.verifyCreationPhrase(phrase); err != nil {
-		return vault.Head{}, err
+		return nil, vault.Head{}, err
 	}
 	if err := s.checkChoice(choice); err != nil {
-		return vault.Head{}, err
+		return nil, vault.Head{}, err
+	}
+	if s.openedHere() {
+		s.discardStaging()
+		return nil, vault.Head{}, ErrAlreadyInitialized
+	}
+	head, err := stage.session.Head()
+	if err != nil {
+		return nil, vault.Head{}, err
+	}
+	return stage, head, nil
+}
+
+// dropStage discards the staging while staged reports that the caller's stage is still the one held.
+func (s *Service) dropStage(staged func() bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if staged() {
+		s.discardStaging()
+	}
+}
+
+// commitCreation writes the staged vault with policy as its ways in, unless the stage was dropped meanwhile.
+func (s *Service) commitCreation(stage *stagedCreation, head vault.Head, policy unlock.Policy) (vault.Head, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.creating != stage {
+		return vault.Head{}, ErrNoPendingSetup
 	}
 	if s.openedHere() {
 		s.discardStaging()
 		return vault.Head{}, ErrAlreadyInitialized
 	}
-	head, err := stage.session.Head()
-	if err != nil {
-		return vault.Head{}, err
-	}
 	id := head.VaultID.String()
-	policy, err := s.bindChoice(head.VaultID, choice, stage.session.WrapDeviceKey)
-	if err != nil {
-		s.discardStaging()
-		return vault.Head{}, err
-	}
 	if err := s.savePolicy(head.VaultID, policy); err != nil {
 		s.discardStaging()
 		return vault.Head{}, err
@@ -356,12 +398,38 @@ func (s *Service) ConfirmCreation(phrase string, choice MethodChoice) (vault.Hea
 		s.discardStaging()
 		return vault.Head{}, fmt.Errorf("create vault: %w", err)
 	}
-	s.session = stage.session
-	s.states.Record()
-	s.identifyBound(head.VaultID)
 	clear(stage.container)
 	s.creating = nil
+	s.discardDivergence()
+	s.setSession(stage.session, head.VaultID)
+	s.noteSessionKey(stage.session)
 	return head, nil
+}
+
+// setSession makes opened the open vault. The caller holds s.mu.
+func (s *Service) setSession(opened *vault.Session, id vault.ID) {
+	s.session = opened
+	s.opening++
+	s.states.Record()
+	s.identifyBound(id)
+}
+
+// CurrentOpening names the open vault session, failing with ErrNotReady while none is open.
+func (s *Service) CurrentOpening() (Opening, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.session == nil {
+		return 0, ErrNotReady
+	}
+	return s.opening, nil
+}
+
+// openedAs fails with ErrNotReady unless the session opening names is still open. The caller holds s.mu.
+func (s *Service) openedAs(opening Opening) error {
+	if s.session == nil || s.opening != opening {
+		return ErrNotReady
+	}
+	return nil
 }
 
 // Unlock opens the bound vault with device authentication, showing reason in the system prompt.
@@ -372,7 +440,7 @@ func (s *Service) Unlock(reason string) (vault.Head, error) {
 		return vault.Head{}, ErrSetupInProgress
 	}
 	s.discardDivergence()
-	container, err := s.files.LoadCiphertext()
+	container, err := s.loadBound()
 	if err != nil {
 		return vault.Head{}, err
 	}
@@ -455,9 +523,8 @@ func (s *Service) adoptSession(opened *vault.Session) (vault.Head, error) {
 		opened.Lock()
 		return vault.Head{}, err
 	}
-	s.session = opened
-	s.states.Record()
-	s.identifyBound(head.VaultID)
+	s.setSession(opened, head.VaultID)
+	s.noteSessionKey(opened)
 	return head, nil
 }
 
@@ -468,7 +535,7 @@ func (s *Service) BeginRecovery(phrase string) (RecoveryPreview, error) {
 	if s.session != nil || s.creating != nil || s.recovering != nil {
 		return RecoveryPreview{}, ErrSetupInProgress
 	}
-	container, err := s.files.LoadCiphertext()
+	container, err := s.loadBound()
 	if err != nil {
 		return RecoveryPreview{}, err
 	}
@@ -491,80 +558,143 @@ func (s *Service) BeginRecovery(phrase string) (RecoveryPreview, error) {
 		_, err = opened.ReconcileWitness(witness)
 		potentialLoss = err != nil
 	}
-	s.recovering = &stagedRecovery{session: opened, head: head, potentialLoss: potentialLoss}
+	keyReplaced, err := s.sealedUnderReplacedKey(opened)
+	if err != nil {
+		opened.Lock()
+		return RecoveryPreview{}, err
+	}
+	s.recovering = &stagedRecovery{session: opened, head: head, potentialLoss: potentialLoss, keyReplaced: keyReplaced}
 	return RecoveryPreview{
 		Head:                    head,
 		MayLoseNewerCredentials: potentialLoss,
+		KeyReplaced:             keyReplaced,
 		NeedsWayIn:              !s.keptPolicy(opened).Usable(s.owner.DeviceOwnerAvailable()),
 	}, nil
 }
 
-// ConfirmRecovery commits the staged recovery; an empty choice keeps the device's usable ways in.
-func (s *Service) ConfirmRecovery(acceptPossibleDataLoss bool, choice MethodChoice) (vault.Head, error) {
+// recoveryCommit is a checked recovery: the witness it replaces and the ways in it keeps.
+type recoveryCommit struct {
+	stage   *stagedRecovery
+	witness *vault.Witness
+	kept    unlock.Policy
+	// held names the key this device's ways in held before the recovery, nil where they held none.
+	held *[32]byte
+}
+
+// ConfirmRecovery commits the staged recovery; an empty choice keeps the device's usable ways in. accepted confirms
+// each warning the preview gave; a warning that arose since the preview needs confirming again.
+func (s *Service) ConfirmRecovery(accepted bool, choice MethodChoice) (vault.Head, error) {
+	checked, err := s.recoveryToConfirm(accepted, choice)
+	if err != nil {
+		return vault.Head{}, err
+	}
+	// Hardware keys take seconds to create on some devices; the service stays usable meanwhile.
+	policy, err := s.recoveredPolicy(checked, choice)
+	if err != nil {
+		s.dropStage(func() bool { return s.recovering == checked.stage })
+		return vault.Head{}, err
+	}
+	return s.commitRecovery(checked, policy)
+}
+
+// recoveryToConfirm checks the staged recovery against the file, the witness and the warnings accepted.
+func (s *Service) recoveryToConfirm(accepted bool, choice MethodChoice) (recoveryCommit, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	stage := s.recovering
 	if stage == nil {
-		return vault.Head{}, ErrNoPendingSetup
+		return recoveryCommit{}, ErrNoPendingSetup
 	}
+	kept := s.keptPolicy(stage.session)
 	if choice.Empty() {
-		if !s.keptPolicy(stage.session).Usable(s.owner.DeviceOwnerAvailable()) {
-			return vault.Head{}, unlock.ErrNoMethodLeft
+		if !kept.Usable(s.owner.DeviceOwnerAvailable()) {
+			return recoveryCommit{}, unlock.ErrNoMethodLeft
 		}
 	} else if err := s.checkChoice(choice); err != nil {
-		return vault.Head{}, err
+		return recoveryCommit{}, err
 	}
 	currentContainer, err := s.files.LoadCiphertext()
 	if err != nil && !errors.Is(err, storage.ErrNotFound) {
 		s.discardStaging()
-		return vault.Head{}, err
+		return recoveryCommit{}, err
 	}
 	if err != nil || sha256.Sum256(currentContainer) != stage.head.Hash {
 		s.discardStaging()
-		return vault.Head{}, ErrRecoveryChanged
+		return recoveryCommit{}, ErrRecoveryChanged
 	}
-	id := stage.head.VaultID.String()
-	witness, err := s.loadWitness(id)
+	witness, err := s.loadWitness(stage.head.VaultID.String())
 	if err != nil {
 		s.discardStaging()
-		return vault.Head{}, err
+		return recoveryCommit{}, err
 	}
 	potentialLoss := witness == nil
 	if witness != nil {
 		_, err = stage.session.ReconcileWitness(witness)
 		potentialLoss = err != nil
 	}
-	if potentialLoss && !acceptPossibleDataLoss {
+	if potentialLoss && (!accepted || !stage.potentialLoss) {
 		stage.potentialLoss = true
-		return vault.Head{}, ErrConfirmationNeeded
+		return recoveryCommit{}, ErrConfirmationNeeded
 	}
-	if potentialLoss && !stage.potentialLoss {
-		stage.potentialLoss = true
-		return vault.Head{}, ErrConfirmationNeeded
+	keyReplaced, err := s.sealedUnderReplacedKey(stage.session)
+	if err != nil {
+		return recoveryCommit{}, err
+	}
+	if keyReplaced && (!accepted || !stage.keyReplaced) {
+		stage.keyReplaced = true
+		return recoveryCommit{}, ErrReplacedKeyNeedsConfirmation
+	}
+	return recoveryCommit{stage: stage, witness: witness, kept: kept, held: s.heldKey(stage.head.VaultID)}, nil
+}
+
+// recoveredPolicy binds choice, or binds the kept device authentication again, for the recovered vault.
+func (s *Service) recoveredPolicy(checked recoveryCommit, choice MethodChoice) (unlock.Policy, error) {
+	id, wrap := checked.stage.head.VaultID, checked.stage.session.WrapDeviceKey
+	if !choice.Empty() {
+		return s.bindChoice(id, choice, wrap)
+	}
+	policy := checked.kept
+	if policy.HasPlatform() {
+		platform, err := s.platforms.Set(id, wrap)
+		if err != nil {
+			return unlock.Policy{}, err
+		}
+		policy.Platform = platform
+	}
+	return policy, nil
+}
+
+// commitRecovery opens the recovered vault with policy as its ways in while its file and witness are still as checked.
+func (s *Service) commitRecovery(checked recoveryCommit, policy unlock.Policy) (vault.Head, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	stage := checked.stage
+	if s.recovering != stage {
+		return vault.Head{}, ErrNoPendingSetup
 	}
 	finalize := func() error {
-		current, loadErr := s.loadWitness(id)
+		current, loadErr := s.loadWitness(stage.head.VaultID.String())
 		if loadErr != nil {
 			return loadErr
 		}
-		if !equalWitness(current, witness) {
+		if !equalWitness(current, checked.witness) {
 			return vault.ErrWitnessMismatch
 		}
-		return s.enrollRecoveredKey(stage, choice)
+		return s.enrollRecoveredKey(stage, policy, checked.held)
 	}
 	if err := s.files.ReconcileCiphertext(stage.head.Hash, finalize); err != nil {
 		s.discardStaging()
 		return vault.Head{}, err
 	}
-	s.session = stage.session
-	s.states.Record()
-	s.identifyBound(stage.head.VaultID)
 	s.recovering = nil
+	s.discardDivergence()
+	s.setSession(stage.session, stage.head.VaultID)
 	return stage.head, nil
 }
 
-// enrollRecoveredKey binds choice, or rebinds the kept device authentication, for the recovered vault.
-func (s *Service) enrollRecoveredKey(stage *stagedRecovery, choice MethodChoice) error {
+// enrollRecoveredKey records policy, the key the recovered vault is sealed under and its head on this device; held is
+// the key the ways in held before.
+func (s *Service) enrollRecoveredKey(stage *stagedRecovery, policy unlock.Policy, held *[32]byte) error {
 	id := stage.head.VaultID.String()
 	if err := s.keys.DeleteUsageRecord(id); err != nil {
 		return fmt.Errorf("remove device usage record: %w", err)
@@ -573,20 +703,10 @@ func (s *Service) enrollRecoveredKey(stage *stagedRecovery, choice MethodChoice)
 		return fmt.Errorf("remove export record: %w", err)
 	}
 	s.device.forget()
-	policy := s.keptPolicy(stage.session)
-	if !choice.Empty() {
-		var err error
-		if policy, err = s.bindChoice(stage.head.VaultID, choice, stage.session.WrapDeviceKey); err != nil {
-			return err
-		}
-	} else if policy.HasPlatform() {
-		platform, err := s.platforms.Set(stage.head.VaultID, stage.session.WrapDeviceKey)
-		if err != nil {
-			return err
-		}
-		policy.Platform = platform
-	}
 	if err := s.savePolicy(stage.head.VaultID, policy); err != nil {
+		return err
+	}
+	if err := s.recordRecoveredKey(stage.session, held); err != nil {
 		return err
 	}
 	return s.saveVerifiedWitness(stage.head)
@@ -731,9 +851,33 @@ func (s *Service) Export() ([]byte, vault.Head, error) {
 	if s.session == nil {
 		return nil, vault.Head{}, ErrNotReady
 	}
-	container, head, err := s.session.Export()
+	container, head, err := s.exportChecked()
 	if err != nil {
 		s.lockSession()
+		return nil, vault.Head{}, err
+	}
+	return container, head, nil
+}
+
+// Snapshot is Export for a copy nobody asked for at that moment, such as a backup: it first adopts a successor the file
+// holds, and a file it cannot adopt fails with ErrStaleExport while the vault stays open.
+func (s *Service) Snapshot() ([]byte, vault.Head, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.session == nil {
+		return nil, vault.Head{}, ErrNotReady
+	}
+	if s.followFile() == FileRefused {
+		return nil, vault.Head{}, ErrStaleExport
+	}
+	return s.exportChecked()
+}
+
+// exportChecked returns the open vault's container while the file and device witness still match its head. The caller
+// holds s.mu.
+func (s *Service) exportChecked() ([]byte, vault.Head, error) {
+	container, head, err := s.session.Export()
+	if err != nil {
 		return nil, vault.Head{}, err
 	}
 	err = s.files.ReconcileCiphertext(head.Hash, func() error {
@@ -747,7 +891,6 @@ func (s *Service) Export() ([]byte, vault.Head, error) {
 		return nil
 	})
 	if err != nil {
-		s.lockSession()
 		if errors.Is(err, storage.ErrStaleHead) || errors.Is(err, vault.ErrWitnessMismatch) || errors.Is(err, ErrWitnessCorrupt) {
 			return nil, vault.Head{}, fmt.Errorf("%w: %w", ErrStaleExport, err)
 		}
@@ -763,11 +906,11 @@ func (s *Service) Unlocked() bool {
 	return s.session != nil
 }
 
-// Lock closes the open vault and discards any staged setup.
+// Lock closes the open vault and discards any staged setup; the caller clears what the open vault left behind.
 func (s *Service) Lock() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.lockSession()
+	s.closeSession()
 	s.discardStaging()
 }
 
@@ -797,10 +940,22 @@ func (s *Service) BindStorage(target storage.Target) error {
 	return nil
 }
 
-// MoveStorage verifies the open vault against its head and witness, then relocates it to target.
+// MoveStorage verifies the open vault against its head and witness, then relocates it to target; a move that fails
+// discards the empty placeholder a picker made at target.
 func (s *Service) MoveStorage(target storage.Target) (storage.Relocation, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	relocation, err := s.moveStorage(target)
+	if err != nil {
+		s.files.DiscardEmpty(target)
+		return storage.Relocation{}, err
+	}
+	s.states.Record()
+	return relocation, nil
+}
+
+// moveStorage is MoveStorage without the discard. The caller holds s.mu.
+func (s *Service) moveStorage(target storage.Target) (storage.Relocation, error) {
 	if s.session == nil {
 		return storage.Relocation{}, ErrNotReady
 	}
@@ -941,8 +1096,26 @@ func (s *Service) saveVerifiedWitness(head vault.Head) error {
 	return nil
 }
 
-// lockSession locks the open vault; callers that rebind storage must do so under the same s.mu hold.
+// OnLock sets what runs after every lock the service raises on its own, such as after a failed save or a vault switch;
+// a Lock the caller asks for does not run it. It runs on its own goroutine, since a lock can be raised while the caller
+// holds locks of its own.
+func (s *Service) OnLock(locked func()) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.locked = locked
+}
+
+// lockSession locks the open vault and tells OnLock's observer; callers that rebind storage must do so under the same
+// s.mu hold.
 func (s *Service) lockSession() {
+	s.closeSession()
+	if s.locked != nil {
+		go s.locked()
+	}
+}
+
+// closeSession locks the open vault. The caller holds s.mu.
+func (s *Service) closeSession() {
 	s.discardRekey()
 	if s.session != nil {
 		s.session.Lock()
