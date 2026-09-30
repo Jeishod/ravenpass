@@ -30,8 +30,15 @@ export function createQueryClient(): QueryClient {
   });
 }
 
-/** Security: runs on lock; a mutation's variables and function may hold a PIN or vault content. */
-export function forgetVault(client: QueryClient): void {
+/** Security: runs as the vault locks; a mutation's variables and function may hold a PIN or vault content. */
+export function forgetVaultEdits(client: QueryClient): void {
   client.getMutationCache().clear();
+}
+
+/**
+ * Runs once the screens that read the vault are gone: a removed query that a mounted screen renders again is fetched
+ * again, from a vault that is locked by then.
+ */
+export function forgetVaultReads(client: QueryClient): void {
   client.removeQueries({ queryKey: vaultScope });
 }

@@ -117,7 +117,8 @@ export function VaultView({
   onPhase,
 }: {
   api: VaultApi;
-  onPhase: (phase: VaultState["phase"]) => void;
+  /** `chosen` is set where the owner chose another vault to open, which its locked screen then asks to unlock. */
+  onPhase: (phase: VaultState["phase"], chosen?: boolean) => void;
 }) {
   const { t, failure } = useTranslator();
   const client = useQueryClient();
@@ -619,10 +620,10 @@ export function VaultView({
   }
 
   // Switching or deleting the open vault can leave this screen.
-  async function continueAfterVaultChange() {
+  async function continueAfterVaultChange(chosen: boolean) {
     const phase = (await api.getState()).phase;
     if (phase !== "ready") {
-      onPhase(phase);
+      onPhase(phase, chosen);
       return;
     }
     siteIconStore.clear();
@@ -633,14 +634,16 @@ export function VaultView({
     ]);
   }
 
+  /** `chosen` is set for an action that opens the vault the owner chose. */
   async function runVaultAction(
     action: () => Promise<boolean>,
     failureMessage: MessageKey,
+    chosen = false,
   ) {
     setWorking(true);
     try {
       if (await action()) {
-        await continueAfterVaultChange();
+        await continueAfterVaultChange(chosen);
       }
     } catch (cause) {
       report(cause, failureMessage);
@@ -650,10 +653,14 @@ export function VaultView({
   }
 
   function switchVault(path: string) {
-    return runVaultAction(async () => {
-      await api.switchVault(path);
-      return true;
-    }, "workspace.error.vault-switch");
+    return runVaultAction(
+      async () => {
+        await api.switchVault(path);
+        return true;
+      },
+      "workspace.error.vault-switch",
+      true,
+    );
   }
 
   function createVault() {
@@ -667,6 +674,7 @@ export function VaultView({
     return runVaultAction(
       async () => (await api.openVault()).changed,
       "workspace.error.vault-open",
+      true,
     );
   }
 

@@ -16,7 +16,7 @@ import { type OpeningPhase, openingPhase } from "./intro/opening.ts";
 import { CrossFade } from "./motion/CrossFade.tsx";
 import { MotionProvider } from "./motion/MotionProvider.tsx";
 import { rise } from "./motion/timings.ts";
-import { forgetVault } from "./query/client.ts";
+import { forgetVaultEdits, forgetVaultReads } from "./query/client.ts";
 import { FailureToasts } from "./query/failure-toasts.ts";
 import { queryKeys } from "./query/keys.ts";
 import type { VaultApi, VaultState } from "./vault-api.ts";
@@ -35,14 +35,22 @@ export function App({ api }: { api?: VaultApi }) {
   const [chosen, setChosen] = useState<OpeningPhase | null>(null);
   const [introPlayed, setIntroPlayed] = useState(false);
   const [fromIntro, setFromIntro] = useState(false);
+  const [unlockChosen, setUnlockChosen] = useState(false);
   const compact = useCompactLayout();
   const phase: AppPhase = !api
     ? "unavailable"
     : (chosen ?? (opening.isError ? "error" : (opening.data ?? "loading")));
 
-  function setPhase(next: OpeningPhase) {
-    if (next !== "ready") forgetVault(client);
+  // `vaultChosen` is set where the owner chose the vault now shown locked, which then asks for its unlock at once.
+  function setPhase(next: OpeningPhase, vaultChosen = false) {
+    if (next !== "ready") forgetVaultEdits(client);
+    setUnlockChosen(vaultChosen && next === "locked");
     setChosen(next);
+  }
+
+  // The workspace keeps reading while it fades out, so its reads go once it is gone.
+  function screenLeft() {
+    if (phase !== "ready") forgetVaultReads(client);
   }
 
   function leaveIntro(next: VaultState["phase"]) {
@@ -63,7 +71,13 @@ export function App({ api }: { api?: VaultApi }) {
       <FailureToasts />
       <CapabilitiesProvider api={api}>
         <MotionProvider>
-          <CrossFade id={phase} presence={rise} appear className="h-dvh">
+          <CrossFade
+            id={phase}
+            presence={rise}
+            appear
+            className="h-dvh"
+            onLeft={screenLeft}
+          >
             {screenFor()}
           </CrossFade>
         </MotionProvider>
@@ -117,6 +131,7 @@ export function App({ api }: { api?: VaultApi }) {
       return (
         <LockedView
           api={api}
+          unlockAtOnce={unlockChosen}
           onPhase={moveOn}
           onStart={() => {
             setIntroPlayed(true);

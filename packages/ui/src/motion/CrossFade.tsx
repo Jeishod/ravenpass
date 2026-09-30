@@ -8,6 +8,7 @@ export function CrossFade({
   presence = settle,
   appear = false,
   className,
+  onLeft,
   children,
 }: {
   /** What the content is; a new value replaces it. */
@@ -16,10 +17,12 @@ export function CrossFade({
   /** Whether the first content animates in as well. */
   appear?: boolean;
   className?: string;
+  /** Called once replaced content has faded out and unmounted. */
+  onLeft?: () => void;
   children: ReactNode;
 }) {
   return (
-    <AnimatePresence mode="wait" initial={appear}>
+    <AnimatePresence mode="wait" initial={appear} onExitComplete={onLeft}>
       <motion.div
         key={id}
         initial={presence.initial}

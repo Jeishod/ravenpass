@@ -43,10 +43,13 @@ const headings: Record<LockedScreen, MessageKey> = {
 /** LockedView asks for the device's own unlock at most once per showing, where the host offers it. */
 export function LockedView({
   api,
+  unlockAtOnce = false,
   onPhase,
   onStart,
 }: {
   api: VaultApi;
+  /** Set where the owner just chose this vault, whose device unlock is then asked for at once. */
+  unlockAtOnce?: boolean;
   onPhase: (phase: VaultState["phase"]) => void;
   /** Called once the only vault the device knows, with no way into it, has left the list. */
   onStart: () => void;
@@ -66,6 +69,8 @@ export function LockedView({
   const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
   const [changingVault, setChangingVault] = useState(false);
+  // Set while a vault the owner chose waits to ask for its device unlock.
+  const [chosenToUnlock, setChosenToUnlock] = useState(unlockAtOnce);
   // Set while the host holds a vault another device changed at the same time, until the owner answers.
   const [diverged, setDiverged] = useState(false);
   // A failed read only skips the automatic prompt; the unlock button stays.
@@ -140,7 +145,9 @@ export function LockedView({
     onPhase("ready");
   }
 
+  // Any device unlock answers a chosen vault's wait for one, so the screen never asks twice.
   function unlock(raisedBySelf = false) {
+    setChosenToUnlock(false);
     return attempt(() => api.unlock(), "unlock.errors.failed", raisedBySelf);
   }
 
@@ -187,13 +194,24 @@ export function LockedView({
     }
   }, [unlockOnShow, showings, visible, promptable, promptAllowed, occupied]);
 
+  // A vault the owner just chose asks for its device unlock once its own ways in are read.
+  const settled =
+    methods !== null && !methodsRead.isFetching && !storageRead.isFetching;
+  const unlockChosen = useEffectEvent(() => {
+    setChosenToUnlock(false);
+    if (actions.deviceUnlock) void unlock(true);
+  });
+  useEffect(() => {
+    if (chosenToUnlock && settled && !occupied) unlockChosen();
+  }, [chosenToUnlock, settled, occupied]);
+
   function unlockWithPin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     return attempt(() => api.unlockWithPin(pin), "unlock.errors.failed");
   }
 
-  // A switch that leaves the vault locked keeps this screen.
-  async function changeVault(change: () => Promise<boolean>) {
+  // A switch that leaves the vault locked keeps this screen; `chosen` marks a vault the owner chose to open.
+  async function changeVault(change: () => Promise<boolean>, chosen = false) {
     setChangingVault(true);
     try {
       if (await change()) {
@@ -201,6 +219,7 @@ export function LockedView({
         await Promise.all([storageRead.refetch(), methodsRead.refetch()]);
         setPin("");
         if (phase !== "locked") onPhase(phase);
+        else setChosenToUnlock(chosen);
       }
     } catch (reason) {
       toast.error(failure(reason, "unlock.errors.switch-failed"));
@@ -271,13 +290,13 @@ export function LockedView({
               changeVault(async () => {
                 await api.switchVault(path);
                 return true;
-              })
+              }, true)
             }
             onCreate={() =>
               changeVault(async () => (await api.createVault()).changed)
             }
             onOpen={() =>
-              changeVault(async () => (await api.openVault()).changed)
+              changeVault(async () => (await api.openVault()).changed, true)
             }
           />
         </div>
