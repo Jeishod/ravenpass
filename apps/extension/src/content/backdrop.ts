@@ -1,3 +1,5 @@
+import type { ColorScheme } from "../toolbar/icon.ts";
+
 /** A colour in sRGB, each channel and alpha from 0 to 1. */
 export interface Rgba {
   readonly red: number;
@@ -6,14 +8,29 @@ export interface Rgba {
   readonly alpha: number;
 }
 
-/** The share of Ravenpass's popover colour the menu page lays over the blurred page. */
-export const tintAlpha = 0.35;
+/** How the menu's frost mixes Ravenpass's popover colour with the blurred page. */
+export interface Frosting {
+  /** The share of the popover colour the menu page lays over the blurred page. */
+  readonly tint: number;
+  /** What a page's own background adds to the menu's colour. */
+  readonly backgroundLight: number;
+  /** The most a white spot behind the menu adds. */
+  readonly maxLight: number;
+  /** The opacity of the dark ring that sets the menu off the page. */
+  readonly ring: number;
+}
 
-/** What a page's own background adds to the menu's colour. */
-const backgroundLight = 0.085;
+export const frostings: Readonly<Record<ColorScheme, Frosting>> = {
+  // Above about 0.35 of added light, muted text loses contrast.
+  dark: { tint: 0.35, backgroundLight: 0.085, maxLight: 0.32, ring: 0.4 },
+  // No brightness turns a dark page light, so the popover colour carries the light; 0.78 keeps muted text at 4.5:1 over black.
+  light: { tint: 0.78, backgroundLight: 0.2, maxLight: 0.22, ring: 0.1 },
+};
 
-/** The most a white spot behind the menu adds; above about 0.35 muted text loses contrast. */
-const maxLight = 0.32;
+/** Chrome's light or dark mode, which the menu page's stylesheet follows. */
+export function preferredScheme(): ColorScheme {
+  return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
 
 /** Chrome's canvas for a document in a dark colour scheme with no background of its own. */
 const darkCanvas: Rgba = {
@@ -25,9 +42,12 @@ const darkCanvas: Rgba = {
 const lightCanvas: Rgba = { red: 1, green: 1, blue: 1, alpha: 1 };
 
 /** CSS filters are affine: a light page and a dark page need different brightness. */
-export function backdropFilter(luminance: number): string {
+export function backdropFilter(
+  luminance: number,
+  { tint, backgroundLight, maxLight }: Frosting,
+): string {
   const light = Math.min(backgroundLight / Math.max(luminance, 0.01), maxLight);
-  const brightness = light / (1 - tintAlpha);
+  const brightness = light / (1 - tint);
   return `blur(14px) saturate(1.6) brightness(${brightness.toFixed(3)})`;
 }
 

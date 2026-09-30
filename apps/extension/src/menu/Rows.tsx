@@ -150,7 +150,7 @@ const actionKeys: Record<MenuAction, { key: string; word: MessageKey }> = {
 };
 
 const keyCap =
-  "h-[18px] min-w-[18px] rounded-[5px] bg-white/7 px-[5px] text-[10.5px] text-foreground/75 shadow-[inset_0_-1px_0_rgb(0_0_0/0.35),inset_0_0_0_1px_rgb(255_255_255/0.05)]";
+  "h-[18px] min-w-[18px] rounded-[5px] bg-foreground/7 px-[5px] text-[10.5px] text-foreground/75 shadow-[inset_0_-1px_0_rgb(0_0_0/0.12),inset_0_0_0_1px_rgb(0_0_0/0.06)] dark:shadow-[inset_0_-1px_0_rgb(0_0_0/0.35),inset_0_0_0_1px_rgb(255_255_255/0.05)]";
 
 export function MenuFooter({
   actions = [],
@@ -159,7 +159,7 @@ export function MenuFooter({
 }) {
   const { t } = useTranslator();
   return (
-    <footer className="m-[5px_-5px_-5px] flex h-8 items-center rounded-b-row border-t border-white/5 bg-white/2 px-3 text-[11px] text-faint">
+    <footer className="m-[5px_-5px_-5px] flex h-8 items-center rounded-b-row border-t border-foreground/5 bg-foreground/2 px-3 text-[11px] text-faint">
       <span className="flex items-center gap-1.5 font-medium text-muted-foreground">
         <KeyGlyph />
         Ravenpass

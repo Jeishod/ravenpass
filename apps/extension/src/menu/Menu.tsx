@@ -4,7 +4,7 @@ import { LanguageProvider } from "@ravenpass/ui/i18n/translator.tsx";
 import { MotionProvider } from "@ravenpass/ui/motion/MotionProvider.tsx";
 import { SiteIconStore } from "@ravenpass/ui/workspace/site-icons.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { tintAlpha } from "../content/backdrop.ts";
+import { frostings, preferredScheme } from "../content/backdrop.ts";
 import { StoredLanguage } from "../language.ts";
 import {
   ask,
@@ -27,7 +27,7 @@ import { SignInCard } from "./SignInCard.tsx";
 
 const language = new StoredLanguage();
 
-const tint = `color-mix(in srgb, var(--color-popover) ${tintAlpha * 100}%, transparent)`;
+const tint = `color-mix(in srgb, var(--color-popover) ${frostings[preferredScheme()].tint * 100}%, transparent)`;
 
 /** A click acts only while the menu is visibly shown. */
 export function Menu({ token }: { token: string }) {
@@ -113,7 +113,7 @@ function MenuSurface({ token }: { token: string }) {
   return (
     <div
       ref={measure}
-      className="rounded-row p-[5px] text-popover-foreground shadow-[inset_0_0_0_1px_rgb(255_255_255/0.055),inset_0_1px_0_rgb(255_255_255/0.05)]"
+      className="rounded-row p-[5px] text-popover-foreground shadow-[inset_0_0_0_1px_rgb(0_0_0/0.06),inset_0_1px_0_rgb(255_255_255/0.6)] dark:shadow-[inset_0_0_0_1px_rgb(255_255_255/0.055),inset_0_1px_0_rgb(255_255_255/0.05)]"
       style={{ backgroundColor: tint }}
     >
       <MenuBody

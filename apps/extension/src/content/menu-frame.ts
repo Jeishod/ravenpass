@@ -1,6 +1,12 @@
 import { enterTiming, leaveTiming } from "@ravenpass/ui/motion/timings.ts";
 import { menuMoved } from "../messages.ts";
-import { backdropFilter, pageLuminanceBehind } from "./backdrop.ts";
+import {
+  backdropFilter,
+  type Frosting,
+  frostings,
+  pageLuminanceBehind,
+  preferredScheme,
+} from "./backdrop.ts";
 import { Frost } from "./frost.ts";
 import { guardedAttributes, HostGuard } from "./host-guard.ts";
 
@@ -41,15 +47,16 @@ const surfaceStyle: Readonly<Record<string, string>> = {
 };
 
 /** Painted beneath the frame; carries the shadow and, at rest, the blur. */
-const frostStyle: Readonly<Record<string, string>> = {
-  position: "absolute",
-  inset: "0",
-  "border-radius": surfaceRadius,
-  // The dark ring sets the menu off a dark page, where the drop shadows disappear.
-  "box-shadow":
-    "0 0 0 1px rgb(0 0 0 / 0.4), 0 24px 56px -14px rgb(0 0 0 / 0.6), 0 8px 18px -8px rgb(0 0 0 / 0.45)",
-  "pointer-events": "none",
-};
+function frostStyle({ ring }: Frosting): Readonly<Record<string, string>> {
+  return {
+    position: "absolute",
+    inset: "0",
+    "border-radius": surfaceRadius,
+    // The dark ring sets the menu off a dark page, where the drop shadows disappear.
+    "box-shadow": `0 0 0 1px rgb(0 0 0 / ${ring}), 0 24px 56px -14px rgb(0 0 0 / 0.6), 0 8px 18px -8px rgb(0 0 0 / 0.45)`,
+    "pointer-events": "none",
+  };
+}
 
 const heightTransition = `height ${enterTiming.duration}ms ${enterTiming.easing}`;
 
@@ -66,7 +73,7 @@ const leaving: Keyframe = {
 };
 const still: Keyframe = { opacity: 0 };
 
-// Chrome paints a frame opaque when its colour scheme differs from its document's, which is dark.
+// Chrome paints a frame opaque when its colour scheme differs from its document's, which follows Chrome's mode.
 const frameStyle: Readonly<Record<string, string>> = {
   all: "initial",
   display: "block",
@@ -78,7 +85,7 @@ const frameStyle: Readonly<Record<string, string>> = {
   margin: "0",
   padding: "0",
   background: "transparent",
-  "color-scheme": "dark",
+  "color-scheme": "light dark",
 };
 
 /** Where a menu frame goes, in the viewport's coordinates. */
@@ -198,6 +205,8 @@ export class MenuFrame {
   private readonly anchor: MenuAnchor;
   private readonly surface: HTMLElement;
   private readonly frostLayer: HTMLElement;
+  /** Chrome's mode as the menu opens; the menu page reads the same. */
+  private readonly frosting = frostings[preferredScheme()];
   private frost: Frost | null = null;
   private readonly onGone: () => void;
   private readonly unwatch: () => void;
@@ -227,7 +236,7 @@ export class MenuFrame {
     this.surface = document.createElement("div");
     applyStyle(this.surface, surfaceStyle);
     this.frostLayer = document.createElement("div");
-    applyStyle(this.frostLayer, frostStyle);
+    applyStyle(this.frostLayer, frostStyle(this.frosting));
     this.surface.append(this.frostLayer, this.frame);
     this.host.attachShadow({ mode: "closed" }).append(this.surface);
     this.host.popover = "manual";
@@ -287,7 +296,7 @@ export class MenuFrame {
     const frost = new Frost(
       this.surface,
       this.frostLayer,
-      backdropFilter(pageLuminanceBehind(this.host)),
+      backdropFilter(pageLuminanceBehind(this.host), this.frosting),
     );
     this.frost = frost;
     frost.moving();
