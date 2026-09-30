@@ -1,4 +1,10 @@
-import { ask, isFrameMessage, menuPage } from "../messages.ts";
+import {
+  ask,
+  type FieldMenuOpen,
+  isFieldMenuOpen,
+  isFrameMessage,
+  menuPage,
+} from "../messages.ts";
 import { sendIgnoringClosedPort } from "../messaging/send.ts";
 import type { Field } from "./fields.ts";
 import { fillForm, typeCode } from "./fill.ts";
@@ -26,6 +32,8 @@ export class FieldMenus {
   private asking: HTMLInputElement | null = null;
   /** Inputs that open no menu until focus leaves them. */
   private dismissed: readonly HTMLInputElement[] = [];
+  /** The input the last right-click in this frame started at, which the context menu's items open a menu for. */
+  private rightClicked: HTMLInputElement | null = null;
   private dismissalCheck: ReturnType<typeof setTimeout> | undefined;
   private focusCheck: ReturnType<typeof setTimeout> | undefined;
 
@@ -39,6 +47,7 @@ export class FieldMenus {
     this.document.addEventListener("keydown", this.onKeyDown, true);
     this.document.addEventListener("keyup", this.onKeyUp, true);
     this.document.addEventListener("pointerdown", this.onPointerDown, true);
+    this.document.addEventListener("contextmenu", this.onContextMenu, true);
     addEventListener("blur", this.onBlur);
     addEventListener("pagehide", this.onPageHide);
     chrome.runtime.onMessage.addListener(this.onMessage);
@@ -50,6 +59,7 @@ export class FieldMenus {
     this.document.removeEventListener("keydown", this.onKeyDown, true);
     this.document.removeEventListener("keyup", this.onKeyUp, true);
     this.document.removeEventListener("pointerdown", this.onPointerDown, true);
+    this.document.removeEventListener("contextmenu", this.onContextMenu, true);
     removeEventListener("blur", this.onBlur);
     removeEventListener("pagehide", this.onPageHide);
     chrome.runtime.onMessage.removeListener(this.onMessage);
@@ -172,6 +182,10 @@ export class FieldMenus {
     this.offer(event);
   };
 
+  private readonly onContextMenu = (event: MouseEvent): void => {
+    this.rightClicked = inputOf(event);
+  };
+
   private readonly onPageHide = (): void => {
     this.close({ tell: true, refocus: false });
   };
@@ -180,6 +194,10 @@ export class FieldMenus {
     message: unknown,
     sender: chrome.runtime.MessageSender,
   ): undefined => {
+    if (sender.id === chrome.runtime.id && isFieldMenuOpen(message)) {
+      this.openRequested(message.field);
+      return;
+    }
     const open = this.open;
     if (
       !open ||
@@ -199,7 +217,7 @@ export class FieldMenus {
         this.close({ tell: false, refocus: true });
         break;
       case "fill":
-        fillForm(open.input, message);
+        fillForm(open.input, open.field.kind, message);
         this.close({ tell: false, refocus: true });
         break;
       case "fill-code":
@@ -211,10 +229,30 @@ export class FieldMenus {
     }
   };
 
-  private async ask(input: HTMLInputElement, field: Field): Promise<void> {
+  /** Opens the menu the person chose from the context menu beneath the input they right-clicked, recognised or not. */
+  private openRequested(kind: FieldMenuOpen["field"]): void {
+    const input = this.rightClicked;
+    this.rightClicked = null;
+    if (!input?.isConnected) return;
+    const found = signInFieldOf(input);
+    const field: Field =
+      found && (found.kind === "code") === (kind === "code")
+        ? found
+        : { kind, inputs: [input] };
+    this.close({ tell: true, refocus: false });
+    void this.ask(input, field, true);
+    // Asking first keeps this focus from opening a second menu.
+    input.focus({ preventScroll: true });
+  }
+
+  private async ask(
+    input: HTMLInputElement,
+    field: Field,
+    requested = false,
+  ): Promise<void> {
     this.asking = input;
     const answer = await sendIgnoringClosedPort(
-      ask({ kind: "menu-open", field: field.kind }),
+      ask({ kind: "menu-open", field: field.kind, requested }),
     );
     const token = answer?.token;
     if (!token) return;

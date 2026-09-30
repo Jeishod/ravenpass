@@ -146,6 +146,19 @@ function takesCode(maxLength: number | null): boolean {
 }
 
 /** `password` is -1 for a form without one; the result is -1 for no login field. */
+/** Where a fill from the input at `at` puts the login and the password among a form's input kinds, -1 for none;
+ * `chosen` is what the menu took that input for, which counts where detection read the input as no field. */
+export function fillTargets(
+  kinds: readonly (FieldKind | null)[],
+  at: number,
+  chosen: FieldKind,
+): { readonly login: number; readonly password: number } {
+  const own = at < 0 ? null : (kinds[at] ?? chosen);
+  const password = own === "password" ? at : kinds.indexOf("password");
+  const login = own === "login" ? at : pairedLogin(kinds, password);
+  return { login, password };
+}
+
 export function pairedLogin(
   kinds: readonly (FieldKind | null)[],
   password: number,

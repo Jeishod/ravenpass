@@ -14,7 +14,7 @@ import { useTranslator } from "@ravenpass/ui/i18n/translator.tsx";
 import { SelectionGroup } from "@ravenpass/ui/motion/SelectionIndicator.tsx";
 import type { OneTimeCode } from "@ravenpass/ui/vault-api.ts";
 import { cn } from "cn";
-import { UserRoundKey } from "lucide-react";
+import { KeyRound, TimerReset, UserRoundKey } from "lucide-react";
 import {
   type ReactNode,
   useCallback,
@@ -36,9 +36,11 @@ import {
   type CredentialMenuContent,
   isFrameMessage,
   type Listed,
+  listsNothing,
   type MenuFailure,
   type PasskeyFailure,
 } from "../messages.ts";
+import { sendIgnoringClosedPort } from "../messaging/send.ts";
 import { useClickGate } from "./ClickGateProvider.tsx";
 import { ConfirmFill } from "./ConfirmFill.tsx";
 import { CodeMenu, type CodeMenuView } from "./code-menu.ts";
@@ -51,8 +53,10 @@ import {
   LockedRow,
   NotOpenRow,
   RowChevron,
+  StateRow,
   VerificationRow,
 } from "./Rows.tsx";
+import { watchVaultState } from "./vault-state.ts";
 
 export type Highlight = ReturnType<typeof useHighlight>;
 
@@ -71,7 +75,6 @@ export interface Credentials {
   readonly pending: Listed<Suggestion> | null;
   /** What Ravenpass asks of the person while a fill waits for the owner. */
   readonly confirming: ShareProgress | null;
-  readonly list: (content: CredentialMenuContent) => void;
   /** Runs `proceed` at once for a strong suggestion, otherwise once the person confirms it. */
   readonly choose: (
     credential: Listed<Suggestion>,
@@ -87,7 +90,8 @@ export interface Credentials {
   readonly unlock: () => void;
 }
 
-/** A request that finds Ravenpass locked or closed switches the list to that state; any other failure is noted. */
+/** A request that finds Ravenpass locked or closed switches the list to that state; any other failure is noted. A
+ * locked list asks again once Ravenpass leaves the locked state. */
 export function useCredentials(
   token: string,
   initial: CredentialMenuContent,
@@ -121,8 +125,21 @@ export function useCredentials(
     return () => chrome.runtime.onMessage.removeListener(onMessage);
   }, [progress, token]);
 
+  const locked = content.state === "locked";
+  useEffect(() => {
+    if (!locked) return;
+    return watchVaultState((state) => {
+      if (state === "locked") return;
+      void sendIgnoringClosedPort(ask({ kind: "menu-review", token })).then(
+        (answer) => {
+          if (answer?.listing) setContent(answer.listing);
+        },
+      );
+    });
+  }, [locked, token]);
+
   const unavailable = useCallback((reason: Exclude<MenuFailure, "failed">) => {
-    setContent({ state: reason });
+    setContent((current) => ({ state: reason, purpose: current.purpose }));
   }, []);
 
   const fillFailed = (reason: Exclude<PasskeyFailure, "locked" | "not-open">) =>
@@ -157,7 +174,6 @@ export function useCredentials(
     passkeyFailed,
     pending,
     confirming,
-    list: setContent,
     choose: (credential, proceed) => confirmation.choose(credential, proceed),
     confirm: (remember) => confirmation.confirm(remember),
     cancel: () => confirmation.cancel(),
@@ -228,12 +244,28 @@ export function CredentialList({
     unlock,
   } = credentials;
   const highlight = useHighlight();
+  const empty = listsNothing(content);
   return (
     <>
       {content.state === "list" && confirming && (
         <VerificationRow progress={confirming} subject="fill" />
       )}
-      {content.state === "list" && (
+      {content.state === "list" && empty && (
+        <StateRow
+          icon={content.purpose === "code" ? TimerReset : KeyRound}
+          title={t(
+            content.purpose === "code"
+              ? "extension.menu.codes.empty.title"
+              : "extension.menu.empty.title",
+          )}
+          detail={t(
+            content.purpose === "code"
+              ? "extension.menu.codes.empty.detail"
+              : "extension.menu.empty.detail",
+          )}
+        />
+      )}
+      {content.state === "list" && !empty && (
         <nav
           className="flex max-h-[284px] flex-col gap-1 overflow-y-auto"
           aria-label={t(

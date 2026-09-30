@@ -21,6 +21,7 @@ import { sendIgnoringClosedPort } from "../messaging/send.ts";
 import { StoredSignInStyle } from "../sign-in-style.ts";
 import { ColorSchemePage } from "../toolbar/color-scheme-page.ts";
 import { toolbarIcon } from "../toolbar/icon.ts";
+import { ContextMenu } from "./context-menu.ts";
 import { MenuRouter, type TabMessenger } from "./menus.ts";
 import { PagePasskeys } from "./page-passkeys.ts";
 import { PendingPasskeys } from "./pending-passkeys.ts";
@@ -30,14 +31,14 @@ import { SaveOffers } from "./save-offers.ts";
 import { MenuSessions } from "./sessions.ts";
 import { SignInCards } from "./sign-in-cards.ts";
 import { TabOffers } from "./tab-offers.ts";
-import { UploadMenu } from "./upload-menu.ts";
 import { VaultWatch } from "./vault-watch.ts";
 
 const vaultStatusEveryMs = 1500;
 
 const tabCleanupFailure = "Ravenpass could not forget a closed tab.";
-const uploadMenuFailure = "Ravenpass could not build its upload menu.";
-const fileMenuFailure = "Ravenpass could not open the file menu.";
+const contextMenuFailure = "Ravenpass could not build its context menu.";
+const contextMenuClickFailure =
+  "Ravenpass could not open the menu chosen from the context menu.";
 const colorSchemeFailure = "Ravenpass could not match the toolbar icon.";
 const chromeAutofillFailure = "Ravenpass could not change Chrome's autofill.";
 
@@ -108,7 +109,14 @@ const colorSchemePage = new ColorSchemePage();
 
 const chromeAutofill = new ChromeAutofill();
 
-const uploadMenu = new UploadMenu(language);
+const contextMenu = new ContextMenu({
+  language,
+  menus: chrome.contextMenus,
+  send: (tabId, frameId, message) =>
+    sendIgnoringClosedPort(
+      chrome.tabs.sendMessage(tabId, message, { frameId }),
+    ),
+});
 
 const vaultWatch = new VaultWatch({
   status: () => client.status(),
@@ -204,11 +212,11 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  void logRejection(uploadMenu.clicked(info, tab), fileMenuFailure);
+  void logRejection(contextMenu.clicked(info, tab), contextMenuClickFailure);
 });
 
 language.watchLanguage(() => {
-  void logRejection(uploadMenu.retitle(), uploadMenuFailure);
+  void logRejection(contextMenu.retitle(), contextMenuFailure);
 });
 
 function applyChromeAutofill(): void {
@@ -224,7 +232,7 @@ function openColorSchemePage(): void {
 function prepare(): void {
   openColorSchemePage();
   applyChromeAutofill();
-  void logRejection(uploadMenu.create(), uploadMenuFailure);
+  void logRejection(contextMenu.create(), contextMenuFailure);
 }
 
 // Chrome wakes the service worker at startup and install only for these listeners.

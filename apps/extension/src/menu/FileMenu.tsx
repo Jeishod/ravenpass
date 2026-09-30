@@ -47,6 +47,7 @@ import {
   StateRow,
   VerificationRow,
 } from "./Rows.tsx";
+import { watchVaultState } from "./vault-state.ts";
 
 type Listing =
   | { readonly state: "loading" }
@@ -125,8 +126,18 @@ function IdentityFilesMenu({
   const [sharing, setSharing] = useState<Sharing>({ state: "idle" });
   const [unlocking, setUnlocking] = useState(false);
   const [unlockFailed, setUnlockFailed] = useState(false);
+  const [loads, setLoads] = useState(0);
   const highlight = useHighlight();
+  const locked = listing.state === "unavailable" && listing.reason === "locked";
 
+  useEffect(() => {
+    if (!locked) return;
+    return watchVaultState((state) => {
+      if (state !== "locked") setLoads((count) => count + 1);
+    });
+  }, [locked]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: each change of loads asks again once Ravenpass leaves the locked state.
   useEffect(() => {
     let active = true;
     ask({ kind: "menu-identities", token }).then(
@@ -145,7 +156,7 @@ function IdentityFilesMenu({
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [token, loads]);
 
   useEffect(() => {
     const onMessage = (

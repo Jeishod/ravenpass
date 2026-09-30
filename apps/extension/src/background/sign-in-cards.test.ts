@@ -157,14 +157,15 @@ test("a code field of the same frame replaces its sign-in card", async () => {
   const { sessions, cards } = signInCards();
   await cards.show(frame("login-frame"), "sign-in", accounts, false);
 
-  await cards.show(frame("login-frame"), "code", { state: "locked" }, false);
+  const listing = { state: "locked", purpose: "code" } as const;
+  await cards.show(frame("login-frame"), "code", listing, false);
 
   const card = await sessions.cardOf(tabId);
   assert.equal(card?.token, "token-2");
   assert.deepEqual(card?.content, {
     state: "sign-in-card",
     purpose: "code",
-    listing: { state: "locked" },
+    listing,
     requested: false,
   });
 });

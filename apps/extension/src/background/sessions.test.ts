@@ -177,7 +177,10 @@ test("opening a menu sweeps the sessions that expired unasked", async () => {
   await menus.open(page(), content);
   clock.time += 10 * 60_000;
 
-  const token = await menus.open(page(), { state: "locked" });
+  const token = await menus.open(page(), {
+    state: "locked",
+    purpose: "sign-in",
+  });
 
   assert.deepEqual([...area.items.keys()], [`menu:${token}`]);
 });

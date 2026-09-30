@@ -16,6 +16,7 @@ import {
   type FieldDescription,
   type FieldKind,
   type FieldShape,
+  fillTargets,
   isVisible,
   loginValue,
   mentions,
@@ -444,6 +445,31 @@ test("an email field takes the login when the credential has no email", () => {
     loginValue(field({ type: "email" }), { login: "alex", email: "" }),
     "alex",
   );
+});
+
+test("a fill from a detected field goes where detection places the login and the password", () => {
+  const kinds = ["login", null, "password"] as const;
+  assert.deepEqual(fillTargets(kinds, 0, "login"), { login: 0, password: 2 });
+  assert.deepEqual(fillTargets(kinds, 2, "password"), {
+    login: 0,
+    password: 2,
+  });
+  assert.deepEqual(fillTargets(kinds, 0, "code"), { login: 0, password: 2 });
+});
+
+test("a field detection missed takes the login the menu was opened for, and the form's password field the password", () => {
+  assert.deepEqual(fillTargets([null, "password"], 0, "login"), {
+    login: 0,
+    password: 1,
+  });
+  assert.deepEqual(fillTargets([null, null], 1, "login"), {
+    login: 1,
+    password: -1,
+  });
+  assert.deepEqual(fillTargets([null], -1, "login"), {
+    login: -1,
+    password: -1,
+  });
 });
 
 test("a password field pairs with the last login field before it", () => {

@@ -1,7 +1,6 @@
 import { Button } from "@ravenpass/ui/components/ui/button.tsx";
 import { useTranslator } from "@ravenpass/ui/i18n/translator.tsx";
 import { SelectionGroup } from "@ravenpass/ui/motion/SelectionIndicator.tsx";
-import { useEffect } from "react";
 import type { Suggestion } from "../link/client.ts";
 import { ask, type Listed, type SignInCardContent } from "../messages.ts";
 import { sendIgnoringClosedPort } from "../messaging/send.ts";
@@ -16,7 +15,6 @@ import {
 } from "./Credentials.tsx";
 import { useHighlight } from "./highlight.ts";
 import { VerificationRow } from "./Rows.tsx";
-import { watchVaultState } from "./vault-state.ts";
 
 export function SignInCard({
   token,
@@ -31,20 +29,7 @@ export function SignInCard({
 }) {
   const { t } = useTranslator();
   const credentials = useCredentials(token, content.listing);
-  const { content: listing, list } = credentials;
-  const locked = listing.state === "locked";
-
-  useEffect(() => {
-    if (!locked) return;
-    return watchVaultState((state) => {
-      if (state === "locked") return;
-      void sendIgnoringClosedPort(ask({ kind: "menu-review", token })).then(
-        (answer) => {
-          if (answer?.listing) list(answer.listing);
-        },
-      );
-    });
-  }, [locked, token, list]);
+  const { content: listing } = credentials;
 
   const only =
     listing.state === "list" &&

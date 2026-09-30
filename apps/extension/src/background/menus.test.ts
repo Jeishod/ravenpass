@@ -205,7 +205,7 @@ test("in the card style a focused field shows the card again, and no menu", asyn
   const { relayed, serve } = router("card");
 
   const answer = await serve(
-    { kind: "menu-open", field: "password" },
+    { kind: "menu-open", field: "password", requested: false },
     loginFrame,
   );
 
@@ -226,7 +226,7 @@ test("in the field style a found form shows no card, and a focused field opens i
     { fill: null },
   );
   const { token } = (await serve(
-    { kind: "menu-open", field: "login" },
+    { kind: "menu-open", field: "login", requested: false },
     loginFrame,
   )) as { token: string | null };
 
@@ -242,7 +242,10 @@ test("a site without accounts, and Ravenpass not open, show no card", async () =
     ravenpass.refusal = refusal;
 
     await serve({ kind: "sign-in-form", field: "password" }, loginFrame);
-    await serve({ kind: "menu-open", field: "password" }, loginFrame);
+    await serve(
+      { kind: "menu-open", field: "password", requested: false },
+      loginFrame,
+    );
 
     assert.deepEqual(relayed, []);
   }
@@ -254,7 +257,7 @@ test("a locked Ravenpass shows the card locked, which lists the accounts once Ra
   await serve({ kind: "sign-in-form", field: "login" }, loginFrame);
   const token = await bindCard();
   assert.deepEqual(await serve({ kind: "menu-review", token }, menuSender()), {
-    listing: { state: "locked" },
+    listing: { state: "locked", purpose: "sign-in" },
   });
 
   ravenpass.refusal = null;
@@ -539,7 +542,10 @@ test("a frame of another origin than the tab's top document, or of a tab Chrome 
     const frame = pageSender({ frameId: 2, documentId: "login-frame", tab });
 
     const found = await serve({ kind: "sign-in-form", field: "login" }, frame);
-    const focused = await serve({ kind: "menu-open", field: "login" }, frame);
+    const focused = await serve(
+      { kind: "menu-open", field: "login", requested: false },
+      frame,
+    );
 
     assert.deepEqual(found, { fill: null });
     assert.deepEqual(focused, { token: "token-1" });
@@ -583,7 +589,10 @@ test("a frame of the top page's site shows the card, which names the frame and f
   const { sessions, ravenpass, relayed, serve } = router("card");
 
   assert.deepEqual(
-    await serve({ kind: "menu-open", field: "login" }, sameSiteFrame),
+    await serve(
+      { kind: "menu-open", field: "login", requested: false },
+      sameSiteFrame,
+    ),
     { token: null },
   );
   const card = await sessions.cardOf(tabId);
@@ -613,7 +622,7 @@ test("a field menu in another site's frame closes the card, and an open field me
   assert.ok(card);
 
   const { token } = (await serve(
-    { kind: "menu-open", field: "login" },
+    { kind: "menu-open", field: "login", requested: false },
     crossSiteFrame,
   )) as { token: string | null };
 
@@ -630,7 +639,10 @@ test("a field menu in another site's frame closes the card, and an open field me
   assert.equal(await sessions.cardOf(tabId), null);
 
   await serve({ kind: "menu-close", token }, crossSiteFrame);
-  await serve({ kind: "menu-open", field: "password" }, sameSiteFrame);
+  await serve(
+    { kind: "menu-open", field: "password", requested: false },
+    sameSiteFrame,
+  );
   assert.equal((await sessions.cardOf(tabId))?.page.origin, sameSiteOrigin);
 });
 
@@ -639,7 +651,7 @@ test("the top page's form and a same-site frame's field share one card and open 
   await serve({ kind: "sign-in-form", field: "login" }, pageSender());
 
   const focused = await serve(
-    { kind: "menu-open", field: "password" },
+    { kind: "menu-open", field: "password", requested: false },
     sameSiteFrame,
   );
 
@@ -667,7 +679,10 @@ test("a field asking for the card shows it for a weak match", async () => {
   const { sessions, ravenpass, serve } = router("card");
   ravenpass.accounts = [{ ...account, exact: false }];
 
-  await serve({ kind: "menu-open", field: "password" }, loginFrame);
+  await serve(
+    { kind: "menu-open", field: "password", requested: false },
+    loginFrame,
+  );
 
   const card = await sessions.cardOf(tabId);
   assert.equal(card?.content.state, "sign-in-card");
@@ -684,7 +699,7 @@ test("a weak match fills a password or a code only once the person confirmed it"
       { ...account, site: "alice.github.io", exact: false },
     ];
     const { token } = (await serve(
-      { kind: "menu-open", field },
+      { kind: "menu-open", field, requested: false },
       loginFrame,
     )) as {
       token: string;
@@ -720,7 +735,7 @@ test("an exact match on a plain-http page fills only once the person confirmed i
   const { ravenpass, serve } = router("field");
   const insecure = pageSender({ origin: "http://github.com" });
   const { token } = (await serve(
-    { kind: "menu-open", field: "password" },
+    { kind: "menu-open", field: "password", requested: false },
     insecure,
   )) as { token: string };
   await serve({ kind: "menu", token }, menuSender());
@@ -742,7 +757,7 @@ test("a confirmed fill in a frame of the saved site remembers the frame's origin
   for (const [field, kind] of fills) {
     const { sessions, ravenpass, serve, bindCard } = router("card");
     ravenpass.accounts = [{ ...account, exact: false }];
-    await serve({ kind: "menu-open", field }, sameSiteFrame);
+    await serve({ kind: "menu-open", field, requested: false }, sameSiteFrame);
     const token = await bindCard();
     const card = await sessions.cardOf(tabId);
     assert.equal(
@@ -758,7 +773,7 @@ test("a confirmed fill in a frame of the saved site remembers the frame's origin
     );
     assert.deepEqual(ravenpass.added, [["a1", sameSiteOrigin]]);
 
-    await serve({ kind: "menu-open", field }, sameSiteFrame);
+    await serve({ kind: "menu-open", field, requested: false }, sameSiteFrame);
     const again = await bindCard();
     assert.deepEqual(
       await serve(
@@ -776,7 +791,7 @@ test("a fill that does not go through remembers nothing", async () => {
   ravenpass.accounts = [{ ...account, exact: false }];
   ravenpass.verification = new SessionError("declined");
   const { token } = (await serve(
-    { kind: "menu-open", field: "login" },
+    { kind: "menu-open", field: "login", requested: false },
     sameSiteFrame,
   )) as { token: string };
   await serve({ kind: "menu", token }, menuSender());
@@ -802,7 +817,7 @@ test("another site's page is remembered only when the person asks", async () => 
       { ...account, site: "alice.github.io", exact: false },
     ];
     const { token } = (await serve(
-      { kind: "menu-open", field: "login" },
+      { kind: "menu-open", field: "login", requested: false },
       otherSite,
     )) as { token: string };
     const menu = (await serve(
@@ -833,7 +848,7 @@ test("a plain-http page is never remembered, even when asked", async () => {
     const { ravenpass, serve } = router("field");
     ravenpass.accounts = [{ ...account, exact }];
     const { token } = (await serve(
-      { kind: "menu-open", field: "password" },
+      { kind: "menu-open", field: "password", requested: false },
       pageSender({ origin: "http://github.com" }),
     )) as { token: string };
     await serve({ kind: "menu", token }, menuSender());
@@ -855,7 +870,7 @@ test("a page Ravenpass does not remember still fills, and only the error's name 
   ravenpass.accounts = [{ ...account, exact: false }];
   ravenpass.addRefusal = new SessionError("no-match");
   const { token } = (await serve(
-    { kind: "menu-open", field: "login" },
+    { kind: "menu-open", field: "login", requested: false },
     sameSiteFrame,
   )) as { token: string };
   await serve({ kind: "menu", token }, menuSender());
@@ -893,7 +908,10 @@ test("a card the form showed while Ravenpass was locked closes once Ravenpass li
 test("a card a field asked for while Ravenpass was locked lists a weak match once Ravenpass is unlocked", async () => {
   const { sessions, ravenpass, serve, bindCard } = router("card");
   ravenpass.refusal = new SessionError("locked");
-  await serve({ kind: "menu-open", field: "login" }, loginFrame);
+  await serve(
+    { kind: "menu-open", field: "login", requested: false },
+    loginFrame,
+  );
   const token = await bindCard();
 
   ravenpass.refusal = null;
@@ -908,7 +926,10 @@ async function openFieldMenu(
   serve: (request: MenuRequest, sender: Sender) => Promise<unknown>,
   field: "login" | "code",
 ) {
-  const { token } = (await serve({ kind: "menu-open", field }, loginFrame)) as {
+  const { token } = (await serve(
+    { kind: "menu-open", field, requested: false },
+    loginFrame,
+  )) as {
     token: string;
   };
   await serve({ kind: "menu", token }, menuSender());
@@ -917,6 +938,111 @@ async function openFieldMenu(
 
 const menuDocument = { tabId, documentId: "menu-document" };
 const fieldFrame = { tabId, documentId: "login-frame", origin };
+
+test("unlocking from a field's menu keeps it open, and it lists the accounts once Ravenpass is unlocked", async () => {
+  for (const field of ["login", "code"] as const) {
+    const { ravenpass, relayed, serve } = router("field");
+    ravenpass.refusal = new SessionError("locked");
+    const token = await openFieldMenu(serve, field);
+
+    assert.deepEqual(
+      await serve({ kind: "menu-unlock", token }, menuSender()),
+      {
+        ok: true,
+      },
+    );
+    assert.deepEqual(kinds(relayed), []);
+
+    ravenpass.refusal = null;
+    const answer = (await serve(
+      { kind: "menu-review", token },
+      menuSender(),
+    )) as {
+      listing: { state: string; purpose: string } | null;
+    };
+
+    assert.equal(answer.listing?.state, "list");
+    assert.equal(
+      answer.listing?.purpose,
+      field === "code" ? "code" : "sign-in",
+    );
+    assert.deepEqual(kinds(relayed), []);
+  }
+});
+
+const nothingListed = {
+  state: "list",
+  purpose: "sign-in",
+  credentials: [],
+  passkeys: [],
+};
+
+test("a field's menu unlocked from the menu says the site has nothing once Ravenpass lists nothing", async () => {
+  const { ravenpass, relayed, serve } = router("field");
+  ravenpass.refusal = new SessionError("locked");
+  const token = await openFieldMenu(serve, "login");
+
+  ravenpass.refusal = null;
+  ravenpass.accounts = [];
+
+  assert.deepEqual(await serve({ kind: "menu-review", token }, menuSender()), {
+    listing: nothingListed,
+  });
+  assert.deepEqual(kinds(relayed), []);
+});
+
+test("a field's menu closes when Ravenpass cannot list", async () => {
+  const { ravenpass, relayed, serve } = router("field");
+  ravenpass.refusal = new SessionError("locked");
+  const token = await openFieldMenu(serve, "login");
+
+  ravenpass.refusal = new SessionError("failed");
+
+  assert.deepEqual(await serve({ kind: "menu-review", token }, menuSender()), {
+    listing: null,
+  });
+  assert.deepEqual(relayed.at(-1), [fieldFrame, { kind: "menu-close", token }]);
+});
+
+test("a menu asked for from the context menu opens beneath the field with nothing to list, in either style", async () => {
+  for (const style of ["field", "card"] as const) {
+    const { sessions, ravenpass, serve } = router(style);
+    ravenpass.accounts = [];
+
+    assert.deepEqual(
+      await serve(
+        { kind: "menu-open", field: "login", requested: false },
+        loginFrame,
+      ),
+      { token: null },
+    );
+    const { token } = (await serve(
+      { kind: "menu-open", field: "login", requested: true },
+      loginFrame,
+    )) as { token: string | null };
+
+    assert.ok(token);
+    const menu = (await serve({ kind: "menu", token }, menuSender())) as {
+      content: unknown;
+    };
+    assert.deepEqual(menu.content, nothingListed);
+    assert.equal(await sessions.cardOf(tabId), null);
+  }
+});
+
+test("a menu asked for from the context menu in the card style replaces the card", async () => {
+  const { sessions, serve } = router("card");
+  await serve({ kind: "sign-in-form", field: "login" }, loginFrame);
+  assert.ok(await sessions.cardOf(tabId));
+
+  const { token } = (await serve(
+    { kind: "menu-open", field: "login", requested: true },
+    loginFrame,
+  )) as { token: string | null };
+
+  assert.ok(token);
+  assert.equal(await sessions.cardOf(tabId), null);
+});
 
 const waitingFills = [
   ["login", "menu-fill", "fill"],

@@ -23,10 +23,10 @@ import {
   type FileFailure,
   type FormMessage,
   type FrameMessage,
-  isCard,
   isPlaced,
   isSubmission,
   type Listed,
+  listsNothing,
   type MenuContent,
   type MenuFailure,
   type MenuRequest,
@@ -153,7 +153,7 @@ export class MenuRouter {
   ): Promise<Answers[MenuRequest["kind"]]> {
     switch (request.kind) {
       case "menu-open":
-        return this.open(sender, request.field);
+        return this.open(sender, request.field, request.requested);
       case "file-menu":
         return this.openFileMenu(sender, request.destination);
       case "menu": {
@@ -183,7 +183,8 @@ export class MenuRouter {
         return this.remembered(chosen, await this.fillCode(chosen));
       }
       case "menu-unlock":
-        return this.unlock(await this.fromMenu(request, sender));
+        await this.fromMenu(request, sender);
+        return this.unlock();
       case "menu-identities":
         return this.identities(await this.fromFileMenu(request, sender));
       case "menu-share":
@@ -245,18 +246,22 @@ export class MenuRouter {
     ]);
   }
 
-  /** In the card style, shows the sign-in card even when the person closed it; a field menu replaces the card. */
+  /** In the card style, shows the sign-in card even when the person closed it; a field menu replaces the card. A menu
+   * the person requested from the context menu opens as a field menu, even with nothing to list. */
   private async open(
     sender: Sender,
     field: FieldKind,
+    requested: boolean,
   ): Promise<Answers["menu-open"]> {
     const page = this.sessions.pageOf(sender);
     if (!page) return { token: null };
     const purpose = purposeOf(field);
     const content = await this.contentFor(page, purpose);
-    if (!content) return { token: null };
+    if (!content || (!requested && listsNothing(content))) {
+      return { token: null };
+    }
     if ((await this.signInStyle()) === "card") {
-      if (this.servesCard(sender, page)) {
+      if (!requested && this.servesCard(sender, page)) {
         if (content.state !== "not-open") {
           await this.cards.show(page, purpose, content, true);
         }
@@ -307,24 +312,32 @@ export class MenuRouter {
     return { fill: null };
   }
 
-  /** A card the form showed on its own, not one the person requested, closes once it lists nothing strong. */
+  /** A field's menu closes only when Ravenpass cannot answer; a card closes once it lists nothing, and one the form
+   * showed on its own, not one the person requested, once it lists nothing strong. */
   private async review(session: MenuSession): Promise<Answers["menu-review"]> {
-    if (session.content.state !== "sign-in-card") {
-      throw new RefusedRequest("menu-review");
+    const { content } = session;
+    if (content.state !== "sign-in-card") {
+      const shown = listingOf(content);
+      if (!shown) throw new RefusedRequest("menu-review");
+      const listing = await this.contentFor(session.page, shown.purpose);
+      if (!listing) {
+        await this.endFromMenu(session);
+        return { listing: null };
+      }
+      await this.sessions.revise(session.token, listing);
+      return { listing };
     }
-    const listing = await this.contentFor(
-      session.page,
-      session.content.purpose,
-    );
+    const listing = await this.contentFor(session.page, content.purpose);
     if (
       !listing ||
       listing.state === "not-open" ||
-      (!session.content.requested && !showsOnItsOwn(listing))
+      listsNothing(listing) ||
+      (!content.requested && !showsOnItsOwn(listing))
     ) {
       await this.cards.hide(session, false);
       return { listing: null };
     }
-    await this.sessions.revise(session.token, { ...session.content, listing });
+    await this.sessions.revise(session.token, { ...content, listing });
     return { listing };
   }
 
@@ -418,14 +431,11 @@ export class MenuRouter {
               ),
               passkeys: await this.passkeys.optionsFor(page),
             };
-      const listed =
-        content.credentials.length > 0 ||
-        (content.purpose === "sign-in" && content.passkeys.length > 0);
-      return listed ? content : null;
+      return content;
     } catch (error) {
       if (error instanceof SessionError) {
-        if (error.reason === "locked") return { state: "locked" };
-        if (error.reason === "not-open") return { state: "not-open" };
+        if (error.reason === "locked") return { state: "locked", purpose };
+        if (error.reason === "not-open") return { state: "not-open", purpose };
       }
       return null;
     }
@@ -544,14 +554,13 @@ export class MenuRouter {
     };
   }
 
-  /** A menu closes and asks again on its next focus; a card stays open and asks again once unlocked. */
-  private async unlock(session: MenuSession): Promise<Answers["menu-unlock"]> {
+  /** A menu or card stays open and asks again once unlocked. */
+  private async unlock(): Promise<Answers["menu-unlock"]> {
     try {
       await this.client.unlock();
     } catch (error) {
       return { ok: false, reason: menuFailure(error) };
     }
-    if (!isCard(session.content)) await this.endFromMenu(session);
     return { ok: true };
   }
 

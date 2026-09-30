@@ -55,11 +55,16 @@ export interface FileDestination {
 }
 
 /**
- * `confirmed` is set once the person confirmed a fill of a suggestion that is not strong; `remember` once they also
- * asked to remember the page for an `other-site` suggestion.
+ * `requested` is set when the person asked for the field's menu from the context menu. `confirmed` is set once the
+ * person confirmed a fill of a suggestion that is not strong; `remember` once they also asked to remember the page for
+ * an `other-site` suggestion.
  */
 export type MenuRequest =
-  | { readonly kind: "menu-open"; readonly field: FieldKind }
+  | {
+      readonly kind: "menu-open";
+      readonly field: FieldKind;
+      readonly requested: boolean;
+    }
   | {
       readonly kind: "file-menu";
       readonly destination: FileDestination | null;
@@ -179,6 +184,15 @@ export function isCard(content: MenuContent): boolean {
   );
 }
 
+/** Whether a listing holds no credential and no passkey to choose. */
+export function listsNothing(listing: CredentialMenuContent): boolean {
+  return (
+    listing.state === "list" &&
+    listing.credentials.length === 0 &&
+    (listing.purpose === "code" || listing.passkeys.length === 0)
+  );
+}
+
 export type Listed<Credential extends Suggestion> = Credential & {
   readonly strength: MatchStrength;
 };
@@ -195,8 +209,8 @@ export type CredentialMenuContent =
       readonly purpose: "code";
       readonly credentials: readonly Listed<CodeSuggestion>[];
     }
-  | { readonly state: "locked" }
-  | { readonly state: "not-open" };
+  | { readonly state: "locked"; readonly purpose: SuggestPurpose }
+  | { readonly state: "not-open"; readonly purpose: SuggestPurpose };
 
 export type FileMenuContent =
   | ({ readonly state: "files" } & FileDestination)
@@ -370,6 +384,12 @@ export interface FileMenuOpen {
   readonly kind: "file-menu-open";
 }
 
+/** Asks the frame to open the field menu for the input it last saw right-clicked. */
+export interface FieldMenuOpen {
+  readonly kind: "field-menu-open";
+  readonly field: Extract<FieldKind, "login" | "code">;
+}
+
 /** Posted by the framing content script to the menu's window; a page can post it too. */
 export interface MenuMoved {
   readonly kind: "menu-moved";
@@ -423,6 +443,10 @@ const kind = <Kind extends string>(name: Kind) =>
 
 const cardShow = kind("card-show");
 const fileMenuOpen = kind("file-menu-open");
+const fieldMenuOpen = v.object({
+  kind: v.literal("field-menu-open"),
+  field: v.picklist(["login", "code"]),
+});
 const menuMovedMessage = kind("menu-moved");
 const offerShow = kind("offer-show");
 const passkeyAnswer = kind("passkey-answer");
@@ -458,6 +482,10 @@ export function isFormMessage(message: unknown): message is FormMessage {
 
 export function isFileMenuOpen(message: unknown): message is FileMenuOpen {
   return v.is(fileMenuOpen, message);
+}
+
+export function isFieldMenuOpen(message: unknown): message is FieldMenuOpen {
+  return v.is(fieldMenuOpen, message);
 }
 
 export function isMenuMoved(message: unknown): message is MenuMoved {

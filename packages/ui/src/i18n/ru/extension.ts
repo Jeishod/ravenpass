@@ -53,6 +53,14 @@ export const extension: typeof english = {
   "extension.menu.not-open.title": "Ravenpass не открыт",
   "extension.menu.not-open.detail":
     "Откройте его на этом компьютере, чтобы подставлять пароли.",
+  "extension.menu.empty.title": "Для этого сайта нет паролей",
+  "extension.menu.empty.detail":
+    "Здесь появятся пароли, сохранённые в Ravenpass для этого сайта.",
+  "extension.menu.codes.empty.title": "Для этого сайта нет кодов",
+  "extension.menu.codes.empty.detail":
+    "Здесь появятся одноразовые коды, настроенные в Ravenpass для этого сайта.",
+  "extension.context.passwords": "Показать пароли",
+  "extension.context.codes": "Показать одноразовые коды",
   "extension.menu.code.waiting": "Следующий код подставится через {seconds} с",
   "extension.menu.passkey.detail": "Ключ доступа · {account}",
   "extension.menu.hint.show": "показать",

@@ -141,7 +141,7 @@ export class SignInForms {
   ): Promise<Submission> {
     if (!field) return notSubmitted;
     const input = field.inputs[0];
-    const fill = fillForm(input, values);
+    const fill = fillForm(input, field.kind, values);
     if (!fill.complete) return { submitted: false, password: fill.password };
     await afterNextFrame();
     return { submitted: submitForm(input), password: fill.password };

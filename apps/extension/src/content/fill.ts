@@ -3,9 +3,10 @@ import {
   classify,
   codeEntries,
   describe,
+  type FieldKind,
+  fillTargets,
   formInputs,
   loginValue,
-  pairedLogin,
 } from "./fields.ts";
 
 // The isolated world's setter writes the element's value past any setter the page defines on it.
@@ -20,18 +21,17 @@ export interface FormFill {
   readonly password: boolean;
 }
 
-/** Fills the password and the login or email into a field's form, without submitting it. */
+/** Fills the password and the login or email into the form of a field taken as `kind`, without submitting it. */
 export function fillForm(
   field: HTMLInputElement,
+  kind: FieldKind,
   values: FillValues,
 ): FormFill {
   const inputs = formInputs(field);
   const kinds = inputs.map((input) => classify(describe(input)));
-  const at = inputs.indexOf(field);
-  const passwordAt = kinds[at] === "password" ? at : kinds.indexOf("password");
-  const password = inputs[passwordAt];
-  const login =
-    inputs[kinds[at] === "login" ? at : pairedLogin(kinds, passwordAt)];
+  const targets = fillTargets(kinds, inputs.indexOf(field), kind);
+  const password = inputs[targets.password];
+  const login = inputs[targets.login];
   let complete = Boolean(login || password);
   if (login) {
     const value = loginValue(describe(login), values);

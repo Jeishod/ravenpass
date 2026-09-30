@@ -12,6 +12,7 @@ import {
   type FileMenuContent,
   isCard,
   isFrameMessage,
+  listsNothing,
   type MenuContent,
 } from "../messages.ts";
 import { sendIgnoringClosedPort } from "../messaging/send.ts";
@@ -182,7 +183,7 @@ function CredentialMenu({
       />
       <MenuFooter
         actions={
-          content.state !== "list"
+          content.state !== "list" || listsNothing(content)
             ? []
             : content.purpose === "code"
               ? ["show", "fill"]

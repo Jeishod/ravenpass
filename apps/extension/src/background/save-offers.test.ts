@@ -522,7 +522,7 @@ test("only the menu under the offer's latest token may answer it", async () => {
   );
   const fieldMenu = await sessions.open(
     { tabId, documentId: "page-document", origin: "https://github.com" },
-    { state: "locked" },
+    { state: "locked", purpose: "sign-in" },
   );
   await sessions.bind(
     fieldMenu,

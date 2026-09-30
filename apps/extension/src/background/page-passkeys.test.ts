@@ -646,7 +646,7 @@ test("a conditional request waits for a sign-in field of its document, whose men
   assert.deepEqual(relayed, []);
 
   const { token } = await menu(
-    { kind: "menu-open", field: "login" },
+    { kind: "menu-open", field: "login", requested: false },
     pageSender(),
   );
   assert.ok(token);
@@ -683,13 +683,19 @@ test("a sign-in field of another document, or after the conditional request ends
   await request(conditional, 6);
 
   const frame = pageSender({ frameId: 2, documentId: "login-frame" });
-  assert.deepEqual(await menu({ kind: "menu-open", field: "login" }, frame), {
-    token: null,
-  });
+  assert.deepEqual(
+    await menu({ kind: "menu-open", field: "login", requested: false }, frame),
+    {
+      token: null,
+    },
+  );
 
   await ask({ kind: "passkey-withdraw", id: 6 });
   assert.deepEqual(
-    await menu({ kind: "menu-open", field: "login" }, pageSender()),
+    await menu(
+      { kind: "menu-open", field: "login", requested: false },
+      pageSender(),
+    ),
     { token: null },
   );
 });
@@ -702,12 +708,18 @@ test("a later document of the tab, and a closed tab, forget the requests of the 
   const next = pageSender({ documentId: "next-document" });
   await request(conditional, 1, next);
   assert.deepEqual(
-    await menu({ kind: "menu-open", field: "login" }, pageSender()),
+    await menu(
+      { kind: "menu-open", field: "login", requested: false },
+      pageSender(),
+    ),
     { token: null },
   );
 
   await passkeys.tabClosed(tabId);
-  assert.deepEqual(await menu({ kind: "menu-open", field: "login" }, next), {
-    token: null,
-  });
+  assert.deepEqual(
+    await menu({ kind: "menu-open", field: "login", requested: false }, next),
+    {
+      token: null,
+    },
+  );
 });

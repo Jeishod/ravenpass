@@ -52,6 +52,14 @@ export const extension = {
   "extension.menu.not-open.title": "Ravenpass isn't open",
   "extension.menu.not-open.detail":
     "Open it on this computer to fill in passwords.",
+  "extension.menu.empty.title": "No passwords for this site",
+  "extension.menu.empty.detail":
+    "Passwords you save in Ravenpass for this site appear here.",
+  "extension.menu.codes.empty.title": "No codes for this site",
+  "extension.menu.codes.empty.detail":
+    "One-time codes you set up in Ravenpass for this site appear here.",
+  "extension.context.passwords": "Show passwords",
+  "extension.context.codes": "Show one-time codes",
   "extension.menu.code.waiting": "Next code fills in {seconds}s",
   "extension.menu.passkey.detail": "Passkey · {account}",
   "extension.menu.hint.show": "show",
