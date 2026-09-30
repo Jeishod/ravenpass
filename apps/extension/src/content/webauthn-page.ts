@@ -1,4 +1,4 @@
-import { isPortOffer } from "../passkeys/page-channel.ts";
+import { takePortOffer } from "../passkeys/page-channel.ts";
 import {
   type PageCreateCall,
   PageCredentials,
@@ -45,14 +45,4 @@ container.get = replacements.get;
 PublicKeyCredential.isConditionalMediationAvailable =
   replacements.isConditionalMediationAvailable;
 
-// The first port offer is the isolated script's; the page must never see it.
-const onPortOffer = (event: MessageEvent): void => {
-  if (event.source !== window || !isPortOffer(event.data)) return;
-  const [port] = event.ports;
-  if (!port) return;
-  event.stopImmediatePropagation();
-  removeEventListener("message", onPortOffer, true);
-  page.connect(port);
-};
-
-addEventListener("message", onPortOffer, true);
+takePortOffer(window, (port) => page.connect(port));

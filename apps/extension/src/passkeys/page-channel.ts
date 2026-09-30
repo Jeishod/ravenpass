@@ -16,6 +16,42 @@ export function isPortOffer(data: unknown): boolean {
   return v.is(portOfferMessage, data);
 }
 
+/** The window the main-world script takes the isolated script's port from. */
+export interface OfferWindow {
+  addEventListener(
+    type: "message",
+    listener: (event: MessageEvent) => void,
+    capture: boolean,
+  ): void;
+}
+
+/**
+ * Hands `connect` the first port the window offers itself: the isolated script posts it at document_start, before any
+ * page script runs, so it is queued ahead of any offer a page makes. Every offer stops in the capture phase, so no
+ * offered port reaches a page script, and each offer after the first is closed unused.
+ */
+export function takePortOffer(
+  target: OfferWindow,
+  connect: (port: MessagePort) => void,
+): void {
+  let taken = false;
+  target.addEventListener(
+    "message",
+    (event) => {
+      if (event.source !== target || !isPortOffer(event.data)) return;
+      event.stopImmediatePropagation();
+      const [port, ...others] = event.ports;
+      if (taken || !port || others.length > 0) {
+        for (const offered of event.ports) offered.close();
+        return;
+      }
+      taken = true;
+      connect(port);
+    },
+    true,
+  );
+}
+
 export type PageAnswer = v.InferOutput<typeof pageAnswer>;
 
 /** A DOMException a page's request rejects with. */

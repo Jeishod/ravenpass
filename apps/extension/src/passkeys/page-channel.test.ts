@@ -5,12 +5,14 @@ import {
   isPortOffer,
   native,
   notAllowed,
+  type OfferWindow,
   type PageAnswer,
   type PageMessage,
   portOffer,
   readBridgeMessage,
   readPageAnswer,
   readPageMessage,
+  takePortOffer,
 } from "./page-channel.ts";
 import type { GetOptions } from "./requests.ts";
 import type { CreatedPasskey, SignedPasskey } from "./responses.ts";
@@ -52,6 +54,44 @@ test("the port offer is recognized by its tag alone", () => {
     [portOffer],
   ]) {
     assert.equal(isPortOffer(data), false);
+  }
+});
+
+test("only the first port the window offers itself connects, and no offer reaches the page", () => {
+  let listener: ((event: MessageEvent) => void) | undefined;
+  const target: OfferWindow = {
+    addEventListener: (_type, added, capture) => {
+      assert.equal(capture, true);
+      listener = added;
+    },
+  };
+  const connected: MessagePort[] = [];
+  takePortOffer(target, (port) => connected.push(port));
+  const offer = (source: unknown, data: unknown, ports: MessagePort[]) => {
+    let stopped = false;
+    listener?.({
+      source,
+      data,
+      ports,
+      stopImmediatePropagation: () => {
+        stopped = true;
+      },
+    } as unknown as MessageEvent);
+    return stopped;
+  };
+  const channels = Array.from({ length: 4 }, () => new MessageChannel());
+  const [first, second, third, fourth] = channels.map(({ port2 }) => port2);
+  assert.ok(first && second && third && fourth);
+
+  assert.equal(offer({}, portOffer, [first]), false, "another window's offer");
+  assert.equal(offer(target, { other: true }, [first]), false);
+  assert.equal(offer(target, portOffer, [first, second]), true);
+  assert.equal(offer(target, portOffer, [third]), true);
+  assert.equal(offer(target, portOffer, [fourth]), true);
+  assert.deepEqual(connected, [third]);
+  for (const { port1, port2 } of channels) {
+    port1.close();
+    port2.close();
   }
 });
 
