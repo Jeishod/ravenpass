@@ -22,14 +22,14 @@ test("the current PIN verifies the owner where device authentication is off or u
   assert.equal(ownerCheck({ ...methods, biometryAvailable: false }), "pin");
 });
 
-test("a vault with neither way in on the device asks nothing", () => {
+test("a vault with no way in the device can use asks for its recovery key", () => {
   assert.equal(
     ownerCheck({ ...methods, biometryEnabled: false, pinSet: false }),
-    "none",
+    "recovery-key",
   );
   assert.equal(
     ownerCheck({ ...methods, biometryAvailable: false, pinSet: false }),
-    "none",
+    "recovery-key",
   );
 });
 

@@ -263,7 +263,8 @@ function VerifyStep({
   const [revealCurrent, setRevealCurrent] = useState(false);
   const fields = useRef<PhraseFieldsHandle>(null);
   const pinSet = Boolean(methods?.pinSet);
-  const needsCurrent = methods !== null && ownerCheck(methods) === "none";
+  const needsCurrent =
+    methods !== null && ownerCheck(methods) === "recovery-key";
   const ready =
     methods !== null &&
     (!pinSet || pin.length >= methods.pinMinLength) &&

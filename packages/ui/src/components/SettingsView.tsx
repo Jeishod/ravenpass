@@ -222,7 +222,8 @@ export function SettingsView({
             settings={autofill}
             linking={extensionLinking}
             verifiable={
-              unlockMethods !== null && ownerCheck(unlockMethods) !== "none"
+              unlockMethods !== null &&
+              ownerCheck(unlockMethods) !== "recovery-key"
             }
             busy={busy}
           />

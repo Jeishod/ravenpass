@@ -21,6 +21,25 @@ const noWords = PhraseEntry.empty(recoveryKeyWords);
 
 type Stage = "phrase" | "unlock";
 
+/** What the person has accepted of the warnings a preview gives. */
+interface Acceptance {
+  loss: boolean;
+  replacedKey: boolean;
+}
+
+const nothingAccepted: Acceptance = { loss: false, replacedKey: false };
+
+/** Whether every warning `preview` gives is accepted; one without warnings needs nothing. */
+function warningsAccepted(
+  preview: RecoveryPreview,
+  accepted: Acceptance,
+): boolean {
+  return (
+    (!preview.mayLoseNewerCredentials || accepted.loss) &&
+    (!preview.keyReplaced || accepted.replacedKey)
+  );
+}
+
 /** RecoveryFlow opens the current vault with its recovery key, then sets up ways in where the device holds none. */
 export function RecoveryFlow({
   api,
@@ -39,7 +58,7 @@ export function RecoveryFlow({
   const fields = useRef<PhraseFieldsHandle>(null);
   // The host refuses a second recovery while one is staged; going back discards the staging.
   const [staged, setStaged] = useState<RecoveryPreview | null>(null);
-  const [acceptLoss, setAcceptLoss] = useState(false);
+  const [accepted, setAccepted] = useState(nothingAccepted);
   const [choice, setChoice] = useState<UnlockChoice>(noUnlockChoice);
   const [restoring, setRestoring] = useState<UnlockChoice | null>(null);
   const [busy, setBusy] = useState(false);
@@ -66,26 +85,26 @@ export function RecoveryFlow({
       return;
     }
     setStaged(preview);
-    setAcceptLoss(false);
+    setAccepted(nothingAccepted);
     setBusy(false);
-    if (!preview.mayLoseNewerCredentials) proceed(preview);
+    if (warningsAccepted(preview, nothingAccepted)) proceed(preview);
   }
 
-  // An older copy goes on only once the person accepts losing newer items.
+  // A copy that warns goes on only once the person accepts each warning.
   function proceed(preview: RecoveryPreview) {
-    if (preview.mayLoseNewerCredentials && !acceptLoss) return;
+    if (!warningsAccepted(preview, accepted)) return;
     if (preview.needsWayIn) {
       setStage("unlock");
       return;
     }
-    void restore(noUnlockChoice);
+    void restore(preview, noUnlockChoice);
   }
 
-  async function restore(chosen: UnlockChoice) {
+  async function restore(preview: RecoveryPreview, chosen: UnlockChoice) {
     setBusy(true);
     setRestoring(chosen);
     try {
-      await api.confirmRecovery(acceptLoss, chosen);
+      await api.confirmRecovery(warningsAccepted(preview, accepted), chosen);
       setEntry(noWords);
       onRecovered();
     } catch (reason) {
@@ -138,7 +157,9 @@ export function RecoveryFlow({
           backLabel={t("recovery.actions.back")}
           submitLabel={t("recovery.actions.restore")}
           onBack={() => setStage("phrase")}
-          onChosen={restore}
+          onChosen={(chosen) => {
+            if (staged) void restore(staged, chosen);
+          }}
         />
       ) : (
         <form id={formID} className="flex flex-col gap-3" onSubmit={submit}>
@@ -173,27 +194,29 @@ export function RecoveryFlow({
             />
           </div>
 
+          {staged?.keyReplaced && (
+            <RecoveryWarning
+              id="accept-replaced-key"
+              title={t("recovery.preview.replaced-key.title")}
+              description={t("recovery.preview.replaced-key.description")}
+              accept={t("recovery.preview.accept-replaced-key")}
+              checked={accepted.replacedKey}
+              onChecked={(replacedKey) =>
+                setAccepted((held) => ({ ...held, replacedKey }))
+              }
+              disabled={busy}
+            />
+          )}
           {staged?.mayLoseNewerCredentials && (
-            <>
-              <Alert>
-                <CircleAlert />
-                <AlertTitle>{t("recovery.preview.older.title")}</AlertTitle>
-                <AlertDescription>
-                  {t("recovery.preview.older.description")}
-                </AlertDescription>
-              </Alert>
-              <div className="flex items-start gap-2.5">
-                <Checkbox
-                  id="accept-older-copy"
-                  checked={acceptLoss}
-                  onCheckedChange={(checked) => setAcceptLoss(checked === true)}
-                  disabled={busy}
-                />
-                <label htmlFor="accept-older-copy" className="text-[13px]">
-                  {t("recovery.preview.accept-loss")}
-                </label>
-              </div>
-            </>
+            <RecoveryWarning
+              id="accept-older-copy"
+              title={t("recovery.preview.older.title")}
+              description={t("recovery.preview.older.description")}
+              accept={t("recovery.preview.accept-loss")}
+              checked={accepted.loss}
+              onChecked={(loss) => setAccepted((held) => ({ ...held, loss }))}
+              disabled={busy}
+            />
           )}
 
           <ActionBar>
@@ -210,7 +233,7 @@ export function RecoveryFlow({
               type="submit"
               form={formID}
               disabled={
-                busy || Boolean(staged?.mayLoseNewerCredentials && !acceptLoss)
+                busy || (staged !== null && !warningsAccepted(staged, accepted))
               }
             >
               {busy
@@ -223,5 +246,45 @@ export function RecoveryFlow({
         </form>
       )}
     </AccessShell>
+  );
+}
+
+/** RecoveryWarning states one risk of the staged copy and takes the person's acceptance of it. */
+function RecoveryWarning({
+  id,
+  title,
+  description,
+  accept,
+  checked,
+  onChecked,
+  disabled,
+}: {
+  id: string;
+  title: string;
+  description: string;
+  accept: string;
+  checked: boolean;
+  onChecked: (checked: boolean) => void;
+  disabled: boolean;
+}) {
+  return (
+    <>
+      <Alert>
+        <CircleAlert />
+        <AlertTitle>{title}</AlertTitle>
+        <AlertDescription>{description}</AlertDescription>
+      </Alert>
+      <div className="flex items-start gap-2.5">
+        <Checkbox
+          id={id}
+          checked={checked}
+          onCheckedChange={(next) => onChecked(next === true)}
+          disabled={disabled}
+        />
+        <label htmlFor={id} className="text-[13px]">
+          {accept}
+        </label>
+      </div>
+    </>
   );
 }

@@ -21,6 +21,12 @@ export const failures = {
     "Vault setup is no longer active. Start creating your vault again.",
   "failure.no-local-vault":
     "No vault was found there. Select an encrypted copy to restore it.",
+  "failure.recovery-replaced-key":
+    "This copy uses a recovery key that has since been replaced. Confirm that you restored it yourself before opening it.",
+  "failure.key-change-unfinished":
+    "The recovery key changed, but Ravenpass could not finish saving the change on this device. Use the new recovery key from now on, and unlock the vault again.",
+  "failure.key-change-uncertain":
+    "Ravenpass could not confirm whether the recovery key changed. Keep both the old and the new recovery key until the vault opens again.",
   "failure.recovery-needs-confirmation":
     "This copy may be older than your latest vault. Confirm the possible loss of changes before restoring it.",
   "failure.recovery-changed":

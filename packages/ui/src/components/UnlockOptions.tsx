@@ -1,10 +1,12 @@
-import { LoaderCircle } from "lucide-react";
-import { type FormEvent, useId, useState } from "react";
+import { Eye, EyeOff, LoaderCircle } from "lucide-react";
+import { type FormEvent, useId, useRef, useState } from "react";
 import { useTranslator } from "../i18n/translator.tsx";
 import type { UnlockMethods } from "../vault-api.ts";
 import { Block, BlockRow } from "./Block.tsx";
 import { checkNewPin } from "./new-pin.ts";
+import { PhraseFields, type PhraseFieldsHandle } from "./PhraseFields.tsx";
 import { PinField } from "./PinField.tsx";
+import { PhraseEntry } from "./phrase-entry.ts";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -13,11 +15,14 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "./ResponsiveDialog.tsx";
+import { recoveryKeyWords } from "./recovery-challenge.ts";
 import { Button } from "./ui/button.tsx";
 import { Switch } from "./ui/switch.tsx";
 import { ownerCheck, type UnlockPending } from "./unlock-change.ts";
 
-/** A change to the ways in that runs once it has the current PIN, empty where none is asked; true once saved. */
+const noWords = PhraseEntry.empty(recoveryKeyWords);
+
+/** A change to the ways in that runs once it has the current PIN or recovery key, empty where none is asked; true once saved. */
 type HeldChange = (current: string) => Promise<boolean>;
 
 /** UnlockOptions offers the ways a vault may be opened on the device, in setup and settings alike. */
@@ -39,7 +44,10 @@ export function UnlockOptions({
   /** Whether the last way in must stay on, as it must for a vault that exists. */
   keepOne?: boolean;
   descriptions?: boolean;
-  /** Set where each change applies to the device at once, so the current PIN confirms it where the device cannot. */
+  /**
+   * Set where each change applies to the device at once, so the current PIN confirms it where the device cannot, and
+   * the recovery key where neither can.
+   */
   confirmChanges?: boolean;
   onSetPin: (pin: string, current: string) => Promise<boolean>;
   onRemovePin: (current: string) => Promise<boolean>;
@@ -51,10 +59,12 @@ export function UnlockOptions({
 
   const busyOrUnknown = busy || pending !== null || !methods;
   const enablingBiometry = pending === "biometry-on";
-  const askPin =
-    confirmChanges && methods !== null && ownerCheck(methods) === "pin";
-  // A PIN removed by wrong attempts leaves nothing to ask for.
-  if (held !== null && !askPin) setHeld(null);
+  // Null where changes apply without confirming the owner, as in setup.
+  const asked = confirmChanges && methods !== null ? ownerCheck(methods) : null;
+  const askPin = asked === "pin";
+  const askKey = asked === "recovery-key";
+  // Device authentication that comes back leaves nothing to ask for.
+  if (held !== null && !askPin && !askKey) setHeld(null);
   // The last way in cannot be given up, so its switch is held where nothing would replace it.
   const biometryIsLast =
     keepOne && Boolean(methods?.biometryEnabled) && !methods?.pinSet;
@@ -62,11 +72,18 @@ export function UnlockOptions({
     keepOne && Boolean(methods?.pinSet) && !methods?.biometryEnabled;
 
   function apply(change: HeldChange) {
-    if (askPin) {
+    if (askPin || askKey) {
       setHeld(() => change);
       return;
     }
     void change("");
+  }
+
+  // The recovery key is asked after the new PIN, in a dialog of its own.
+  function savePin(pin: string, current: string): Promise<boolean> {
+    if (!askKey) return onSetPin(pin, current);
+    apply((key) => onSetPin(pin, key));
+    return Promise.resolve(true);
   }
 
   return (
@@ -156,17 +173,22 @@ export function UnlockOptions({
         attemptsLeft={methods?.pinAttemptsLeft}
         minimum={methods?.pinMinLength ?? 6}
         maximum={methods?.pinMaxLength ?? 12}
-        onSave={onSetPin}
+        onSave={savePin}
         onClose={() => setEditing(false)}
       />
       <CurrentPinDialog
-        open={held !== null}
+        open={held !== null && askPin}
         note={
           enablingBiometry ? t("unlock-methods.biometry.creating") : undefined
         }
         attemptsLeft={methods?.pinAttemptsLeft}
         minimum={methods?.pinMinLength ?? 6}
         maximum={methods?.pinMaxLength ?? 12}
+        onConfirm={(current) => held?.(current) ?? Promise.resolve(false)}
+        onClose={() => setHeld(null)}
+      />
+      <CurrentKeyDialog
+        open={held !== null && askKey}
         onConfirm={(current) => held?.(current) ?? Promise.resolve(false)}
         onClose={() => setHeld(null)}
       />
@@ -310,6 +332,115 @@ function PinDialog({
           >
             {t(
               saving ? "unlock-methods.pin.saving" : "unlock-methods.pin.save",
+            )}
+          </Button>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
+  );
+}
+
+/** CurrentKeyDialog takes the vault's recovery key to confirm a change where neither a PIN nor the device can. */
+function CurrentKeyDialog({
+  open,
+  onConfirm,
+  onClose,
+}: {
+  open: boolean;
+  onConfirm: (current: string) => Promise<boolean>;
+  onClose: () => void;
+}) {
+  const { t } = useTranslator();
+  const id = useId();
+  const fields = useRef<PhraseFieldsHandle>(null);
+  const [entry, setEntry] = useState(noWords);
+  const [reveal, setReveal] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  function close() {
+    setEntry(noWords);
+    setReveal(false);
+    onClose();
+  }
+
+  async function confirm(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!entry.complete) {
+      fields.current?.focus(entry.firstEmpty);
+      return;
+    }
+    if (saving) return;
+    setSaving(true);
+    try {
+      if (await onConfirm(entry.phrase)) close();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <ResponsiveDialog
+      open={open}
+      dismissible={!saving}
+      onOpenChange={(next) => {
+        if (!next) close();
+      }}
+    >
+      <ResponsiveDialogContent className="bg-background sm:max-w-[480px]">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>
+            {t("unlock-methods.confirm-key.title")}
+          </ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
+            {t("unlock-methods.confirm-key.description")}
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
+        <form id={`${id}-form`} className="grid gap-2" onSubmit={confirm}>
+          <div className="flex justify-end">
+            <Button
+              className="text-muted-foreground"
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={t(
+                reveal ? "recovery.phrase.hide" : "recovery.phrase.show",
+              )}
+              onClick={() => setReveal((shown) => !shown)}
+              disabled={saving}
+            >
+              {reveal ? <EyeOff /> : <Eye />}
+            </Button>
+          </div>
+          <PhraseFields
+            ref={fields}
+            label={t("recovery.phrase.label")}
+            entry={entry}
+            onEntry={setEntry}
+            concealed={!reveal}
+            disabled={saving}
+          />
+        </form>
+        <ResponsiveDialogFooter>
+          <Button
+            type="button"
+            variant="quiet"
+            size="pill"
+            disabled={saving}
+            onClick={close}
+          >
+            {t("unlock-methods.pin.cancel")}
+          </Button>
+          <Button
+            type="submit"
+            form={`${id}-form`}
+            variant="raised"
+            size="pill"
+            disabled={saving}
+          >
+            {t(
+              saving
+                ? "unlock-methods.pin.saving"
+                : "unlock-methods.confirm.action",
             )}
           </Button>
         </ResponsiveDialogFooter>

@@ -107,6 +107,9 @@ export const access = {
   "unlock-methods.confirm.description":
     "Confirm it's you to change how this vault unlocks.",
   "unlock-methods.confirm.action": "Continue",
+  "unlock-methods.confirm-key.title": "Enter your recovery key",
+  "unlock-methods.confirm-key.description":
+    "This device cannot confirm who you are with a PIN or biometrics. Enter the vault's recovery key to change how it unlocks.",
   "unlock-methods.errors.save-failed":
     "Ravenpass could not save that change. Try again.",
   "unlock-methods.errors.unreadable":
@@ -161,6 +164,11 @@ export const access = {
   "recovery.preview.older.description":
     "Restoring it could remove items added after this copy was saved.",
   "recovery.preview.accept-loss": "I understand that newer items may be lost.",
+  "recovery.preview.replaced-key.title":
+    "This copy uses a replaced recovery key",
+  "recovery.preview.replaced-key.description":
+    "This vault's recovery key has since been replaced. Anyone who has the old key could have written this copy. Open it only if you restored it yourself.",
+  "recovery.preview.accept-replaced-key": "I restored this copy myself.",
   "recovery.actions.back": "Back",
   "recovery.actions.continue": "Continue",
   "recovery.actions.checking": "Checking…",

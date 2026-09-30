@@ -138,6 +138,8 @@ export interface StorageChange {
 
 export interface RecoveryPreview {
   mayLoseNewerCredentials: boolean;
+  /** True when the file is sealed under a recovery key this device saw replaced. */
+  keyReplaced: boolean;
   /** True when the device holds no way in that still opens the vault. */
   needsWayIn: boolean;
 }
@@ -882,7 +884,8 @@ export interface VaultApi {
   adoptChangedVault(): Promise<void>;
   /**
    * Confirms the owner first: by device authentication where the vault opens with it, failing with `owner-unverified`
-   * on a decline; else by `current`, the vault's PIN, counted as the locked screen counts it.
+   * on a decline; else by `current`, the vault's PIN, counted as the locked screen counts it; else by `current` as the
+   * vault's recovery key.
    */
   setPin(pin: string, current: string): Promise<void>;
   /** Confirms the owner first, as `setPin` does. */
@@ -890,11 +893,11 @@ export interface VaultApi {
   /** Confirms the owner first, as `setPin` does, unless it is already as asked. */
   setBiometryUnlock(enabled: boolean, current: string): Promise<void>;
   beginRecovery(phrase: string): Promise<RecoveryPreview>;
-  /** An empty `choice` keeps the device's ways in; a filled one replaces them. */
-  confirmRecovery(
-    acceptPossibleDataLoss: boolean,
-    choice: UnlockChoice,
-  ): Promise<void>;
+  /**
+   * `accepted` confirms every warning the preview gave. An empty `choice` keeps the device's ways in; a filled one
+   * replaces them.
+   */
+  confirmRecovery(accepted: boolean, choice: UnlockChoice): Promise<void>;
   listCredentials(): Promise<CredentialSummary[]>;
   credentialLimits(): Promise<CredentialLimits>;
   readCredential(id: string): Promise<Credential>;

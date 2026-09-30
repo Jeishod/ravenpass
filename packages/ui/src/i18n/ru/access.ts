@@ -111,6 +111,9 @@ export const access: typeof english = {
   "unlock-methods.confirm.description":
     "Подтвердите, что это вы, чтобы изменить способ разблокировки хранилища.",
   "unlock-methods.confirm.action": "Продолжить",
+  "unlock-methods.confirm-key.title": "Введите ключ восстановления",
+  "unlock-methods.confirm-key.description":
+    "На этом устройстве нельзя подтвердить вашу личность пин-кодом или биометрией. Введите ключ восстановления хранилища, чтобы изменить способ разблокировки.",
   "unlock-methods.errors.save-failed":
     "Не удалось сохранить изменение. Повторите попытку.",
   "unlock-methods.errors.unreadable":
@@ -168,6 +171,11 @@ export const access: typeof english = {
     "После восстановления могут пропасть записи, добавленные позже этой копии.",
   "recovery.preview.accept-loss":
     "Я понимаю, что новые записи могут быть потеряны.",
+  "recovery.preview.replaced-key.title":
+    "Эта копия использует заменённый ключ восстановления",
+  "recovery.preview.replaced-key.description":
+    "Ключ восстановления этого хранилища с тех пор заменили. Эту копию мог записать любой, у кого есть старый ключ. Открывайте её, только если восстановили её сами.",
+  "recovery.preview.accept-replaced-key": "Эта копия восстановлена мной.",
   "recovery.actions.back": "Назад",
   "recovery.actions.continue": "Продолжить",
   "recovery.actions.checking": "Проверяем…",

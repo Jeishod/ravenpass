@@ -4,12 +4,12 @@ import type { UnlockChoice, UnlockMethods } from "../vault-api.ts";
 export type UnlockPending = "biometry-on" | "other";
 
 /** How the owner proves who they are before a way in changes on this device; the host holds the same rule. */
-export type OwnerCheck = "device" | "pin" | "none";
+export type OwnerCheck = "device" | "pin" | "recovery-key";
 
-/** Device authentication where the vault opens with it, else the current PIN; a vault with neither asks nothing. */
+/** Device authentication where the vault opens with it, else the current PIN, else the vault's recovery key. */
 export function ownerCheck(methods: UnlockMethods): OwnerCheck {
   if (methods.biometryEnabled && methods.biometryAvailable) return "device";
-  return methods.pinSet ? "pin" : "none";
+  return methods.pinSet ? "pin" : "recovery-key";
 }
 
 /** The choice of no way in; committed in recovery, it keeps the ways in the device holds. */
