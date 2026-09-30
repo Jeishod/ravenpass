@@ -230,6 +230,11 @@ func PrepareScan(name string, given []byte) (PreparedScan, error) {
 	return PreparedScan{name: name, mediaType: mediaType, content: content, thumbnail: thumbnail}, nil
 }
 
+// Copy is the scan in its stored form, to attach to another document without converting it again.
+func (s Scan) Copy() PreparedScan {
+	return PreparedScan{name: s.Name, mediaType: s.MediaType, content: bytes.Clone(s.Content), thumbnail: bytes.Clone(s.Thumbnail)}
+}
+
 // Name is the scan's file name.
 func (p PreparedScan) Name() string { return p.name }
 
