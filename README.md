@@ -12,6 +12,7 @@
 </p>
 <p>
   <a href="https://ravenpass.org">Website</a> ·
+  <a href="https://www.youtube.com/watch?v=7Vlkf9ZTwo4">Trailer</a> ·
   <a href="#features">Features</a> ·
   <a href="#download">Download</a> ·
   <a href="#security">Security</a> ·
