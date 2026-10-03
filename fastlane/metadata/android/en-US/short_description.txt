@@ -1,0 +1,1 @@
+Passwords, passkeys and two-factor codes in one encrypted vault, no account

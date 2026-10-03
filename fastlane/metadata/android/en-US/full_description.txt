@@ -1,0 +1,19 @@
+Ravenpass keeps your passwords, passkeys and two-factor codes in one encrypted vault on your phone and computer, and fills them in wherever you sign in. No account needed, and you decide where your vault lives.
+
+<b>Features</b>
+<ul>
+<li><b>Native autofill.</b> Ravenpass is an Android autofill service and, on Android 14 and later, a passkey provider, so it fills in any app or browser.</li>
+<li><b>Your vault, your choice.</b> Keep it on your device, or in a cloud drive folder to open the same vault on your computer and phone.</li>
+<li><b>Everything in one place.</b> Passwords, passkeys, two-factor codes, payment cards, identities with document scans, secure notes and crypto wallet seeds.</li>
+<li><b>Quick to unlock.</b> Your fingerprint or your device's screen lock, or a PIN.</li>
+<li><b>Hard to lose.</b> Automatic encrypted backups to a folder you choose, and a 24-word recovery key you can print or save.</li>
+<li><b>Easy to switch.</b> Bring your passwords over from other password managers in a few clicks.</li>
+<li><b>No tracking.</b> No analytics or telemetry. Ravenpass goes online only to fetch icons from the sites you save and to check which apps a site trusts.</li>
+</ul>
+
+<b>Security</b>
+Every item is encrypted with XChaCha20-Poly1305 before it is written anywhere, and unlocking is bound to the Android Keystore.
+
+Ravenpass is in beta. Keep a backup of anything you store in it.
+
+Ravenpass also runs on macOS, with a Chrome extension.
