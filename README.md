@@ -62,6 +62,10 @@ brew install --cask dortanes/ravenpass/ravenpass
 
 To update, run `brew update` and `brew upgrade --cask dortanes/ravenpass/ravenpass`.
 
+On Android, you can also install with [Obtainium](https://obtainium.imranr.dev/), which keeps Ravenpass up to date from this repository's releases:
+
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/dortanes/ravenpass"><img src=".github/assets/badge_obtainium.png" alt="Get it on Obtainium" width="161"></a>
+
 > [!IMPORTANT]
 > Nobody can reset your vault for you. Keep backups on and keep a copy of your recovery key: it unlocks a vault file you still have, but it cannot bring back a file that is gone.
 
