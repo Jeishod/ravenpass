@@ -20,7 +20,8 @@ private struct KeychainFailure: Error {
 }
 
 // A key's representation lives in a Data Protection keychain item in the app's default access group, the application
-// identifier: code signed by another team or for another app cannot read it.
+// identifier: code signed by another team or for another app cannot read it. An ad-hoc signed build, which has no
+// application identifier, keeps it in the login keychain instead; see dataProtectionKeychain.
 private let labelSize = 16
 
 private func hex(_ bytes: Data) -> String {
@@ -32,12 +33,36 @@ private func keyAccount(salt: Data, label: Data) -> String {
     "\(hex(salt)).\(hex(label))"
 }
 
+// An ad-hoc signed build has no application identifier, so the Data Protection keychain refuses it with
+// errSecMissingEntitlement; such a build keeps the key's representation in the login keychain instead.
+// The representation is only usable by this Mac's Secure Enclave either way.
+private let dataProtectionKeychain: Bool = {
+    // Only a write reports the missing entitlement; a search just finds nothing.
+    let probe: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword,
+        kSecUseDataProtectionKeychain as String: true,
+        kSecAttrService as String: "com.dortanes.ravenpass.entitlement-probe",
+        kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+        kSecValueData as String: Data(),
+    ]
+    let status = SecItemAdd(probe as CFDictionary, nil)
+    if status == errSecSuccess {
+        var query = probe
+        query.removeValue(forKey: kSecValueData as String)
+        query.removeValue(forKey: kSecAttrAccessible as String)
+        SecItemDelete(query as CFDictionary)
+    }
+    return status != errSecMissingEntitlement
+}()
+
 private func keyQuery(_ service: String, account: String? = nil) -> [String: Any] {
     var query: [String: Any] = [
         kSecClass as String: kSecClassGenericPassword,
-        kSecUseDataProtectionKeychain as String: true,
         kSecAttrService as String: service,
     ]
+    if dataProtectionKeychain {
+        query[kSecUseDataProtectionKeychain as String] = true
+    }
     if let account {
         query[kSecAttrAccount as String] = account
     }
