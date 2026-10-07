@@ -16,6 +16,7 @@ import (
 	"github.com/dortanes/ravenpass/packages/app/backups"
 	"github.com/dortanes/ravenpass/packages/app/breaches"
 	"github.com/dortanes/ravenpass/packages/app/confirmation"
+	"github.com/dortanes/ravenpass/packages/app/genhistory"
 	"github.com/dortanes/ravenpass/packages/app/linkserver"
 	"github.com/dortanes/ravenpass/packages/app/linkstore"
 	"github.com/dortanes/ravenpass/packages/app/ownerauth"
@@ -142,6 +143,8 @@ type Service struct {
 	folders BackupFolders
 	about   About
 	apps    AppNames
+	// generator is nil on a host that keeps no generator history.
+	generator *genhistory.Store
 }
 
 // Confirmations is how the service reaches the confirmation panel.
@@ -191,6 +194,8 @@ type Host struct {
 	SystemAutofill SystemAutofill
 	// Backups is set on a host that backs up the open vault on its own.
 	Backups *backups.Keeper
+	// Generator is set on a host that keeps the passwords the generator handed out.
+	Generator *genhistory.Store
 	// BackupFolders is nil where the owner picks the backup folder with the desktop folder dialog.
 	BackupFolders BackupFolders
 	// About is nil where the process runs from a macOS app bundle.
@@ -312,7 +317,7 @@ func New(vault *vaultservice.Service, settings *preferences.Store, icons *siteic
 		shows: shows, screens: screens, systemAutofill: systemAutofill,
 		confirmations: confirmations.Queue, panel: panel,
 		showMain: confirmations.ShowMain, reloadMain: confirmations.ReloadMain, owner: confirmations.Owner,
-		backups: host.Backups, folders: folders, about: about, apps: apps,
+		backups: host.Backups, generator: host.Generator, folders: folders, about: about, apps: apps,
 	}
 	s.confirmations.UnlockOnDevice(s.unlockOnDevice)
 	vault.OnLock(s.lockedInside)

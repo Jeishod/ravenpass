@@ -35,6 +35,8 @@ export type {
     ExportStatus,
     ExtensionLinkOffer,
     ExtensionLinks,
+    GeneratedPassword,
+    GeneratorHistorySetting,
     Group,
     Identity,
     IdentityAddresses,

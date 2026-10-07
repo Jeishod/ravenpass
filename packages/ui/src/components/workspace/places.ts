@@ -17,7 +17,14 @@ export type ItemPlaceName =
   | "notes"
   | "seeds";
 
-export type WorkspacePlace = ItemPlaceName | "settings";
+/** A place holding no items. */
+export type ToolPlaceName = "settings" | "generator";
+
+export type WorkspacePlace = ItemPlaceName | ToolPlaceName;
+
+export function isToolPlace(place: WorkspacePlace): place is ToolPlaceName {
+  return place === "settings" || place === "generator";
+}
 
 export interface ItemPlaceEntry {
   id: ItemPlaceName;

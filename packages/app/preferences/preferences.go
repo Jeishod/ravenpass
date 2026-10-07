@@ -68,6 +68,9 @@ type record struct {
 	IdentityListOn     bool `json:"identityListOn,omitempty"`
 	ScreenshotsAllowed bool `json:"screenshotsAllowed,omitempty"`
 	BreachChecksOn     bool `json:"breachChecksOn,omitempty"`
+	// GeneratorHistoryDays is zero for defaultGeneratorHistoryDays.
+	GeneratorHistoryDays int  `json:"generatorHistoryDays,omitempty"`
+	GeneratorHistoryOff  bool `json:"generatorHistoryOff,omitempty"`
 	// Appearance is empty for AppearanceSystem.
 	Appearance Appearance `json:"appearance,omitempty"`
 	// AutoBackupOn requires AutoBackupFolder.
@@ -222,6 +225,9 @@ func (s *Store) load() {
 		stored.ClipboardClearSeconds = 0
 	}
 	s.keepOfferedAutoLock(&stored)
+	if !offeredGeneratorHistoryDays(stored.GeneratorHistoryDays) {
+		stored.GeneratorHistoryDays = 0
+	}
 	if !offeredSignInStyle(stored.SignInStyle) {
 		stored.SignInStyle = ""
 	}

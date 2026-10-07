@@ -1,5 +1,5 @@
 import { cn } from "cn";
-import { Settings2 } from "lucide-react";
+import { Settings2, WandSparkles } from "lucide-react";
 import { type ComponentType, useState } from "react";
 import { useTranslator } from "../../i18n/translator.tsx";
 import {
@@ -40,27 +40,35 @@ export function WorkspaceRail({
           />
         ))}
       </SelectionGroup>
-      <SelectionGroup id="rail-settings">
+      <SelectionGroup id="rail-tools">
+        <RailItem
+          label={t("workspace.rail.generator")}
+          icon={WandSparkles}
+          active={place === "generator"}
+          appear={appear}
+          onClick={() => onPlace("generator")}
+          className="mt-auto"
+        />
         <RailItem
           label={t("workspace.rail.settings")}
           icon={Settings2}
           active={place === "settings"}
           appear={appear}
           onClick={() => onPlace("settings")}
-          className="mt-auto"
         />
       </SelectionGroup>
     </nav>
   );
 }
 
-const clusters: Record<WorkspacePlace, "items" | "settings"> = {
+const clusters: Record<WorkspacePlace, "items" | "tools"> = {
   passwords: "items",
   identities: "items",
   cards: "items",
   notes: "items",
   seeds: "items",
-  settings: "settings",
+  settings: "tools",
+  generator: "tools",
 };
 
 function RailItem({

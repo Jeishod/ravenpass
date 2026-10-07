@@ -4,12 +4,15 @@ import type {
   BankDetails,
   BreachChecks,
   ClipboardClearing,
+  GeneratorHistorySetting,
   ScreenshotSettings,
   SiteIcons,
+  VaultApi,
 } from "../../vault-api.ts";
 import { Block, BlockHeading, BlockNote, BlockRow } from "../Block.tsx";
 import { Switch } from "../ui/switch.tsx";
 import { DelaySetting } from "./DelaySetting.tsx";
+import { GeneratorHistoryRows } from "./GeneratorHistoryRows.tsx";
 import { ScreenshotsSetting } from "./ScreenshotsSetting.tsx";
 
 export function PrivacyPanel({
@@ -20,6 +23,9 @@ export function PrivacyPanel({
   onBankDetails,
   breachChecks,
   onBreachChecks,
+  generatorHistory,
+  generatorHistoryApi,
+  onGeneratorHistory,
   clipboard,
   onClipboard,
   screenshots,
@@ -31,6 +37,9 @@ export function PrivacyPanel({
   onBankDetails: (enabled: boolean) => void;
   breachChecks: BreachChecks | null;
   onBreachChecks: (enabled: boolean) => void;
+  generatorHistory: GeneratorHistorySetting | null;
+  generatorHistoryApi: Pick<VaultApi, "countGeneratorHistoryPast">;
+  onGeneratorHistory: (enabled: boolean, days: number) => void;
   clipboard: ClipboardClearing | null;
   onClipboard: (enabled: boolean, seconds: number) => void;
   screenshots: ScreenshotSettings;
@@ -99,6 +108,12 @@ export function PrivacyPanel({
             onCheckedChange={onBreachChecks}
           />
         </BlockRow>
+        <GeneratorHistoryRows
+          setting={generatorHistory}
+          busy={busy}
+          history={generatorHistoryApi}
+          onChange={onGeneratorHistory}
+        />
       </Block>
       {offers.screenshots && (
         <ScreenshotsSetting settings={screenshots} busy={busy} />

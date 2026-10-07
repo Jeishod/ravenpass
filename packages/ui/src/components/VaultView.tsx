@@ -49,6 +49,7 @@ import {
 } from "../workspace/sections.ts";
 import { SelectionQueue } from "../workspace/selection.ts";
 import { SiteIconStore } from "../workspace/site-icons.ts";
+import { GeneratorView } from "./generator/GeneratorView.tsx";
 import { SettingsView } from "./SettingsView.tsx";
 import type { ImportActions } from "./settings/ImportPanel.tsx";
 import type { SettingsSection } from "./settings/sections.ts";
@@ -71,7 +72,9 @@ import { NotesPlace } from "./workspace/NotesPlace.tsx";
 import { PasswordsPlace } from "./workspace/PasswordsPlace.tsx";
 import {
   type ItemPlaceName,
+  isToolPlace,
   placeOf,
+  type ToolPlaceName,
   type WorkspacePlace,
 } from "./workspace/places.ts";
 import { SeedsPlace } from "./workspace/SeedsPlace.tsx";
@@ -88,6 +91,7 @@ const regionLabels: Record<WorkspacePlace, MessageKey> = {
   notes: "workspace.region.notes",
   seeds: "workspace.region.seeds",
   settings: "workspace.region.settings",
+  generator: "workspace.region.generator",
 };
 
 const searchLabels: Record<
@@ -117,6 +121,10 @@ const searchLabels: Record<
 };
 
 const noItems: never[] = [];
+
+/** The pane a place without items fills. */
+const toolPane =
+  "flex min-h-0 flex-1 flex-col overflow-hidden rounded-pane border bg-card max-sm:rounded-none max-sm:border-0 max-sm:bg-background";
 
 /** VaultView is the open vault: the state every place shares, around whichever place is open. */
 export function VaultView({
@@ -219,6 +227,14 @@ export function VaultView({
     readFailure: "app.error.setting-read",
     writeFailure: "settings.breach-checks.error",
   });
+  const generatorHistorySetting = useHostSetting({
+    key: queryKeys.generatorHistorySetting,
+    read: () => api.generatorHistorySetting(),
+    write: (enabled: boolean, days: number) =>
+      api.setGeneratorHistorySetting(enabled, days),
+    readFailure: "app.error.setting-read",
+    writeFailure: "settings.generator-history.error",
+  });
   // A refused change leaves the previous keys working.
   const shortcutSetting = useHostSetting({
     key: queryKeys.shortcuts,
@@ -262,7 +278,7 @@ export function VaultView({
     [recordedShortcuts],
   );
   const [itemPlace, setItemPlace] = useState<ItemPlaceName>("passwords");
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [toolPlace, setToolPlace] = useState<ToolPlaceName | null>(null);
   const [settingsSection, setSettingsSection] =
     useState<SettingsSection | null>(null);
   const [paneShown, setPaneShown] = useState(false);
@@ -289,7 +305,7 @@ export function VaultView({
   const [listPositions] = useState(() => new ListPositions());
   const openPlace = useRef<PlaceHandle | null>(null);
   const searchField = useRef<HTMLInputElement | null>(null);
-  const place: WorkspacePlace = settingsOpen ? "settings" : itemPlace;
+  const place: WorkspacePlace = toolPlace ?? itemPlace;
   const group =
     chosenGroup === everyGroup || groups.some((item) => item.id === chosenGroup)
       ? chosenGroup
@@ -302,6 +318,7 @@ export function VaultView({
     siteIconsSetting.changing ||
     bankDetailsSetting.changing ||
     breachChecksSetting.changing ||
+    generatorHistorySetting.changing ||
     shortcutSetting.changing ||
     interfaceSizeChange.isPending ||
     appearanceChange.isPending ||
@@ -328,7 +345,7 @@ export function VaultView({
     );
     void refreshExportState();
     void client.invalidateQueries({ queryKey: reads.codeSetup.key });
-    if (place !== "settings") openPlace.current?.reload();
+    if (toolPlace === null) openPlace.current?.reload();
   });
   useEffect(
     () =>
@@ -402,19 +419,19 @@ export function VaultView({
     openPlace.current?.close();
     setQuery("");
     setOpening(opening);
-    if (next === "settings") {
-      setSettingsOpen(true);
+    if (isToolPlace(next)) {
+      setToolPlace(next);
       return;
     }
-    setSettingsOpen(false);
+    setToolPlace(null);
     setItemPlace(next);
   }
 
   function chooseSection(next: WorkspaceSection) {
     setSection(next);
-    if (settingsOpen) {
+    if (toolPlace !== null) {
       setOpening("empty");
-      setSettingsOpen(false);
+      setToolPlace(null);
     } else {
       openPlace.current?.leaveEditor();
     }
@@ -832,13 +849,13 @@ export function VaultView({
     notes: notes.length,
     seeds: seeds.length,
   };
-  const count = settingsOpen
+  const count = toolPlace
     ? Object.values(counts).reduce((total, items) => total + items, 0)
     : counts[itemPlace];
   const placeLabel = t(placeOf(itemPlace).label);
-  const listShown = !settingsOpen && !paneShown;
+  const listShown = toolPlace === null && !paneShown;
   // A compact screen's head and foot cross-fade with the content between them.
-  const compactScreen = settingsOpen ? "settings" : paneShown ? "pane" : "list";
+  const compactScreen = toolPlace ?? (paneShown ? "pane" : "list");
   const iconStore = siteIcons?.enabled ? siteIconStore : null;
   const toolbar = (
     <WorkspaceToolbar
@@ -863,6 +880,7 @@ export function VaultView({
       }
       onNew={createItem}
       onLock={lock}
+      onGenerator={() => choosePlace("generator")}
       onSettings={() => showSettings(null)}
       busy={busy}
     />
@@ -879,6 +897,9 @@ export function VaultView({
               onBack={() => openPlace.current?.close()}
             />
           )}
+          {compactScreen === "generator" && (
+            <BackRow label={placeLabel} onBack={() => choosePlace(itemPlace)} />
+          )}
         </CrossFade>
       ) : (
         toolbar
@@ -893,7 +914,7 @@ export function VaultView({
         >
           <CrossFade id={place} className="flex min-w-0 flex-1 gap-3">
             {place === "settings" && (
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-pane border bg-card max-sm:rounded-none max-sm:border-0 max-sm:bg-background">
+              <div className={toolPane}>
                 <SettingsView
                   section={settingsSection}
                   onSection={setSettingsSection}
@@ -918,6 +939,9 @@ export function VaultView({
                   onBankDetails={bankDetailsSetting.change}
                   breachChecks={breachChecksSetting.value}
                   onBreachChecks={breachChecksSetting.change}
+                  generatorHistory={generatorHistorySetting.value}
+                  generatorHistoryApi={api}
+                  onGeneratorHistory={generatorHistorySetting.change}
                   screenshots={api}
                   storage={storage}
                   movingStorage={storageMove === "moving"}
@@ -966,6 +990,11 @@ export function VaultView({
                       );
                   }}
                 />
+              </div>
+            )}
+            {place === "generator" && (
+              <div className={toolPane}>
+                <GeneratorView api={api} />
               </div>
             )}
             {place === "passwords" && (

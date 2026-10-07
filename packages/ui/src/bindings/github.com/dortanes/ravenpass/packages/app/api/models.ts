@@ -525,6 +525,25 @@ export interface ExtensionLinks {
 }
 
 /**
+ * GeneratedPassword is one password the generator handed out; Mode is "words" or "characters" and At is RFC 3339 in
+ * UTC.
+ */
+export interface GeneratedPassword {
+    "value": string;
+    "mode": string;
+    "at": string;
+}
+
+/**
+ * GeneratorHistorySetting is whether the generator's history is kept, for how many days, and the periods offered.
+ */
+export interface GeneratorHistorySetting {
+    "enabled": boolean;
+    "days": number;
+    "offered": number[] | null;
+}
+
+/**
  * Group is a name the person gave a set of credentials. It carries no credential data.
  */
 export interface Group {

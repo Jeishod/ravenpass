@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  characterRuns,
   defaultGeneratorOptions,
+  fitGeneratorOptions,
   PasswordGenerator,
   type RandomIndex,
   randomIndex,
@@ -90,7 +92,78 @@ test("character passwords use every chosen class and no other", () => {
     symbols: false,
   });
   assert.match(password, /^[a-z]{20}$/);
-  assert.equal(bits, 20 * Math.log2(26));
+  assert.ok(Math.abs(bits - 20 * Math.log2(26)) < 1e-9, `${bits} bits`);
+});
+
+test("character passwords hold at least the minimum digits and symbols", () => {
+  const generator = new PasswordGenerator(words);
+  const options = {
+    ...defaultGeneratorOptions,
+    mode: "characters" as const,
+    length: 12,
+    minDigits: 4,
+    minSymbols: 3,
+  };
+  for (let i = 0; i < 50; i++) {
+    const { password } = generator.generate(options);
+    assert.equal(password.length, 12);
+    assert.ok((password.match(/[0-9]/g) ?? []).length >= 4, password);
+    assert.ok((password.match(/[^a-zA-Z0-9]/g) ?? []).length >= 3, password);
+  }
+});
+
+test("avoiding ambiguous characters leaves out I, O, l, 0 and 1", () => {
+  const generator = new PasswordGenerator(words);
+  for (let i = 0; i < 50; i++) {
+    const { password } = generator.generate({
+      ...defaultGeneratorOptions,
+      mode: "characters",
+      length: 64,
+      avoidAmbiguous: true,
+    });
+    assert.doesNotMatch(password, /[IOl01]/);
+  }
+});
+
+test("the bits count every draw from its own class", () => {
+  const generator = new PasswordGenerator(words, () => 0);
+  const { password, bits } = generator.generate({
+    ...defaultGeneratorOptions,
+    mode: "characters",
+    length: 8,
+    symbols: false,
+    minDigits: 2,
+  });
+  assert.equal([...password].sort().join(""), "00Aaaaaa");
+  const pool = 26 + 26 + 10;
+  const expected = 2 * Math.log2(26) + 2 * Math.log2(10) + 4 * Math.log2(pool);
+  assert.ok(Math.abs(bits - expected) < 1e-9, `${bits} bits`);
+});
+
+test("minimums and length keep the guaranteed characters within the password", () => {
+  const options = {
+    ...defaultGeneratorOptions,
+    mode: "characters" as const,
+    length: 8,
+  };
+  assert.equal(
+    fitGeneratorOptions({ ...options, minDigits: 9 }, "minDigits").length,
+    12,
+  );
+  const shortened = fitGeneratorOptions(
+    { ...options, minDigits: 4, minSymbols: 4, length: 8 },
+    "length",
+  );
+  assert.deepEqual([shortened.minDigits, shortened.minSymbols], [4, 2]);
+});
+
+test("characterRuns splits a password into letters, digits and symbols", () => {
+  assert.deepEqual(characterRuns("ab12#c"), [
+    { text: "ab", kind: "letter" },
+    { text: "12", kind: "digit" },
+    { text: "#", kind: "symbol" },
+    { text: "c", kind: "letter" },
+  ]);
 });
 
 test("strength follows the entropy", () => {
