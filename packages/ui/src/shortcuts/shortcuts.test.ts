@@ -22,7 +22,7 @@ test("recorded hotkeys replace the defaults of known actions only", () => {
 });
 
 test("an invalid recorded hotkey keeps the default", () => {
-  const shortcuts = Shortcuts.fromRecorded({ palette: "Mod+" });
+  const shortcuts = Shortcuts.fromRecorded({ palette: "Banana+K" });
   assert.equal(shortcuts.hotkey("palette"), "Mod+K");
 });
 
