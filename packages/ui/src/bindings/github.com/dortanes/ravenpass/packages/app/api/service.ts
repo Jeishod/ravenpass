@@ -204,6 +204,13 @@ export function ChooseSystemAutofill(): $CancellablePromise<void> {
 }
 
 /**
+ * ClearGeneratorHistory forgets every generated value of the open vault.
+ */
+export function ClearGeneratorHistory(): $CancellablePromise<void> {
+    return $Call.ByID(3926367920);
+}
+
+/**
  * ClearSelection forgets the selected item.
  */
 export function ClearSelection(): $CancellablePromise<void> {
@@ -276,6 +283,13 @@ export function CopyCredentialField(id: string, field: string): $CancellableProm
  */
 export function CopyExtensionLinkKey(): $CancellablePromise<void> {
     return $Call.ByID(1660064991);
+}
+
+/**
+ * CopyGeneratedPassword puts a generated value on the clipboard, cleared like any other copied secret.
+ */
+export function CopyGeneratedPassword(value: string): $CancellablePromise<void> {
+    return $Call.ByID(4128371261, value);
 }
 
 /**
@@ -486,6 +500,20 @@ export function ForgetVault(path: string): $CancellablePromise<void> {
  */
 export function GenerateOneTimeCode(setup: string): $CancellablePromise<$models.OneTimeCode> {
     return $Call.ByID(2739826763, setup);
+}
+
+/**
+ * GeneratePassword makes a password or passphrase with options and records it in the history.
+ */
+export function GeneratePassword(options: $models.GeneratorOptions): $CancellablePromise<$models.GeneratedPassword> {
+    return $Call.ByID(3565383920, options);
+}
+
+/**
+ * GeneratorState reads the open vault's generator history and options.
+ */
+export function GeneratorState(): $CancellablePromise<$models.GeneratorState> {
+    return $Call.ByID(3474031816);
 }
 
 /**

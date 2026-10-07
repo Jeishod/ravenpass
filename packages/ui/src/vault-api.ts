@@ -872,6 +872,38 @@ export interface Capabilities {
   qrCodes: boolean;
 }
 
+export type GeneratorKind = "password" | "passphrase";
+
+/** What the password generator makes; `kind` picks which of the other fields apply. */
+export interface GeneratorOptions {
+  kind: GeneratorKind;
+  length: number;
+  uppercase: boolean;
+  lowercase: boolean;
+  numbers: boolean;
+  symbols: boolean;
+  minNumbers: number;
+  minSymbols: number;
+  avoidAmbiguous: boolean;
+  words: number;
+  separator: string;
+  capitalize: boolean;
+  includeNumber: boolean;
+}
+
+/** One value the generator made; `at` is RFC 3339 in UTC. */
+export interface GeneratedPassword {
+  value: string;
+  kind: GeneratorKind;
+  at: string;
+}
+
+/** The open vault's generator history, newest first, and the options last used. */
+export interface GeneratorState {
+  options: GeneratorOptions;
+  history: GeneratedPassword[];
+}
+
 export interface VaultApi {
   capabilities(): Promise<Capabilities>;
   getState(): Promise<VaultState>;
@@ -1106,6 +1138,13 @@ export interface VaultApi {
   /** Acts on an item of any kind. */
   setPinned(id: string, pinned: boolean): Promise<void>;
   copyCredentialField(id: string, field: CredentialField): Promise<void>;
+  /** Reads the open vault's generator history, kept sealed on this device only. */
+  generatorState(): Promise<GeneratorState>;
+  /** Makes a value with `options`, records it in the history and keeps `options` as the last used. */
+  generatePassword(options: GeneratorOptions): Promise<GeneratedPassword>;
+  clearGeneratorHistory(): Promise<void>;
+  /** Copies a generated value; the clipboard clears it like any other copied secret. */
+  copyGeneratedPassword(value: string): Promise<void>;
   copyIdentityField(id: string, field: IdentityField): Promise<void>;
   exportStatus(): Promise<ExportStatus>;
   openWebsite(address: string): Promise<void>;

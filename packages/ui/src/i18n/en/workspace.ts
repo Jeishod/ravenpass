@@ -9,6 +9,7 @@ export const workspace = {
   "workspace.region.notes": "Notes",
   "workspace.region.seeds": "Seeds",
   "workspace.region.settings": "Settings",
+  "workspace.region.generator": "Password generator",
 
   "workspace.toolbar.search": "Search passwords",
   "workspace.toolbar.search.placeholder": "Search names, logins and emails",
@@ -22,6 +23,7 @@ export const workspace = {
   "workspace.rail.notes": "Notes",
   "workspace.rail.seeds": "Seeds",
   "workspace.rail.settings": "Settings",
+  "workspace.rail.generator": "Generator",
   "workspace.back": "Back to {place}",
 
   "workspace.palette.title": "Search the vault",

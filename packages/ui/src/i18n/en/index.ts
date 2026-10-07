@@ -8,6 +8,7 @@ import { extension } from "./extension.ts";
 import { failures } from "./failures.ts";
 import { general } from "./general.ts";
 import { generator } from "./generator.ts";
+import { generatorPlace } from "./generator-place.ts";
 import { identity } from "./identity.ts";
 import { imports } from "./imports.ts";
 import { intro } from "./intro.ts";
@@ -32,6 +33,7 @@ export const en = {
   ...card,
   ...note,
   ...seed,
+  ...generator,
   ...settings,
   ...imports,
   ...extension,
@@ -42,6 +44,6 @@ export const en = {
   ...system,
   ...trash,
   ...merge,
-  ...generator,
+  ...generatorPlace,
   ...breaches,
 };

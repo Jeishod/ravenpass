@@ -24,6 +24,9 @@ import type {
   CredentialSummary,
   ExportStatus,
   ExtensionLinks,
+  GeneratedPassword,
+  GeneratorKind,
+  GeneratorOptions,
   Identity,
   IdentityAddresses,
   IdentityDocument,
@@ -590,6 +593,20 @@ function watchLanguage(onChange: () => void): () => void {
   ).watch(onChange);
 }
 
+function generatorKindOf(kind: string): GeneratorKind {
+  return kind === "passphrase" ? "passphrase" : "password";
+}
+
+function generatorOptionsOf(
+  options: models.GeneratorOptions,
+): GeneratorOptions {
+  return { ...options, kind: generatorKindOf(options.kind) };
+}
+
+function generatedOf(entry: models.GeneratedPassword): GeneratedPassword {
+  return { ...entry, kind: generatorKindOf(entry.kind) };
+}
+
 /** The vault API of a Wails host, desktop or mobile: both bind the same Go service. */
 export const hostApi: VaultApi = {
   capabilities: service.Capabilities,
@@ -739,6 +756,18 @@ export const hostApi: VaultApi = {
   async listGroups() {
     return (await service.ListGroups()) ?? [];
   },
+  async generatorState() {
+    const state = await service.GeneratorState();
+    return {
+      options: generatorOptionsOf(state.options),
+      history: (state.history ?? []).map(generatedOf),
+    };
+  },
+  async generatePassword(options) {
+    return generatedOf(await service.GeneratePassword(options));
+  },
+  clearGeneratorHistory: service.ClearGeneratorHistory,
+  copyGeneratedPassword: service.CopyGeneratedPassword,
   createGroup: service.CreateGroup,
   renameGroup: service.RenameGroup,
   deleteGroup: service.DeleteGroup,
