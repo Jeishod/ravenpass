@@ -1,31 +1,43 @@
-// Package genhistory generates passwords and passphrases and keeps every one made, with the options last used, in a
-// file on this device sealed as the open vault's device data.
+// Package genhistory keeps the passwords the generator handed out, for each vault, in a file on this device sealed as
+// the open vault's device data, until they are older than the period the owner keeps them.
 package genhistory
 
 import (
-	"crypto/rand"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/dortanes/ravenpass/packages/app/privatefile"
 	"github.com/dortanes/ravenpass/packages/vault"
 )
 
+// Modes of a generated password, as the generator names them.
 const (
-	sealPurpose = "generator-history"
+	ModeWords      = "words"
+	ModeCharacters = "characters"
+)
+
+const (
+	sealName = "generator-history"
 	// MaxEntries bounds the history; the oldest entries go first past it.
 	MaxEntries = 2000
+	// MaxValueBytes is the longest password the history records.
+	MaxValueBytes = 1024
 	// maxFileSize is a sealed history's ciphertext limit plus its envelope.
 	maxFileSize = 32<<20 + 1<<10
+	day         = 24 * time.Hour
 )
+
+// ErrInvalidEntry reports a password or mode the history does not record.
+var ErrInvalidEntry = errors.New("generated password is invalid")
 
 // Vault is the open vault as the history needs it; sealing for a vault no longer open fails.
 type Vault interface {
@@ -34,22 +46,20 @@ type Vault interface {
 	OpenDeviceData(id vault.ID, name string, sealed []byte) ([]byte, error)
 }
 
-// Entry is one generated value.
+// Entry is one password the generator handed out.
 type Entry struct {
 	Value string    `json:"value"`
-	Kind  string    `json:"kind"`
+	Mode  string    `json:"mode"`
 	At    time.Time `json:"at"`
 }
 
-// State is the open vault's history, newest first, and the options last used.
-type State struct {
-	Options Options
-	History []Entry
+func (e Entry) valid() bool {
+	return (e.Mode == ModeWords || e.Mode == ModeCharacters) && e.Value != "" && len(e.Value) <= MaxValueBytes &&
+		utf8.ValidString(e.Value)
 }
 
 // stored is the sealed file's plaintext; History is oldest first.
 type stored struct {
-	Options Options `json:"options"`
 	History []Entry `json:"history"`
 }
 
@@ -57,124 +67,160 @@ type stored struct {
 type Store struct {
 	directory string
 	vault     Vault
-	wordlist  func() []string
-	random    io.Reader
+	keptDays  func() int
 	now       func() time.Time
 	mu        sync.Mutex
 }
 
-// New returns a store keeping histories in directory; wordlist supplies passphrase words.
-func New(directory string, vault Vault, wordlist func() []string) (*Store, error) {
-	if directory == "" || vault == nil || wordlist == nil {
-		return nil, errors.New("history directory, vault and wordlist are required")
+// New returns a store keeping histories in directory; keptDays reports how many days an entry is kept.
+func New(directory string, vault Vault, keptDays func() int) (*Store, error) {
+	if directory == "" || vault == nil || keptDays == nil {
+		return nil, errors.New("history directory, vault and kept days are required")
 	}
-	return &Store{directory: directory, vault: vault, wordlist: wordlist, random: rand.Reader, now: time.Now}, nil
+	return &Store{directory: directory, vault: vault, keptDays: keptDays, now: time.Now}, nil
 }
 
-// State reads the open vault's history and options.
-func (s *Store) State() (State, error) {
+// History reads the open vault's history, newest first.
+func (s *Store) History() ([]Entry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	_, data, err := s.read()
+	_, history, err := s.read()
 	if err != nil {
-		return State{}, err
+		return nil, err
 	}
-	history := make([]Entry, len(data.History))
-	for i, entry := range data.History {
-		history[len(history)-1-i] = entry
+	newest := make([]Entry, len(history))
+	for i, entry := range history {
+		newest[len(newest)-1-i] = entry
 	}
-	return State{Options: data.Options, History: history}, nil
+	return newest, nil
 }
 
-// Generate makes a value with options, records it and keeps options as the last used.
-func (s *Store) Generate(options Options) (Entry, error) {
+// Record adds a password the generator handed out in mode.
+func (s *Store) Record(value, mode string) (Entry, error) {
+	entry := Entry{Value: value, Mode: mode}
+	if !entry.valid() {
+		return Entry{}, ErrInvalidEntry
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if err := options.Validate(); err != nil {
-		return Entry{}, err
-	}
-	id, data, err := s.read()
+	id, history, err := s.read()
 	if err != nil {
 		return Entry{}, err
 	}
-	return s.record(id, data, options)
-}
-
-// record makes a value with options, appends it to data and writes data; the caller holds s.mu.
-func (s *Store) record(id vault.ID, data stored, options Options) (Entry, error) {
-	var wordlist []string
-	if options.Kind == KindPassphrase {
-		wordlist = s.wordlist()
+	entry.At = s.now().UTC()
+	history = append(history, entry)
+	if excess := len(history) - MaxEntries; excess > 0 {
+		history = history[excess:]
 	}
-	value, err := Generate(options, wordlist, s.random)
-	if err != nil {
-		return Entry{}, err
-	}
-	entry := Entry{Value: value, Kind: options.Kind, At: s.now().UTC()}
-	data.Options = options
-	data.History = append(data.History, entry)
-	if excess := len(data.History) - MaxEntries; excess > 0 {
-		data.History = data.History[excess:]
-	}
-	if err := s.write(id, data); err != nil {
+	if err := s.write(id, history); err != nil {
 		return Entry{}, err
 	}
 	return entry, nil
 }
 
-// Clear forgets the open vault's history and keeps its options.
+// Clear forgets the open vault's history by removing its file.
 func (s *Store) Clear() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	id, data, err := s.read()
+	id, err := s.vault.OpenVaultID()
 	if err != nil {
 		return err
 	}
-	data.History = nil
-	return s.write(id, data)
+	if err := os.Remove(s.path(id)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return nil
 }
 
-// read opens the open vault's file; a vault without one starts with the default options and no history.
-func (s *Store) read() (vault.ID, stored, error) {
+// Past counts the entries a period of days would remove.
+func (s *Store) Past(days int) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, history, err := s.read()
+	if err != nil {
+		return 0, err
+	}
+	cutoff := s.now().Add(-time.Duration(days) * day)
+	count := 0
+	for _, entry := range history {
+		if !entry.At.After(cutoff) {
+			count++
+		}
+	}
+	return count, nil
+}
+
+// Prune removes the entries kept longer than the period now set.
+func (s *Store) Prune() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, _, err := s.read()
+	return err
+}
+
+// read opens the open vault's history, oldest first, and writes it back without the entries past the period; a vault
+// without a file has none.
+func (s *Store) read() (vault.ID, []Entry, error) {
 	id, err := s.vault.OpenVaultID()
 	if err != nil {
-		return vault.ID{}, stored{}, err
+		return vault.ID{}, nil, err
 	}
-	sealed, err := privatefile.Read(s.path(id), maxFileSize)
+	plaintext, err := s.open(id)
 	if errors.Is(err, fs.ErrNotExist) {
-		return id, stored{Options: DefaultOptions()}, nil
+		return id, nil, nil
 	}
 	if err != nil {
-		return vault.ID{}, stored{}, err
-	}
-	plaintext, err := s.vault.OpenDeviceData(id, sealPurpose, sealed)
-	if unreadable(err) {
-		// A key change that could not seal it again leaves a file no key opens; keep it aside rather than lose it.
-		if err := s.setAside(id); err != nil {
-			return vault.ID{}, stored{}, err
-		}
-		return id, stored{Options: DefaultOptions()}, nil
-	}
-	if err != nil {
-		return vault.ID{}, stored{}, err
+		return vault.ID{}, nil, err
 	}
 	defer clear(plaintext)
 	var data stored
 	if err := json.Unmarshal(plaintext, &data); err != nil {
-		return vault.ID{}, stored{}, vault.ErrMalformed
+		return vault.ID{}, nil, vault.ErrMalformed
 	}
-	if data.Options.Validate() != nil {
-		data.Options = DefaultOptions()
+	cutoff := s.now().Add(-time.Duration(s.keptDays()) * day)
+	kept := data.History[:0]
+	for _, entry := range data.History {
+		if entry.valid() && entry.At.After(cutoff) {
+			kept = append(kept, entry)
+		}
 	}
-	return id, data, nil
+	if len(kept) != len(data.History) {
+		if err := s.write(id, kept); err != nil {
+			return vault.ID{}, nil, err
+		}
+	}
+	return id, kept, nil
 }
 
-func (s *Store) write(id vault.ID, data stored) error {
-	plaintext, err := json.Marshal(data)
+// open reads and opens the vault id's file. A key change may seal it again between the read and the opening, so a
+// file that fails to open is read once more; one that still fails is set aside rather than lost.
+func (s *Store) open(id vault.ID) ([]byte, error) {
+	var last []byte
+	for {
+		sealed, err := privatefile.Read(s.path(id), maxFileSize)
+		if err != nil {
+			return nil, err
+		}
+		plaintext, err := s.vault.OpenDeviceData(id, sealName, sealed)
+		if !unreadable(err) {
+			return plaintext, err
+		}
+		if last != nil && bytes.Equal(last, sealed) {
+			if err := s.setAside(id); err != nil {
+				return nil, err
+			}
+			return nil, fs.ErrNotExist
+		}
+		last = sealed
+	}
+}
+
+func (s *Store) write(id vault.ID, history []Entry) error {
+	plaintext, err := json.Marshal(stored{History: history})
 	if err != nil {
 		return err
 	}
-	sealed, err := s.vault.SealDeviceData(id, sealPurpose, plaintext)
+	sealed, err := s.vault.SealDeviceData(id, sealName, plaintext)
 	clear(plaintext)
 	if err != nil {
 		return err
@@ -182,9 +228,8 @@ func (s *Store) write(id vault.ID, data stored) error {
 	return privatefile.Write(s.path(id), sealed)
 }
 
-// ResealDeviceData seals the vault id's history again for a key change; it runs while the vault service is busy, so
-// it reads the file without the vault and leaves s.mu alone. A Generate waiting on the service writes after it, from
-// the history it read, sealed with the new key.
+// ResealDeviceData seals the vault id's history again for a key change. It runs while the vault service is busy, so it
+// reads the file without the vault and leaves s.mu to a Record waiting on the service, which writes after it.
 func (s *Store) ResealDeviceData(id vault.ID, open, seal func(name string, data []byte) ([]byte, error)) (func() error, error) {
 	path := s.path(id)
 	sealed, err := privatefile.Read(path, maxFileSize)
@@ -194,11 +239,11 @@ func (s *Store) ResealDeviceData(id vault.ID, open, seal func(name string, data 
 	if err != nil {
 		return nil, err
 	}
-	plaintext, err := open(sealPurpose, sealed)
+	plaintext, err := open(sealName, sealed)
 	if err != nil {
 		return nil, err
 	}
-	resealed, err := seal(sealPurpose, plaintext)
+	resealed, err := seal(sealName, plaintext)
 	clear(plaintext)
 	if err != nil {
 		return nil, err

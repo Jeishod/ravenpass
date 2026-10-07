@@ -24,6 +24,7 @@ export const queryKeys = {
   siteIcons: [...hostScope, "site-icons"],
   bankDetails: [...hostScope, "bank-details"],
   breachChecks: [...hostScope, "breach-checks"],
+  generatorHistorySetting: [...hostScope, "generator-history-setting"],
   screenshots: [...hostScope, "screenshots"],
   systemAutofill: [...hostScope, "system-autofill"],
   identityList: [...hostScope, "identity-list"],

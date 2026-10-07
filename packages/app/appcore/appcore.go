@@ -21,7 +21,6 @@ import (
 	"github.com/dortanes/ravenpass/packages/app/unlock"
 	"github.com/dortanes/ravenpass/packages/app/vaultservice"
 	"github.com/dortanes/ravenpass/packages/app/verification"
-	vaultpkg "github.com/dortanes/ravenpass/packages/vault"
 )
 
 // The files the services keep in the host's directory.
@@ -102,7 +101,9 @@ func Build(platform Platform) (*Services, error) {
 	if err != nil {
 		return nil, err
 	}
-	generator, err := genhistory.New(filepath.Join(directory, generatorDirectory), vault, vaultpkg.SeedWordlist)
+	generator, err := genhistory.New(filepath.Join(directory, generatorDirectory), vault, func() int {
+		return settings.GeneratorHistory().Days
+	})
 	if err != nil {
 		return nil, err
 	}

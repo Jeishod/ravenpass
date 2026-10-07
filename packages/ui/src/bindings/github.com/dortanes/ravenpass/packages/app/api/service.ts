@@ -204,7 +204,7 @@ export function ChooseSystemAutofill(): $CancellablePromise<void> {
 }
 
 /**
- * ClearGeneratorHistory forgets every generated value of the open vault.
+ * ClearGeneratorHistory forgets every password the generator handed out for the open vault.
  */
 export function ClearGeneratorHistory(): $CancellablePromise<void> {
     return $Call.ByID(3926367920);
@@ -286,7 +286,7 @@ export function CopyExtensionLinkKey(): $CancellablePromise<void> {
 }
 
 /**
- * CopyGeneratedPassword puts a generated value on the clipboard, cleared like any other copied secret.
+ * CopyGeneratedPassword puts a generated password on the clipboard, cleared like any other copied secret.
  */
 export function CopyGeneratedPassword(value: string): $CancellablePromise<void> {
     return $Call.ByID(4128371261, value);
@@ -325,6 +325,13 @@ export function CopyScan(id: string): $CancellablePromise<void> {
  */
 export function CopySeedField(id: string, field: $models.SeedField): $CancellablePromise<void> {
     return $Call.ByID(3823222990, id, field);
+}
+
+/**
+ * CountGeneratorHistoryPast counts the passwords in the open vault's history that a period of days would remove.
+ */
+export function CountGeneratorHistoryPast(days: number): $CancellablePromise<number> {
+    return $Call.ByID(298485926, days);
 }
 
 /**
@@ -503,17 +510,10 @@ export function GenerateOneTimeCode(setup: string): $CancellablePromise<$models.
 }
 
 /**
- * GeneratePassword makes a password or passphrase with options and records it in the history.
+ * GeneratorHistory reads the passwords the generator handed out for the open vault, newest first.
  */
-export function GeneratePassword(options: $models.GeneratorOptions): $CancellablePromise<$models.GeneratedPassword> {
-    return $Call.ByID(3565383920, options);
-}
-
-/**
- * GeneratorState reads the open vault's generator history and options.
- */
-export function GeneratorState(): $CancellablePromise<$models.GeneratorState> {
-    return $Call.ByID(3474031816);
+export function GeneratorHistory(): $CancellablePromise<$models.GeneratedPassword[] | null> {
+    return $Call.ByID(2793528121);
 }
 
 /**
@@ -584,6 +584,13 @@ export function GetCredentialLimits(): $CancellablePromise<$models.CredentialLim
  */
 export function GetDockIcon(): $CancellablePromise<$models.DockIcon> {
     return $Call.ByID(518185492);
+}
+
+/**
+ * GetGeneratorHistorySetting reports whether the generator's history is kept and for how many days.
+ */
+export function GetGeneratorHistorySetting(): $CancellablePromise<$models.GeneratorHistorySetting> {
+    return $Call.ByID(3605445883);
 }
 
 /**
@@ -866,6 +873,14 @@ export function ReadSeed(id: string): $CancellablePromise<$models.Seed> {
 }
 
 /**
+ * RecordGeneratedPassword adds a password the generator handed out in mode to the open vault's history, unless the
+ * history is turned off.
+ */
+export function RecordGeneratedPassword(value: string, mode: string): $CancellablePromise<void> {
+    return $Call.ByID(864654549, value, mode);
+}
+
+/**
  * RecordSeedCheck records today, in local time, as the day a phrase seed's copy was confirmed.
  */
 export function RecordSeedCheck(id: string): $CancellablePromise<void> {
@@ -1027,6 +1042,16 @@ export function SetDefaultGroup(id: string): $CancellablePromise<void> {
  */
 export function SetDockIcon(hideWithWindow: boolean): $CancellablePromise<void> {
     return $Call.ByID(2831586456, hideWithWindow);
+}
+
+/**
+ * SetGeneratorHistorySetting records whether the generator's history is kept and for how many days, then removes from
+ * the open vault's history what it no longer keeps: everything when turned off, else what is older than days. A
+ * shorter period's removal that fails once the setting is saved is not reported: the next reading of the history
+ * retries it.
+ */
+export function SetGeneratorHistorySetting(enabled: boolean, days: number): $CancellablePromise<void> {
+    return $Call.ByID(328660543, enabled, days);
 }
 
 /**

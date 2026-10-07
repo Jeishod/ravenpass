@@ -17,7 +17,7 @@ export type ItemPlaceName =
   | "notes"
   | "seeds";
 
-/** A place holding no items: settings and the password generator. */
+/** A place holding no items. */
 export type ToolPlaceName = "settings" | "generator";
 
 export type WorkspacePlace = ItemPlaceName | ToolPlaceName;

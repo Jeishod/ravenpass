@@ -18,6 +18,7 @@ import type {
   DockIcon,
   ExportState,
   ExtensionLinking,
+  GeneratorHistorySetting,
   Group,
   InterfaceSize,
   ScreenshotSettings,
@@ -26,6 +27,7 @@ import type {
   StorageStatus,
   UnlockMethods,
   Vault,
+  VaultApi,
 } from "../vault-api.ts";
 import type { ListedItem } from "../workspace/sections.ts";
 import { WrapBlockText } from "./Block.tsx";
@@ -80,6 +82,9 @@ export function SettingsView({
   onBankDetails,
   breachChecks,
   onBreachChecks,
+  generatorHistory,
+  generatorHistoryApi,
+  onGeneratorHistory,
   screenshots,
   storage,
   movingStorage,
@@ -137,6 +142,9 @@ export function SettingsView({
   onBankDetails: (enabled: boolean) => void;
   breachChecks: BreachChecks | null;
   onBreachChecks: (enabled: boolean) => void;
+  generatorHistory: GeneratorHistorySetting | null;
+  generatorHistoryApi: Pick<VaultApi, "countGeneratorHistoryPast">;
+  onGeneratorHistory: (enabled: boolean, days: number) => void;
   screenshots: ScreenshotSettings;
   storage: StorageStatus | null;
   movingStorage: boolean;
@@ -228,6 +236,9 @@ export function SettingsView({
             onBankDetails={onBankDetails}
             breachChecks={breachChecks}
             onBreachChecks={onBreachChecks}
+            generatorHistory={generatorHistory}
+            generatorHistoryApi={generatorHistoryApi}
+            onGeneratorHistory={onGeneratorHistory}
             clipboard={clipboard}
             onClipboard={onClipboard}
             screenshots={screenshots}

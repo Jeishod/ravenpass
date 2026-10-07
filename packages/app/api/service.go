@@ -140,11 +140,11 @@ type Service struct {
 	owner         OwnerVerifier
 	// backups is nil on a host without automatic backups.
 	backups *backups.Keeper
-	// generator is nil on a host without the password generator.
+	folders BackupFolders
+	about   About
+	apps    AppNames
+	// generator is nil on a host that keeps no generator history.
 	generator *genhistory.Store
-	folders   BackupFolders
-	about     About
-	apps      AppNames
 }
 
 // Confirmations is how the service reaches the confirmation panel.
@@ -194,7 +194,7 @@ type Host struct {
 	SystemAutofill SystemAutofill
 	// Backups is set on a host that backs up the open vault on its own.
 	Backups *backups.Keeper
-	// Generator keeps the password generator's history; nil leaves the generator off.
+	// Generator is set on a host that keeps the passwords the generator handed out.
 	Generator *genhistory.Store
 	// BackupFolders is nil where the owner picks the backup folder with the desktop folder dialog.
 	BackupFolders BackupFolders

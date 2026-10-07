@@ -1,5 +1,5 @@
 import { cn } from "cn";
-import { LockKeyhole, Plus, Settings2 } from "lucide-react";
+import { LockKeyhole, Plus, Settings2, WandSparkles } from "lucide-react";
 import type { ComponentType, RefObject } from "react";
 import { useCompactLayout } from "../../host/compact.ts";
 import { useTranslator } from "../../i18n/translator.tsx";
@@ -29,6 +29,7 @@ export function WorkspaceToolbar({
   searchShortcut,
   onNew,
   onLock,
+  onGenerator,
   onSettings,
   busy,
 }: {
@@ -54,6 +55,8 @@ export function WorkspaceToolbar({
   /** Creates an item of the kind the open place holds. */
   onNew: () => void;
   onLock: () => void;
+  /** Opens the password generator, which a compact screen reaches from the toolbar. */
+  onGenerator: () => void;
   /** Opens settings, which a compact screen reaches from the toolbar. */
   onSettings: () => void;
   busy: boolean;
@@ -100,6 +103,12 @@ export function WorkspaceToolbar({
           {vaultMenu}
           <span className="ml-auto flex items-center gap-2">
             {lock}
+            <VaultAction
+              label={t("workspace.rail.generator")}
+              icon={WandSparkles}
+              compact
+              onClick={onGenerator}
+            />
             <VaultAction
               label={t("workspace.rail.settings")}
               icon={Settings2}

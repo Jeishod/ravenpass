@@ -1,3 +1,4 @@
+import type { GeneratorMode } from "./credentials/password-generator.ts";
 import type { SignInStyle } from "./extensions/sign-in-style.ts";
 import type { Appearance } from "./host/appearance.ts";
 
@@ -872,36 +873,18 @@ export interface Capabilities {
   qrCodes: boolean;
 }
 
-export type GeneratorKind = "password" | "passphrase";
-
-/** What the password generator makes; `kind` picks which of the other fields apply. */
-export interface GeneratorOptions {
-  kind: GeneratorKind;
-  length: number;
-  uppercase: boolean;
-  lowercase: boolean;
-  numbers: boolean;
-  symbols: boolean;
-  minNumbers: number;
-  minSymbols: number;
-  avoidAmbiguous: boolean;
-  words: number;
-  separator: string;
-  capitalize: boolean;
-  includeNumber: boolean;
-}
-
-/** One value the generator made; `at` is RFC 3339 in UTC. */
-export interface GeneratedPassword {
+/** A password the generator handed out; `at` is RFC 3339 in UTC. */
+export interface GeneratorHistoryEntry {
   value: string;
-  kind: GeneratorKind;
+  mode: GeneratorMode;
   at: string;
 }
 
-/** The open vault's generator history, newest first, and the options last used. */
-export interface GeneratorState {
-  options: GeneratorOptions;
-  history: GeneratedPassword[];
+/** Whether the generator's history is kept, for how many days, and the periods offered. */
+export interface GeneratorHistorySetting {
+  enabled: boolean;
+  days: number;
+  offered: number[];
 }
 
 export interface VaultApi {
@@ -1056,6 +1039,11 @@ export interface VaultApi {
   breachChecks(): Promise<BreachChecks>;
   /** Turning checks off forgets every answer. */
   setBreachChecks(enabled: boolean): Promise<void>;
+  generatorHistorySetting(): Promise<GeneratorHistorySetting>;
+  /** Removes what the history no longer keeps: everything when turned off, else what is older than `days`. */
+  setGeneratorHistorySetting(enabled: boolean, days: number): Promise<void>;
+  /** How many passwords in the open vault's history a period of `days` would remove. */
+  countGeneratorHistoryPast(days: number): Promise<number>;
   /**
    * The passwords of the vault that appear in known breaches. Fails with `breach-checks-off` while checks are off and
    * `breach-check-unreachable` when the service cannot be reached.
@@ -1138,12 +1126,12 @@ export interface VaultApi {
   /** Acts on an item of any kind. */
   setPinned(id: string, pinned: boolean): Promise<void>;
   copyCredentialField(id: string, field: CredentialField): Promise<void>;
-  /** Reads the open vault's generator history, kept sealed on this device only. */
-  generatorState(): Promise<GeneratorState>;
-  /** Makes a value with `options`, records it in the history and keeps `options` as the last used. */
-  generatePassword(options: GeneratorOptions): Promise<GeneratedPassword>;
+  /** The passwords the generator handed out for the open vault, newest first; kept on this device only. */
+  generatorHistory(): Promise<GeneratorHistoryEntry[]>;
+  /** Adds a password the generator handed out to the history; nothing while the history is turned off. */
+  recordGeneratedPassword(value: string, mode: GeneratorMode): Promise<void>;
   clearGeneratorHistory(): Promise<void>;
-  /** Copies a generated value; the clipboard clears it like any other copied secret. */
+  /** Copies a generated password; the clipboard clears it like any other copied secret. */
   copyGeneratedPassword(value: string): Promise<void>;
   copyIdentityField(id: string, field: IdentityField): Promise<void>;
   exportStatus(): Promise<ExportStatus>;

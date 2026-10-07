@@ -122,6 +122,10 @@ const searchLabels: Record<
 
 const noItems: never[] = [];
 
+/** The pane a place without items fills. */
+const toolPane =
+  "flex min-h-0 flex-1 flex-col overflow-hidden rounded-pane border bg-card max-sm:rounded-none max-sm:border-0 max-sm:bg-background";
+
 /** VaultView is the open vault: the state every place shares, around whichever place is open. */
 export function VaultView({
   api,
@@ -223,6 +227,14 @@ export function VaultView({
     readFailure: "app.error.setting-read",
     writeFailure: "settings.breach-checks.error",
   });
+  const generatorHistorySetting = useHostSetting({
+    key: queryKeys.generatorHistorySetting,
+    read: () => api.generatorHistorySetting(),
+    write: (enabled: boolean, days: number) =>
+      api.setGeneratorHistorySetting(enabled, days),
+    readFailure: "app.error.setting-read",
+    writeFailure: "settings.generator-history.error",
+  });
   // A refused change leaves the previous keys working.
   const shortcutSetting = useHostSetting({
     key: queryKeys.shortcuts,
@@ -306,6 +318,7 @@ export function VaultView({
     siteIconsSetting.changing ||
     bankDetailsSetting.changing ||
     breachChecksSetting.changing ||
+    generatorHistorySetting.changing ||
     shortcutSetting.changing ||
     interfaceSizeChange.isPending ||
     appearanceChange.isPending ||
@@ -867,6 +880,7 @@ export function VaultView({
       }
       onNew={createItem}
       onLock={lock}
+      onGenerator={() => choosePlace("generator")}
       onSettings={() => showSettings(null)}
       busy={busy}
     />
@@ -900,7 +914,7 @@ export function VaultView({
         >
           <CrossFade id={place} className="flex min-w-0 flex-1 gap-3">
             {place === "settings" && (
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-pane border bg-card max-sm:rounded-none max-sm:border-0 max-sm:bg-background">
+              <div className={toolPane}>
                 <SettingsView
                   section={settingsSection}
                   onSection={setSettingsSection}
@@ -925,6 +939,9 @@ export function VaultView({
                   onBankDetails={bankDetailsSetting.change}
                   breachChecks={breachChecksSetting.value}
                   onBreachChecks={breachChecksSetting.change}
+                  generatorHistory={generatorHistorySetting.value}
+                  generatorHistoryApi={api}
+                  onGeneratorHistory={generatorHistorySetting.change}
                   screenshots={api}
                   storage={storage}
                   movingStorage={storageMove === "moving"}
@@ -976,7 +993,7 @@ export function VaultView({
               </div>
             )}
             {place === "generator" && (
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-pane border bg-card max-sm:rounded-none max-sm:border-0 max-sm:bg-background">
+              <div className={toolPane}>
                 <GeneratorView api={api} />
               </div>
             )}
